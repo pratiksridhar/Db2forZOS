@@ -1,0 +1,2639 @@
+{
+  "schema_version": "1.0.0",
+  "title": "IBM Db2 13 for z/OS CREATE DDL test inventory",
+  "baseline": {
+    "product": "IBM Db2 for z/OS",
+    "release": "13",
+    "documentation_reviewed": "2026-07-19",
+    "latest_reviewed_function_level": "V13R1M509",
+    "current_uts_baseline": "APPLCOMPAT V12R1M504 or later",
+    "authority": "Official IBM documentation only",
+    "notes": "Function level, APPLCOMPAT, subsystem parameters, data sharing, buffer pools, and storage capabilities remain per-case inputs."
+  },
+  "sources": {
+    "ibm-fl509": {
+      "title": "Function level 509",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=levels-function-level-509"
+    },
+    "ibm-sql-statements": {
+      "title": "SQL statements in Db2 for z/OS",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=sql-statements"
+    },
+    "ibm-create-stogroup": {
+      "title": "CREATE STOGROUP statement",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-create-stogroup"
+    },
+    "ibm-stogroup-concept": {
+      "title": "Db2 storage groups",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=structures-db2-storage-groups"
+    },
+    "ibm-stogroup-create-task": {
+      "title": "Creating Db2 storage groups",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=groups-creating-db2-storage"
+    },
+    "ibm-catalog-sysstogroup": {
+      "title": "SYSIBM.SYSSTOGROUP catalog table",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=spaces-sysstogroup"
+    },
+    "ibm-catalog-sysvolumes": {
+      "title": "SYSIBM.SYSVOLUMES catalog table",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=spaces-sysvolumes"
+    },
+    "ibm-create-database": {
+      "title": "CREATE DATABASE statement",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-create-database"
+    },
+    "ibm-database-concept": {
+      "title": "Creation of databases",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=objects-creation-databases"
+    },
+    "ibm-catalog-sysdatabase": {
+      "title": "SYSIBM.SYSDATABASE catalog table",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=spaces-sysdatabase"
+    },
+    "ibm-create-tablespace": {
+      "title": "CREATE TABLESPACE statement",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-create-tablespace"
+    },
+    "ibm-create-lob-tablespace": {
+      "title": "CREATE LOB TABLESPACE statement",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-create-lob-tablespace"
+    },
+    "ibm-tablespace-concept": {
+      "title": "Db2 table spaces",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=structures-db2-table-spaces"
+    },
+    "ibm-pbg-concept": {
+      "title": "Partition-by-growth table spaces",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=zos-partition-by-growth-table-spaces"
+    },
+    "ibm-pbr-create": {
+      "title": "Creating partition-by-range table spaces",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=spaces-creating-partition-by-range-table"
+    },
+    "ibm-implicit-tablespace": {
+      "title": "Implicitly defined table spaces",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=spaces-implicitly-defined-table"
+    },
+    "ibm-ea-spaces": {
+      "title": "EA-enabled table spaces and index spaces",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=spaces-ea-enabled-table-index"
+    },
+    "ibm-gbpcache": {
+      "title": "How the GBPCACHE option affects write operations",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=operations-how-gbpcache-option-affects-write"
+    },
+    "ibm-catalog-systablespace": {
+      "title": "SYSIBM.SYSTABLESPACE catalog table",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=spaces-systablespace"
+    },
+    "ibm-catalog-systablepart": {
+      "title": "SYSIBM.SYSTABLEPART catalog table",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=spaces-systablepart"
+    },
+    "ibm-create-table": {
+      "title": "CREATE TABLE statement",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-create-table"
+    },
+    "ibm-table-concept": {
+      "title": "Db2 tables",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=concepts-db2-tables"
+    },
+    "ibm-create-base-table": {
+      "title": "Creating base tables",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=tables-creating-base"
+    },
+    "ibm-temporal-concept": {
+      "title": "Temporal tables and data versioning",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=tables-temporal-data-versioning"
+    },
+    "ibm-catalog-systables": {
+      "title": "SYSIBM.SYSTABLES catalog table",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=spaces-systables"
+    },
+    "ibm-catalog-syscolumns": {
+      "title": "SYSIBM.SYSCOLUMNS catalog table",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=tables-syscolumns"
+    },
+    "ibm-catalog-sysrels": {
+      "title": "SYSIBM.SYSRELS catalog table",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=tables-sysrels"
+    },
+    "ibm-catalog-sysforeignkeys": {
+      "title": "SYSIBM.SYSFOREIGNKEYS catalog table",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=tables-sysforeignkeys"
+    },
+    "ibm-catalog-syschecks": {
+      "title": "SYSIBM.SYSCHECKS catalog table",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=tables-syschecks"
+    },
+    "ibm-create-index": {
+      "title": "CREATE INDEX statement",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-create-index"
+    },
+    "ibm-index-concept": {
+      "title": "Db2 indexes",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=tables-db2-indexes"
+    },
+    "ibm-index-names": {
+      "title": "Index names and guidelines",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=indexes-index-names-guidelines"
+    },
+    "ibm-partitioned-indexes": {
+      "title": "Indexes on partitioned tables",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=indexes-partitioned-tables"
+    },
+    "ibm-implicit-index": {
+      "title": "How Db2 implicitly creates an index",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=indexes-how-db2-implicitly-creates-index"
+    },
+    "ibm-catalog-sysindexes": {
+      "title": "SYSIBM.SYSINDEXES catalog table",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=spaces-sysindexes"
+    },
+    "ibm-catalog-sysindexpart": {
+      "title": "SYSIBM.SYSINDEXPART catalog table",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=tables-sysindexpart"
+    },
+    "ibm-catalog-syskeys": {
+      "title": "SYSIBM.SYSKEYS catalog table",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=tables-syskeys"
+    },
+    "ibm-catalog-syskeytargets": {
+      "title": "SYSIBM.SYSKEYTARGETS catalog table",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=tables-syskeytargets"
+    },
+    "ibm-create-trigger-basic": {
+      "title": "CREATE TRIGGER statement (basic trigger)",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-create-trigger-basic"
+    },
+    "ibm-create-trigger-advanced": {
+      "title": "CREATE TRIGGER statement (advanced trigger)",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-create-trigger-advanced"
+    },
+    "ibm-trigger-concept": {
+      "title": "Triggers",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=concepts-triggers"
+    },
+    "ibm-trigger-create-task": {
+      "title": "Creating a trigger",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=programs-creating-trigger"
+    },
+    "ibm-trigger-convert": {
+      "title": "Converting existing triggers to support advanced capabilities",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=trigger-converting-existing-triggers-support-advanced-capabilities"
+    },
+    "ibm-trigger-cascading": {
+      "title": "Trigger cascading",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=trigger-cascading"
+    },
+    "ibm-trigger-activation-order": {
+      "title": "Activation order of multiple triggers",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=trigger-activation-order-multiple-triggers"
+    },
+    "ibm-trigger-packages": {
+      "title": "Trigger packages",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=trigger-packages"
+    },
+    "ibm-sqlpl": {
+      "title": "SQL procedural language (SQL PL)",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=sql-procedural-language-pl"
+    },
+    "ibm-sql-procedure-statement": {
+      "title": "SQL-procedure-statement (SQL PL)",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=pl-sql-procedure-statement-sql"
+    },
+    "ibm-sqlpl-compound": {
+      "title": "compound-statement",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=pl-compound-statement"
+    },
+    "ibm-sqlpl-case": {
+      "title": "CASE statement",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=pl-case-statement"
+    },
+    "ibm-sqlpl-for": {
+      "title": "FOR statement",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=pl-statement"
+    },
+    "ibm-sqlpl-if": {
+      "title": "IF statement",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=pl-if-statement"
+    },
+    "ibm-sqlpl-loop": {
+      "title": "LOOP statement",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=pl-loop-statement"
+    },
+    "ibm-sqlpl-repeat": {
+      "title": "REPEAT statement",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=pl-repeat-statement"
+    },
+    "ibm-sqlpl-resignal": {
+      "title": "RESIGNAL statement",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=pl-resignal-statement"
+    },
+    "ibm-sqlpl-return": {
+      "title": "RETURN statement",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=pl-return-statement"
+    },
+    "ibm-sqlpl-signal": {
+      "title": "SIGNAL statement (SQL PL)",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=pl-signal"
+    },
+    "ibm-sqlpl-while": {
+      "title": "WHILE statement",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=pl-while-statement"
+    },
+    "ibm-get-diagnostics": {
+      "title": "GET DIAGNOSTICS statement",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-get-diagnostics"
+    },
+    "ibm-sql-reference-pdf": {
+      "title": "Db2 13 for z/OS SQL Reference",
+      "url": "https://www.ibm.com/docs/en/SSEPEK_13.0.0/pdf/db2z_13_sqlrefbook.pdf"
+    },
+    "ibm-catalog-systriggers": {
+      "title": "SYSIBM.SYSTRIGGERS catalog table",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=tables-systriggers"
+    },
+    "ibm-catalog-systriggers-stmt": {
+      "title": "SYSIBM.SYSTRIGGERS_STMT catalog table",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=tables-systriggers-stmt"
+    },
+    "ibm-catalog-syspackage": {
+      "title": "SYSIBM.SYSPACKAGE catalog table",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=tables-syspackage"
+    },
+    "ibm-catalog-syspackdep": {
+      "title": "SYSIBM.SYSPACKDEP catalog table",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=tables-syspackdep"
+    },
+    "ibm-catalog-sysenvironment": {
+      "title": "SYSIBM.SYSENVIRONMENT catalog table",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=spaces-sysenvironment"
+    }
+  },
+  "objects": {
+    "stogroup": {
+      "display_name": "STOGROUP",
+      "statements": ["CREATE STOGROUP"],
+      "chapter": "kb/objects/stogroup.md",
+      "depends_on": ["ICF catalog or alias", "DFSMS/SMS when SMS classes or nonspecific volumes are used", "ICSF/RACF when KEY LABEL is used"],
+      "catalog_tables": ["SYSIBM.SYSSTOGROUP", "SYSIBM.SYSVOLUMES"],
+      "dimensions": [
+        "name:length and identifier form",
+        "volume_selection:specific|nonspecific|sms-class-only",
+        "volume_count:one|many|maximum",
+        "sms_classes:omitted|dataclas|mgmtclas|storclas|combined",
+        "encryption:omitted|no-key-label|key-label",
+        "validation_phase:create|child-allocation"
+      ],
+      "clauses": [
+        {
+          "id": "name",
+          "syntax": "CREATE STOGROUP <stogroup-name>",
+          "required": "always",
+          "default": "none",
+          "values": "unqualified SQL identifier, maximum 128 characters",
+          "tags": ["identity", "boundary"],
+          "summary": "Server-wide storage-group name; must be new.",
+          "source_refs": ["ibm-create-stogroup"]
+        },
+        {
+          "id": "volumes-specific",
+          "syntax": "VOLUMES (<volume-id> [, ...])",
+          "required": "conditional",
+          "default": "none",
+          "values": "unique identifiers or string constants, each at most 6 characters",
+          "tags": ["storage", "list", "operational"],
+          "summary": "Names explicit volume serials for non-SMS or SMS-managed allocation.",
+          "source_refs": ["ibm-create-stogroup", "ibm-stogroup-concept"]
+        },
+        {
+          "id": "volumes-wildcard",
+          "syntax": "VOLUMES ('*' [, ...])",
+          "required": "conditional",
+          "default": "none",
+          "values": "nonspecific volume marker recognized by SMS",
+          "tags": ["storage", "sms", "operational"],
+          "summary": "Requests nonspecific SMS volume selection; cannot be mixed with specific volume IDs.",
+          "source_refs": ["ibm-create-stogroup"]
+        },
+        {
+          "id": "vcat",
+          "syntax": "VCAT <catalog-name>",
+          "required": "always",
+          "default": "none",
+          "values": "single-level ICF catalog or alias name, documented installation length 1-8",
+          "tags": ["storage", "required"],
+          "summary": "Selects the ICF catalog for Db2-created VSAM data sets.",
+          "source_refs": ["ibm-create-stogroup"]
+        },
+        {
+          "id": "dataclas",
+          "syntax": "DATACLAS <dc-name>",
+          "required": "no",
+          "default": "installation/storage-management selection",
+          "values": "SMS data-class name, 1-8 characters",
+          "tags": ["sms", "default"],
+          "summary": "Supplies the SMS data class.",
+          "source_refs": ["ibm-create-stogroup"]
+        },
+        {
+          "id": "mgmtclas",
+          "syntax": "MGMTCLAS <mc-name>",
+          "required": "no",
+          "default": "installation/storage-management selection",
+          "values": "SMS management-class name, 1-8 characters",
+          "tags": ["sms", "default"],
+          "summary": "Supplies the SMS management class.",
+          "source_refs": ["ibm-create-stogroup"]
+        },
+        {
+          "id": "storclas",
+          "syntax": "STORCLAS <sc-name>",
+          "required": "no",
+          "default": "installation/storage-management selection",
+          "values": "SMS storage-class name, 1-8 characters",
+          "tags": ["sms", "default"],
+          "summary": "Supplies the SMS storage class.",
+          "source_refs": ["ibm-create-stogroup"]
+        },
+        {
+          "id": "key-label",
+          "syntax": "KEY LABEL <key-label-name>",
+          "required": "no",
+          "default": "no storage-group key label",
+          "values": "eligible ICSF key label",
+          "tags": ["encryption", "icsf", "racf", "operational"],
+          "summary": "Supplies the default encryption key label for data sets allocated through the group.",
+          "source_refs": ["ibm-create-stogroup", "ibm-stogroup-create-task"]
+        },
+        {
+          "id": "no-key-label",
+          "syntax": "NO KEY LABEL",
+          "required": "no",
+          "default": "equivalent absence of a storage-group key label",
+          "values": "keyword",
+          "tags": ["encryption", "explicit-default"],
+          "summary": "Explicitly records that the storage group supplies no key label.",
+          "source_refs": ["ibm-create-stogroup"]
+        }
+      ],
+      "rules": [
+        {
+          "id": "volume-or-sms-required",
+          "kind": "requiredness",
+          "clauses": ["volumes-specific", "volumes-wildcard", "dataclas", "mgmtclas", "storclas"],
+          "tags": ["storage", "negative"],
+          "text": "VOLUMES can be omitted only when at least one SMS class clause controls volume selection.",
+          "source_refs": ["ibm-create-stogroup"]
+        },
+        {
+          "id": "no-specific-wildcard-mix",
+          "kind": "conflict",
+          "clauses": ["volumes-specific", "volumes-wildcard"],
+          "tags": ["storage", "negative"],
+          "text": "A storage group cannot mix specific volume IDs with the nonspecific '*' marker.",
+          "source_refs": ["ibm-create-stogroup"]
+        },
+        {
+          "id": "deferred-storage-validation",
+          "kind": "operational",
+          "clauses": ["volumes-specific", "volumes-wildcard", "dataclas", "mgmtclas", "storclas"],
+          "tags": ["allocation", "deferred", "operational"],
+          "text": "CREATE does not prove that named volumes/classes exist or are usable; force a child data-set allocation.",
+          "source_refs": ["ibm-create-stogroup", "ibm-stogroup-create-task"]
+        },
+        {
+          "id": "managed-volume-ceiling",
+          "kind": "limit",
+          "clauses": ["volumes-specific"],
+          "tags": ["boundary"],
+          "text": "Db2 can manage at most 133 volumes for one storage group even though the statement has no smaller syntactic list limit.",
+          "source_refs": ["ibm-stogroup-concept"]
+        },
+        {
+          "id": "key-label-prerequisites",
+          "kind": "operational",
+          "clauses": ["key-label"],
+          "tags": ["encryption", "icsf", "racf", "extended-format"],
+          "text": "The key must be eligible and accessible; page-set data sets need an SMS data class capable of extended format.",
+          "source_refs": ["ibm-create-stogroup", "ibm-stogroup-create-task"]
+        },
+        {
+          "id": "catalog-split",
+          "kind": "verification",
+          "clauses": ["name", "volumes-specific", "volumes-wildcard"],
+          "tags": ["catalog", "round-trip"],
+          "text": "Verify the group row in SYSSTOGROUP and each volume row in SYSVOLUMES.",
+          "source_refs": ["ibm-catalog-sysstogroup", "ibm-catalog-sysvolumes"]
+        }
+      ]
+    },
+    "database": {
+      "display_name": "DATABASE",
+      "statements": ["CREATE DATABASE"],
+      "chapter": "kb/objects/database.md",
+      "depends_on": ["storage group", "active table-space buffer pool", "active index buffer pool", "data-sharing member for work-file form"],
+      "catalog_tables": ["SYSIBM.SYSDATABASE"],
+      "dimensions": [
+        "name:length|reserved|implicit-pattern|delimited",
+        "kind:regular|workfile",
+        "table_buffer_pool:4k|8k|16k|32k|omitted",
+        "index_buffer_pool:4k|8k|16k|32k|omitted",
+        "encoding:ascii|ebcdic|unicode|omitted",
+        "storage_group:explicit|sysdeflt",
+        "workfile_member:current|explicit"
+      ],
+      "clauses": [
+        {
+          "id": "name",
+          "syntax": "CREATE DATABASE <database-name>",
+          "required": "always",
+          "default": "none",
+          "values": "unqualified SQL identifier, maximum 8 characters",
+          "tags": ["identity", "boundary"],
+          "summary": "Database name; reserved Db2 and implicit-name patterns are restricted.",
+          "source_refs": ["ibm-create-database"]
+        },
+        {
+          "id": "bufferpool",
+          "syntax": "BUFFERPOOL <bpname>",
+          "required": "no",
+          "default": "TBSBPOOL subsystem parameter",
+          "values": "active 4K, 8K, 16K, or 32K pool; work-file restrictions apply",
+          "tags": ["default", "page-size", "resource"],
+          "summary": "Default buffer pool for child table spaces.",
+          "source_refs": ["ibm-create-database"]
+        },
+        {
+          "id": "indexbp",
+          "syntax": "INDEXBP <bpname>",
+          "required": "no",
+          "default": "installation default for user indexes",
+          "values": "active 4K, 8K, 16K, or 32K pool",
+          "tags": ["default", "page-size", "resource"],
+          "summary": "Default buffer pool for indexes on child tables.",
+          "source_refs": ["ibm-create-database"]
+        },
+        {
+          "id": "as-workfile",
+          "syntax": "AS WORKFILE",
+          "required": "no",
+          "default": "regular database",
+          "values": "keyword form",
+          "tags": ["workfile", "data-sharing", "subtype"],
+          "summary": "Creates a work-file database rather than a regular database.",
+          "source_refs": ["ibm-create-database"]
+        },
+        {
+          "id": "for-member",
+          "syntax": "FOR <member-name>",
+          "required": "no",
+          "default": "executing data-sharing member",
+          "values": "valid data-sharing member name",
+          "tags": ["workfile", "data-sharing", "default"],
+          "summary": "Associates a work-file database with a member.",
+          "source_refs": ["ibm-create-database"]
+        },
+        {
+          "id": "stogroup",
+          "syntax": "STOGROUP <stogroup-name>",
+          "required": "no",
+          "default": "SYSDEFLT",
+          "values": "existing storage-group name",
+          "tags": ["storage", "inheritance", "default"],
+          "summary": "Default storage group for child table and index spaces.",
+          "source_refs": ["ibm-create-database"]
+        },
+        {
+          "id": "ccsid",
+          "syntax": "CCSID { ASCII | EBCDIC | UNICODE }",
+          "required": "no",
+          "default": "DEF ENCODING SCHEME installation setting",
+          "values": "ASCII, EBCDIC, UNICODE",
+          "tags": ["encoding", "default", "workfile-conflict"],
+          "summary": "Default encoding scheme for child table spaces.",
+          "source_refs": ["ibm-create-database"]
+        }
+      ],
+      "rules": [
+        {
+          "id": "reserved-names",
+          "kind": "restriction",
+          "clauses": ["name"],
+          "tags": ["identity", "negative"],
+          "text": "Names beginning DSNDB and the implicit DSN plus five digits pattern are reserved, subject to the documented special work-file exception.",
+          "source_refs": ["ibm-create-database"]
+        },
+        {
+          "id": "child-default-inheritance",
+          "kind": "default",
+          "clauses": ["bufferpool", "indexbp", "stogroup", "ccsid"],
+          "tags": ["inheritance", "round-trip", "explicit-default"],
+          "text": "Database options are defaults; child table/index spaces can override them, and generated DDL can spell an inherited effective value.",
+          "source_refs": ["ibm-create-database", "ibm-database-concept"]
+        },
+        {
+          "id": "workfile-data-sharing-only",
+          "kind": "context",
+          "clauses": ["as-workfile", "for-member"],
+          "tags": ["workfile", "data-sharing", "negative"],
+          "text": "The work-file form and member association require data sharing.",
+          "source_refs": ["ibm-create-database"]
+        },
+        {
+          "id": "workfile-single-per-member",
+          "kind": "cardinality",
+          "clauses": ["as-workfile", "for-member"],
+          "tags": ["workfile", "dependency"],
+          "text": "Only one work-file database is allowed for each subsystem or data-sharing member.",
+          "source_refs": ["ibm-create-database"]
+        },
+        {
+          "id": "workfile-ccsid-conflict",
+          "kind": "conflict",
+          "clauses": ["as-workfile", "ccsid"],
+          "tags": ["workfile", "negative"],
+          "text": "CCSID is not valid for a work-file database.",
+          "source_refs": ["ibm-create-database"]
+        },
+        {
+          "id": "workfile-page-size",
+          "kind": "restriction",
+          "clauses": ["as-workfile", "bufferpool"],
+          "tags": ["workfile", "page-size", "negative"],
+          "text": "A work-file database cannot specify an 8 KB or 16 KB table-space buffer pool.",
+          "source_refs": ["ibm-create-database"]
+        },
+        {
+          "id": "catalog-verification",
+          "kind": "verification",
+          "clauses": ["name", "bufferpool", "indexbp", "stogroup", "ccsid"],
+          "tags": ["catalog", "round-trip"],
+          "text": "Verify configured defaults and database type in SYSDATABASE; query child rows to prove inheritance.",
+          "source_refs": ["ibm-catalog-sysdatabase"]
+        }
+      ]
+    },
+    "tablespace": {
+      "display_name": "TABLESPACE",
+      "statements": ["CREATE TABLESPACE", "CREATE LOB TABLESPACE", "implicit table space from CREATE TABLE"],
+      "chapter": "kb/objects/tablespace.md",
+      "depends_on": ["database", "storage group or VCAT", "active buffer pool", "DFSMS capabilities for large/RPN data sets"],
+      "catalog_tables": ["SYSIBM.SYSTABLESPACE", "SYSIBM.SYSTABLEPART"],
+      "dimensions": [
+        "form:base|workfile|lob|implicit",
+        "type:pbg|pbr-rpn|pbr-absolute|legacy-low-applcompat",
+        "partition_count:initial|maximum|physical",
+        "page_size:4k|8k|16k|32k",
+        "dssize:minimum|default|maximum|invalid",
+        "storage:database-default|stogroup|vcat|partition-override",
+        "compression:no|yes-default|fixedlength|huffman",
+        "allocation:define-yes|define-no",
+        "free_space:freepage|pctfree|for-update",
+        "locking:locksize|lockmax",
+        "caching:changed|all|none|lob-system",
+        "logging:logged|not-logged",
+        "workfile_usage:general|for-sort|for-dgtt",
+        "compatibility:current|legacy"
+      ],
+      "clauses": [
+        {
+          "id": "name",
+          "syntax": "CREATE [LOB] TABLESPACE <table-space-name>",
+          "required": "always",
+          "default": "none",
+          "values": "unqualified table-space name within a database",
+          "tags": ["identity", "boundary"],
+          "summary": "Names the page set; ordinary table-space physical names follow the documented eight-character catalog space-name boundary.",
+          "source_refs": ["ibm-create-tablespace", "ibm-create-lob-tablespace"]
+        },
+        {
+          "id": "in-database",
+          "syntax": "IN <database-name>",
+          "required": "no",
+          "default": "DSNDB04 for ordinary explicit table spaces",
+          "values": "eligible existing database",
+          "tags": ["placement", "default", "dependency"],
+          "summary": "Places the table space in an existing database.",
+          "source_refs": ["ibm-create-tablespace", "ibm-create-lob-tablespace"]
+        },
+        {
+          "id": "bufferpool",
+          "syntax": "BUFFERPOOL <bpname>",
+          "required": "no",
+          "default": "database or installation default for the form",
+          "values": "active 4K, 8K, 16K, or 32K pool with form restrictions",
+          "tags": ["page-size", "default", "resource"],
+          "summary": "Selects the page size and buffer pool.",
+          "source_refs": ["ibm-create-tablespace", "ibm-create-lob-tablespace"]
+        },
+        {
+          "id": "maxpartitions",
+          "syntax": "MAXPARTITIONS <integer>",
+          "required": "no",
+          "default": "254 for current PBG creation when the partition specification is omitted",
+          "values": "1-4096, further constrained by page size and DSSIZE",
+          "tags": ["pbg", "type-resolution", "boundary"],
+          "summary": "Selects PBG intent and its maximum partition count.",
+          "source_refs": ["ibm-create-tablespace", "ibm-pbg-concept"]
+        },
+        {
+          "id": "numparts",
+          "syntax": "NUMPARTS <integer>",
+          "required": "conditional",
+          "default": "1 initial PBG partition; none for PBR because PBR requires the count",
+          "values": "1-4096",
+          "tags": ["pbg", "pbr", "type-resolution", "boundary"],
+          "summary": "With MAXPARTITIONS it gives initial PBG partitions; without MAXPARTITIONS it selects PBR and gives physical partitions.",
+          "source_refs": ["ibm-create-tablespace"]
+        },
+        {
+          "id": "partition-block",
+          "syntax": "( PARTITION <n> [storage/free/cache/compress/track/DSSIZE overrides] [, ...] )",
+          "required": "no",
+          "default": "table-space-level values",
+          "values": "eligible PBR physical partition numbers",
+          "tags": ["pbr", "partition", "override"],
+          "summary": "Overrides selected physical attributes for individual PBR partitions.",
+          "source_refs": ["ibm-create-tablespace"]
+        },
+        {
+          "id": "pagenum",
+          "syntax": "PAGENUM { RELATIVE | ABSOLUTE }",
+          "required": "no",
+          "default": "PAGESET_PAGENUM subsystem parameter for PBR",
+          "values": "RELATIVE or deprecated ABSOLUTE",
+          "tags": ["pbr", "rpn", "deprecated", "default"],
+          "summary": "Chooses relative or absolute page numbering for PBR.",
+          "source_refs": ["ibm-create-tablespace", "ibm-pbr-create"]
+        },
+        {
+          "id": "dssize",
+          "syntax": "DSSIZE <integer> G",
+          "required": "no",
+          "default": "type/page-size/count dependent; commonly 4 G",
+          "values": "PBG power-of-two 1-256 G; PBR RPN integer 1-1024 G; LOB documented powers 1-256 G",
+          "tags": ["size", "pbg", "pbr", "lob", "boundary", "extended-addressability"],
+          "summary": "Controls the maximum size of a partition/data set under form-specific ranges.",
+          "source_refs": ["ibm-create-tablespace", "ibm-create-lob-tablespace", "ibm-ea-spaces"]
+        },
+        {
+          "id": "segsize",
+          "syntax": "SEGSIZE <integer>",
+          "required": "no",
+          "default": "DPSEGSZ; 32 when the parameter is zero under current UTS behavior",
+          "values": "multiple of 4 from 4 through 64",
+          "tags": ["segment", "default", "compatibility"],
+          "summary": "Defines segment size for eligible base table spaces and historically influenced type selection.",
+          "source_refs": ["ibm-create-tablespace"]
+        },
+        {
+          "id": "ccsid",
+          "syntax": "CCSID { ASCII | EBCDIC | UNICODE }",
+          "required": "no",
+          "default": "database or installation encoding default",
+          "values": "ASCII, EBCDIC, UNICODE",
+          "tags": ["encoding", "default", "workfile-conflict"],
+          "summary": "Selects one encoding scheme for the table-space data.",
+          "source_refs": ["ibm-create-tablespace"]
+        },
+        {
+          "id": "close",
+          "syntax": "CLOSE { YES | NO }",
+          "required": "no",
+          "default": "YES for ordinary/LOB; work-file behavior NO",
+          "values": "YES or NO",
+          "tags": ["lifecycle", "default", "workfile"],
+          "summary": "Controls whether data sets are eligible to close when unused.",
+          "source_refs": ["ibm-create-tablespace", "ibm-create-lob-tablespace"]
+        },
+        {
+          "id": "compress",
+          "syntax": "COMPRESS { NO | YES [ FIXEDLENGTH | HUFFMAN ] }",
+          "required": "no",
+          "default": "form/subsystem dependent; ordinary explicit default is NO",
+          "values": "NO, YES, YES FIXEDLENGTH, YES HUFFMAN; LOB uses YES or NO",
+          "tags": ["compression", "default", "lob", "workfile-conflict"],
+          "summary": "Selects row or eligible LOB compression and algorithm where supported.",
+          "source_refs": ["ibm-create-tablespace", "ibm-create-lob-tablespace"]
+        },
+        {
+          "id": "define",
+          "syntax": "DEFINE { YES | NO }",
+          "required": "no",
+          "default": "YES",
+          "values": "YES or NO",
+          "tags": ["allocation", "default", "deferred"],
+          "summary": "Controls immediate versus deferred Db2-managed data-set allocation.",
+          "source_refs": ["ibm-create-tablespace", "ibm-create-lob-tablespace"]
+        },
+        {
+          "id": "freepage",
+          "syntax": "FREEPAGE <integer>",
+          "required": "no",
+          "default": "0",
+          "values": "0-255",
+          "tags": ["free-space", "boundary", "workfile-conflict"],
+          "summary": "Reserves one page after the specified number of loaded pages, subject to segment adjustment.",
+          "source_refs": ["ibm-create-tablespace"]
+        },
+        {
+          "id": "pctfree",
+          "syntax": "PCTFREE <smallint>",
+          "required": "no",
+          "default": "5",
+          "values": "0-99",
+          "tags": ["free-space", "boundary", "workfile-conflict"],
+          "summary": "Reserves a percentage of each page for future rows.",
+          "source_refs": ["ibm-create-tablespace"]
+        },
+        {
+          "id": "pctfree-for-update",
+          "syntax": "FOR UPDATE <smallint>",
+          "required": "no",
+          "default": "PCTFREE_UPD subsystem parameter",
+          "values": "-1 through 99; -1 requests automatic behavior",
+          "tags": ["free-space", "update", "default", "boundary"],
+          "summary": "Reserves additional free space for update growth.",
+          "source_refs": ["ibm-create-tablespace"]
+        },
+        {
+          "id": "gbpcache",
+          "syntax": "GBPCACHE { CHANGED | ALL | NONE }",
+          "required": "no",
+          "default": "CHANGED",
+          "values": "CHANGED, ALL, NONE; LOB additionally supports SYSTEM",
+          "tags": ["data-sharing", "cache", "default", "lob"],
+          "summary": "Controls group-buffer-pool caching in data sharing.",
+          "source_refs": ["ibm-create-tablespace", "ibm-create-lob-tablespace", "ibm-gbpcache"]
+        },
+        {
+          "id": "insert-algorithm",
+          "syntax": "INSERT ALGORITHM { 0 | 1 | 2 }",
+          "required": "no",
+          "default": "0, which consults DEFAULT_INSERT_ALGORITHM at insert time",
+          "values": "0, 1, 2",
+          "tags": ["insert", "member-cluster", "default"],
+          "summary": "Chooses the eligible insert algorithm.",
+          "source_refs": ["ibm-create-tablespace"]
+        },
+        {
+          "id": "lockmax",
+          "syntax": "LOCKMAX { SYSTEM | <integer> }",
+          "required": "no",
+          "default": "depends on LOCKSIZE",
+          "values": "SYSTEM or 0-2147483647",
+          "tags": ["locking", "boundary", "interaction"],
+          "summary": "Controls lock escalation threshold.",
+          "source_refs": ["ibm-create-tablespace", "ibm-create-lob-tablespace"]
+        },
+        {
+          "id": "locksize",
+          "syntax": "LOCKSIZE { ANY | TABLESPACE | PAGE | ROW }",
+          "required": "no",
+          "default": "ANY for ordinary base table spaces; LOB form also supports LOB",
+          "values": "ANY, TABLESPACE, PAGE, ROW; LOB for LOB space",
+          "tags": ["locking", "lob", "interaction"],
+          "summary": "Chooses the lock granularity family.",
+          "source_refs": ["ibm-create-tablespace", "ibm-create-lob-tablespace"]
+        },
+        {
+          "id": "logging",
+          "syntax": "LOGGED | NOT LOGGED",
+          "required": "no",
+          "default": "LOGGED",
+          "values": "LOGGED or NOT LOGGED",
+          "tags": ["logging", "default", "workfile-conflict"],
+          "summary": "Selects logging behavior for eligible spaces and associated objects.",
+          "source_refs": ["ibm-create-tablespace", "ibm-create-lob-tablespace"]
+        },
+        {
+          "id": "maxrows",
+          "syntax": "MAXROWS <integer>",
+          "required": "no",
+          "default": "255",
+          "values": "1-255",
+          "tags": ["page", "boundary", "workfile-conflict"],
+          "summary": "Limits rows considered per data page.",
+          "source_refs": ["ibm-create-tablespace"]
+        },
+        {
+          "id": "member-cluster",
+          "syntax": "MEMBER CLUSTER",
+          "required": "no",
+          "default": "not member-clustered",
+          "values": "keyword",
+          "tags": ["insert", "data-sharing", "workfile-conflict"],
+          "summary": "Uses available-space insertion rather than clustering-index order.",
+          "source_refs": ["ibm-create-tablespace"]
+        },
+        {
+          "id": "trackmod",
+          "syntax": "TRACKMOD { YES | NO }",
+          "required": "no",
+          "default": "IMPTKMOD subsystem parameter",
+          "values": "YES or NO",
+          "tags": ["tracking", "default", "partition-override", "workfile-conflict"],
+          "summary": "Controls modified-page tracking.",
+          "source_refs": ["ibm-create-tablespace"]
+        },
+        {
+          "id": "using-vcat",
+          "syntax": "USING VCAT <catalog-name>",
+          "required": "no",
+          "default": "Db2-managed storage",
+          "values": "eligible ICF catalog/alias",
+          "tags": ["storage", "user-managed", "pbg-conflict"],
+          "summary": "Selects user-managed data sets.",
+          "source_refs": ["ibm-create-tablespace", "ibm-create-lob-tablespace"]
+        },
+        {
+          "id": "using-stogroup",
+          "syntax": "USING STOGROUP <stogroup-name>",
+          "required": "no",
+          "default": "database default storage group",
+          "values": "existing storage group",
+          "tags": ["storage", "db2-managed", "inheritance"],
+          "summary": "Selects Db2-managed storage and permits allocation attributes.",
+          "source_refs": ["ibm-create-tablespace", "ibm-create-lob-tablespace"]
+        },
+        {
+          "id": "priqty",
+          "syntax": "PRIQTY <integer>",
+          "required": "no",
+          "default": "-1/Db2 calculation in the documented default path",
+          "values": "positive KB or -1; page-size minimums and FL507 large-value behavior apply",
+          "tags": ["storage", "allocation", "boundary", "fl507"],
+          "summary": "Requests primary data-set allocation quantity.",
+          "source_refs": ["ibm-create-tablespace", "ibm-create-lob-tablespace"]
+        },
+        {
+          "id": "secqty",
+          "syntax": "SECQTY <integer>",
+          "required": "no",
+          "default": "-1/Db2 calculation in the documented default path",
+          "values": "positive KB, 0, or -1; FL507 large-value behavior applies",
+          "tags": ["storage", "allocation", "boundary", "fl507"],
+          "summary": "Requests secondary extent quantity.",
+          "source_refs": ["ibm-create-tablespace", "ibm-create-lob-tablespace"]
+        },
+        {
+          "id": "erase",
+          "syntax": "ERASE { NO | YES }",
+          "required": "no",
+          "default": "NO",
+          "values": "NO or YES",
+          "tags": ["storage", "security", "default"],
+          "summary": "Controls zeroing when a Db2-managed data set is deleted.",
+          "source_refs": ["ibm-create-tablespace", "ibm-create-lob-tablespace"]
+        },
+        {
+          "id": "for-sort",
+          "syntax": "FOR SORT",
+          "required": "no",
+          "default": "general work-file eligibility",
+          "values": "work-file qualifier introduced at FL508",
+          "tags": ["workfile", "fl508", "usage"],
+          "summary": "Restricts a work-file table space to sort and related non-DGTT uses.",
+          "source_refs": ["ibm-create-tablespace"]
+        },
+        {
+          "id": "for-dgtt",
+          "syntax": "FOR DGTT",
+          "required": "no",
+          "default": "general work-file eligibility",
+          "values": "work-file qualifier introduced at FL508",
+          "tags": ["workfile", "fl508", "usage"],
+          "summary": "Restricts a work-file table space to declared/internal temporary-table uses.",
+          "source_refs": ["ibm-create-tablespace"]
+        }
+      ],
+      "rules": [
+        {
+          "id": "current-type-resolution",
+          "kind": "type-resolution",
+          "clauses": ["maxpartitions", "numparts"],
+          "tags": ["pbg", "pbr", "current", "high-value"],
+          "text": "At current UTS compatibility: omitted partition specification or MAXPARTITIONS selects PBG; NUMPARTS without MAXPARTITIONS selects PBR; both select PBG with an initial partition count.",
+          "source_refs": ["ibm-create-tablespace"]
+        },
+        {
+          "id": "current-uts-only",
+          "kind": "compatibility",
+          "clauses": ["maxpartitions", "numparts", "segsize"],
+          "tags": ["applcompat", "uts", "legacy"],
+          "text": "At APPLCOMPAT V12R1M504 or later, new base table spaces are PBG/PBR UTS and new tables cannot be created in existing non-UTS spaces.",
+          "source_refs": ["ibm-create-tablespace", "ibm-create-table"]
+        },
+        {
+          "id": "pbg-numparts-ceiling",
+          "kind": "range",
+          "clauses": ["maxpartitions", "numparts"],
+          "tags": ["pbg", "boundary"],
+          "text": "Initial PBG NUMPARTS cannot exceed MAXPARTITIONS.",
+          "source_refs": ["ibm-create-tablespace"]
+        },
+        {
+          "id": "pbg-vcat-conflict",
+          "kind": "conflict",
+          "clauses": ["maxpartitions", "using-vcat"],
+          "tags": ["pbg", "storage", "negative"],
+          "text": "PBG data sets must be Db2-managed; USING VCAT is invalid.",
+          "source_refs": ["ibm-create-tablespace", "ibm-pbg-concept"]
+        },
+        {
+          "id": "pbg-index-shape",
+          "kind": "dependency",
+          "clauses": ["maxpartitions"],
+          "tags": ["pbg", "index", "partitioned"],
+          "text": "A table in PBG can have only nonpartitioned indexes.",
+          "source_refs": ["ibm-pbg-concept", "ibm-create-index"]
+        },
+        {
+          "id": "rpn-range",
+          "kind": "range",
+          "clauses": ["pagenum", "dssize", "numparts"],
+          "tags": ["pbr", "rpn", "boundary", "extended-addressability"],
+          "text": "PBR RPN supports 1-1024 G integer DSSIZE and up to 4096 partitions, with required extended-format/addressability support.",
+          "source_refs": ["ibm-create-tablespace", "ibm-pbr-create", "ibm-ea-spaces"]
+        },
+        {
+          "id": "absolute-deprecated",
+          "kind": "compatibility",
+          "clauses": ["pagenum", "dssize", "numparts"],
+          "tags": ["pbr", "absolute", "deprecated"],
+          "text": "PAGENUM ABSOLUTE is deprecated and uses page-size/DSSIZE-dependent partition ceilings; retain it only for compatibility coverage.",
+          "source_refs": ["ibm-create-tablespace", "ibm-pbr-create"]
+        },
+        {
+          "id": "partition-override-precedence",
+          "kind": "precedence",
+          "clauses": ["partition-block", "using-stogroup", "freepage", "pctfree", "gbpcache", "compress", "trackmod", "dssize"],
+          "tags": ["pbr", "partition", "round-trip"],
+          "text": "Partition-level values override table-space-level values, which override database or subsystem defaults.",
+          "source_refs": ["ibm-create-tablespace"]
+        },
+        {
+          "id": "free-space-sum",
+          "kind": "range",
+          "clauses": ["pctfree", "pctfree-for-update"],
+          "tags": ["free-space", "negative"],
+          "text": "Explicit PCTFREE plus FOR UPDATE cannot exceed 99; -1 requests automatic update reservation behavior.",
+          "source_refs": ["ibm-create-tablespace"]
+        },
+        {
+          "id": "tablespace-lockmax",
+          "kind": "interaction",
+          "clauses": ["locksize", "lockmax"],
+          "tags": ["locking", "default", "negative"],
+          "text": "LOCKSIZE TABLESPACE requires LOCKMAX omitted or zero; omitted LOCKMAX otherwise depends on LOCKSIZE.",
+          "source_refs": ["ibm-create-tablespace"]
+        },
+        {
+          "id": "base-gbpcache-system-invalid",
+          "kind": "context",
+          "clauses": ["gbpcache"],
+          "tags": ["lob", "data-sharing", "negative"],
+          "text": "GBPCACHE SYSTEM is a LOB setting and must not be generated for an ordinary base table space.",
+          "source_refs": ["ibm-gbpcache", "ibm-create-lob-tablespace"]
+        },
+        {
+          "id": "workfile-restrictions",
+          "kind": "context",
+          "clauses": ["in-database", "for-sort", "for-dgtt", "ccsid", "compress", "define", "freepage", "pctfree", "gbpcache", "locksize", "logging", "maxrows", "member-cluster", "pagenum", "segsize", "trackmod"],
+          "tags": ["workfile", "negative", "high-value"],
+          "text": "Work-file table spaces are PBG, use fixed work-file behaviors, and reject the ordinary clauses listed in the table-space chapter.",
+          "source_refs": ["ibm-create-tablespace"]
+        },
+        {
+          "id": "workfile-usage-mutual-exclusion",
+          "kind": "conflict",
+          "clauses": ["for-sort", "for-dgtt"],
+          "tags": ["workfile", "fl508", "negative"],
+          "text": "FOR SORT and FOR DGTT are mutually exclusive.",
+          "source_refs": ["ibm-create-tablespace"]
+        },
+        {
+          "id": "lob-separate-form",
+          "kind": "context",
+          "clauses": ["name", "dssize", "compress", "gbpcache", "locksize"],
+          "tags": ["lob", "syntax", "dependency"],
+          "text": "LOB spaces use CREATE LOB TABLESPACE, have LOB-specific compression/cache/locking rules, and support auxiliary-table data rather than base rows.",
+          "source_refs": ["ibm-create-lob-tablespace"]
+        },
+        {
+          "id": "implicit-physical-clauses",
+          "kind": "context",
+          "clauses": ["dssize", "bufferpool", "compress", "logging", "member-cluster", "trackmod", "pagenum"],
+          "tags": ["implicit", "table", "negative"],
+          "text": "These physical attributes can appear on CREATE TABLE only when Db2 implicitly creates its base table space; an explicit table-space target rejects them.",
+          "source_refs": ["ibm-create-table", "ibm-implicit-tablespace"]
+        },
+        {
+          "id": "catalog-parent-and-parts",
+          "kind": "verification",
+          "clauses": ["name", "partition-block"],
+          "tags": ["catalog", "round-trip"],
+          "text": "Compare SYSTABLESPACE and every ordered SYSTABLEPART row; parent-only comparison misses partition overrides.",
+          "source_refs": ["ibm-catalog-systablespace", "ibm-catalog-systablepart"]
+        }
+      ]
+    },
+    "table": {
+      "display_name": "TABLE",
+      "statements": ["CREATE TABLE"],
+      "chapter": "kb/objects/table.md",
+      "depends_on": ["schema/authorization context", "explicit table space or implicit-creation prerequisites", "supporting indexes", "LOB/XML support objects when applicable"],
+      "catalog_tables": ["SYSIBM.SYSTABLES", "SYSIBM.SYSCOLUMNS", "SYSIBM.SYSCHECKS", "SYSIBM.SYSRELS", "SYSIBM.SYSFOREIGNKEYS", "SYSIBM.SYSINDEXES"],
+      "dimensions": [
+        "definition:explicit|like|as-no-data|mqt",
+        "placement:explicit-space|implicit-space-in-database|fully-implicit|accelerator",
+        "data_type:family|alias|parameter-default|min|max|overflow",
+        "nullability:nullable|not-null",
+        "default:omitted|with-default|explicit-type|constant|forbidden",
+        "generated:identity|row-change|rowid|transaction-start|row-begin|row-end|provenance",
+        "constraint:primary|unique|foreign|check|temporal",
+        "period:none|system|business-exclusive|business-inclusive|both",
+        "partitioning:pbg|pbr|mixed-direction|nullable|partial-key|extrema",
+        "lob:inline|out-of-line|explicit-support|implicit-support",
+        "xml:plain|type-modifier|implicit-support",
+        "attributes:procedure|audit|capture|volatile|append|hidden|key-label|restrict-drop",
+        "compatibility:current|deprecated-hash-low-applcompat"
+      ],
+      "clauses": [
+        {
+          "id": "name",
+          "syntax": "CREATE TABLE <table-name>",
+          "required": "always",
+          "default": "qualifier from current SQL authorization context when omitted",
+          "values": "qualified or unqualified SQL identifier, ordinary identifier maximum 128 characters",
+          "tags": ["identity", "qualification", "boundary"],
+          "summary": "Names the logical table.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "explicit-elements",
+          "syntax": "( <column-or-constraint-or-period> [, ...] )",
+          "required": "conditional",
+          "default": "none",
+          "values": "explicit table-element list",
+          "tags": ["definition-family", "columns"],
+          "summary": "Defines columns, periods, and constraints directly.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "like",
+          "syntax": "LIKE { <table-name> | <view-name> } [copy-options]",
+          "required": "conditional",
+          "default": "copy-option defaults exclude generated attributes as documented",
+          "values": "eligible source table or view plus selectable copy options",
+          "tags": ["definition-family", "copy", "default"],
+          "summary": "Derives column definitions from a source without copying keys, indexes, or placement.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "as-no-data",
+          "syntax": "[column-list] AS (<fullselect>) WITH NO DATA [copy-options]",
+          "required": "conditional",
+          "default": "result-column names and types from fullselect",
+          "values": "eligible fullselect",
+          "tags": ["definition-family", "query", "copy"],
+          "summary": "Defines an empty base table from a query result.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "mqt",
+          "syntax": "[column-list] AS (<fullselect>) DATA INITIALLY DEFERRED REFRESH DEFERRED [MAINTAINED BY ...] [query-optimization]",
+          "required": "conditional",
+          "default": "MAINTAINED BY SYSTEM and ENABLE QUERY OPTIMIZATION",
+          "values": "eligible MQT fullselect and refresh options",
+          "tags": ["definition-family", "mqt", "default"],
+          "summary": "Defines a materialized query table.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "column-definition",
+          "syntax": "<column-name> [<data-type>] [NOT NULL] [generated] [constraint] [default] [attributes]",
+          "required": "conditional",
+          "default": "ordinary columns are nullable when NOT NULL is omitted",
+          "values": "up to 750 normal-table columns subject to row-size limits",
+          "tags": ["column", "row-size", "boundary"],
+          "summary": "Defines one logical column and its attributes.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "data-type",
+          "syntax": "<built-in-or-distinct-type>",
+          "required": "conditional",
+          "default": "only specific generated timestamp forms infer a type",
+          "values": "numeric, character, graphic, binary, datetime, ROWID, LOB, XML, or distinct type",
+          "tags": ["column", "type", "boundary", "alias"],
+          "summary": "Sets storage/value representation with type-specific parameters and restrictions.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "not-null",
+          "syntax": "NOT NULL",
+          "required": "no",
+          "default": "nullable for ordinary columns; some generated/identity/security forms require or imply not null",
+          "values": "keyword",
+          "tags": ["column", "nullability", "constraint"],
+          "summary": "Prohibits null values in the column.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "default",
+          "syntax": "WITH DEFAULT | DEFAULT <default-value>",
+          "required": "no",
+          "default": "DEFAULT NULL for eligible nullable ordinary columns when omitted",
+          "values": "type default, compatible constant, eligible special value, NULL, or eligible cast",
+          "tags": ["column", "default", "explicit-default"],
+          "summary": "Defines the inserted value when an eligible column is omitted.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "identity",
+          "syntax": "GENERATED { ALWAYS | BY DEFAULT } AS IDENTITY [(identity-options)]",
+          "required": "no",
+          "default": "ALWAYS behavior; increment 1, no cycle, cache 20, no order, derived bounds/start",
+          "values": "one eligible exact-numeric scale-zero column per table",
+          "tags": ["generated", "identity", "default", "boundary"],
+          "summary": "Generates sequence-like values for an identity column.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "row-change-timestamp",
+          "syntax": "GENERATED { ALWAYS | BY DEFAULT } FOR EACH ROW ON UPDATE AS ROW CHANGE TIMESTAMP",
+          "required": "no",
+          "default": "none",
+          "values": "one TIMESTAMP(6) WITHOUT TIME ZONE NOT NULL column",
+          "tags": ["generated", "timestamp"],
+          "summary": "Tracks the last row-change timestamp.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "rowid",
+          "syntax": "GENERATED { ALWAYS | BY DEFAULT } ROWID",
+          "required": "no",
+          "default": "Db2 can add an implicit hidden ROWID for LOB support",
+          "values": "eligible ROWID NOT NULL column",
+          "tags": ["generated", "rowid", "lob", "implicit"],
+          "summary": "Generates a row identifier used directly or by LOB infrastructure.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "transaction-start-id",
+          "syntax": "GENERATED ALWAYS AS TRANSACTION START ID",
+          "required": "no",
+          "default": "implicit TIMESTAMP(12) WITHOUT TIME ZONE when type is omitted",
+          "values": "one eligible precision-12 timestamp column",
+          "tags": ["generated", "temporal", "timestamp"],
+          "summary": "Captures a transaction-level timestamp identity for system-period temporal foundations.",
+          "source_refs": ["ibm-create-table", "ibm-temporal-concept"]
+        },
+        {
+          "id": "row-begin",
+          "syntax": "GENERATED ALWAYS AS ROW { BEGIN | START }",
+          "required": "no",
+          "default": "implicit precision-12 timestamp where type omission is supported",
+          "values": "one precision-12 timestamp NOT NULL column",
+          "tags": ["generated", "temporal", "period"],
+          "summary": "Provides the inclusive system-period begin column.",
+          "source_refs": ["ibm-create-table", "ibm-temporal-concept"]
+        },
+        {
+          "id": "row-end",
+          "syntax": "GENERATED ALWAYS AS ROW END",
+          "required": "no",
+          "default": "implicit precision-12 timestamp where type omission is supported",
+          "values": "one precision-12 timestamp NOT NULL column",
+          "tags": ["generated", "temporal", "period"],
+          "summary": "Provides the exclusive system-period end column.",
+          "source_refs": ["ibm-create-table", "ibm-temporal-concept"]
+        },
+        {
+          "id": "generated-provenance",
+          "syntax": "GENERATED ALWAYS AS (<eligible special-register-or-session-variable expression>)",
+          "required": "no",
+          "default": "none",
+          "values": "IBM-listed client/server special registers and package session variables with required type",
+          "tags": ["generated", "provenance", "expression"],
+          "summary": "Generates client, server, operation, or package provenance data from the limited supported set.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "fieldproc",
+          "syntax": "FIELDPROC <program-name> [(constant [, ...])]",
+          "required": "no",
+          "default": "no field procedure",
+          "values": "eligible field procedure and parameters",
+          "tags": ["column", "procedure", "restriction"],
+          "summary": "Applies a field encoding/decoding procedure to an eligible short string column.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "security-label",
+          "syntax": "AS SECURITY LABEL",
+          "required": "no",
+          "default": "no security-label column",
+          "values": "one eligible CHAR(8) security-label column",
+          "tags": ["column", "racf", "security"],
+          "summary": "Marks the table's RACF security-label column.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "implicitly-hidden",
+          "syntax": "IMPLICITLY HIDDEN",
+          "required": "no",
+          "default": "visible",
+          "values": "eligible column",
+          "tags": ["column", "hidden", "round-trip"],
+          "summary": "Excludes the column from unqualified star selection unless explicitly named.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "inline-length",
+          "syntax": "INLINE LENGTH <integer>",
+          "required": "no",
+          "default": "distinct-type attribute or LOB_INLINE_LENGTH behavior",
+          "values": "BLOB/CLOB 0-32680 bytes; DBCLOB 0-16340 double-byte characters, within declared maximum",
+          "tags": ["lob", "inline", "boundary", "uts"],
+          "summary": "Sets inline LOB storage in the base UTS row.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "primary-key",
+          "syntax": "[CONSTRAINT <name>] PRIMARY KEY (<columns> [, BUSINESS_TIME WITHOUT OVERLAPS])",
+          "required": "no",
+          "default": "none",
+          "values": "one key per table, up to 64 eligible NOT NULL columns",
+          "tags": ["constraint", "unique", "index", "temporal"],
+          "summary": "Defines the table primary key and requires an enforcing ordinary unique index.",
+          "source_refs": ["ibm-create-table", "ibm-implicit-index"]
+        },
+        {
+          "id": "unique",
+          "syntax": "[CONSTRAINT <name>] UNIQUE (<columns> [, BUSINESS_TIME WITHOUT OVERLAPS])",
+          "required": "no",
+          "default": "none",
+          "values": "up to 64 eligible NOT NULL columns",
+          "tags": ["constraint", "unique", "index", "temporal"],
+          "summary": "Defines a unique key and requires an enforcing ordinary unique index.",
+          "source_refs": ["ibm-create-table", "ibm-implicit-index"]
+        },
+        {
+          "id": "foreign-key",
+          "syntax": "[CONSTRAINT <name>] FOREIGN KEY (...) REFERENCES <parent> [(...)] [ON DELETE ...] [ENFORCED | NOT ENFORCED ...]",
+          "required": "no",
+          "default": "ENFORCED; delete-rule omission depends on CURRENT RULES",
+          "values": "up to 64 eligible compatible columns, optional PERIOD BUSINESS_TIME",
+          "tags": ["constraint", "referential", "temporal", "current-rules", "default"],
+          "summary": "Defines a referential relationship to a parent primary or unique key.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "check",
+          "syntax": "[CONSTRAINT <name>] CHECK (<check-condition>)",
+          "required": "no",
+          "default": "none",
+          "values": "restricted condition text up to 3800 bytes",
+          "tags": ["constraint", "expression", "boundary"],
+          "summary": "Requires the condition to be true or unknown for every row.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "system-period",
+          "syntax": "PERIOD FOR SYSTEM_TIME (<row-begin-column>, <row-end-column>)",
+          "required": "no",
+          "default": "no system period",
+          "values": "one matching generated row-begin/end pair",
+          "tags": ["period", "temporal", "generated"],
+          "summary": "Defines the system-time period foundation but does not itself enable history versioning.",
+          "source_refs": ["ibm-create-table", "ibm-temporal-concept"]
+        },
+        {
+          "id": "business-period",
+          "syntax": "PERIOD FOR BUSINESS_TIME (<begin>, <end> [EXCLUSIVE | INCLUSIVE])",
+          "required": "no",
+          "default": "EXCLUSIVE inclusive-begin/exclusive-end behavior",
+          "values": "matching DATE or TIMESTAMP(6) WITHOUT TIME ZONE NOT NULL columns",
+          "tags": ["period", "temporal", "default", "constraint"],
+          "summary": "Defines an application-maintained business-time period and its generated check constraint.",
+          "source_refs": ["ibm-create-table", "ibm-temporal-concept"]
+        },
+        {
+          "id": "in-explicit-tablespace",
+          "syntax": "IN <database-name>.<table-space-name>",
+          "required": "no",
+          "default": "implicit placement when no IN form is supplied",
+          "values": "eligible existing UTS",
+          "tags": ["placement", "explicit", "uts"],
+          "summary": "Places the table in an existing physical table space.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "in-database",
+          "syntax": "IN DATABASE <database-name>",
+          "required": "no",
+          "default": "fully implicit database/table-space selection when IN is omitted",
+          "values": "eligible existing database",
+          "tags": ["placement", "implicit", "dependency"],
+          "summary": "Requests an implicit table space inside the named database.",
+          "source_refs": ["ibm-create-table", "ibm-implicit-tablespace"]
+        },
+        {
+          "id": "partition-by-size",
+          "syntax": "PARTITION BY SIZE [EVERY <integer> G]",
+          "required": "no",
+          "default": "PBG for implicit creation when no partition clause is present",
+          "values": "optional EVERY up to 256 G",
+          "tags": ["partition", "pbg", "implicit", "default"],
+          "summary": "Defines PBG behavior for an implicit or compatible existing PBG table space.",
+          "source_refs": ["ibm-create-table", "ibm-pbg-concept"]
+        },
+        {
+          "id": "partition-by-range",
+          "syntax": "PARTITION BY [RANGE] (<expressions>) (PARTITION <n> ENDING AT (...) [INCLUSIVE] [, ...])",
+          "required": "conditional",
+          "default": "ASC direction; range keyword optional",
+          "values": "up to 64 eligible columns and one element per physical partition",
+          "tags": ["partition", "pbr", "boundary", "implicit"],
+          "summary": "Defines the logical range key, order, null handling, and ending boundary of every PBR partition.",
+          "source_refs": ["ibm-create-table", "ibm-pbr-create"]
+        },
+        {
+          "id": "audit",
+          "syntax": "AUDIT { NONE | CHANGES | ALL }",
+          "required": "no",
+          "default": "NONE",
+          "values": "NONE, CHANGES, ALL",
+          "tags": ["attribute", "audit", "default"],
+          "summary": "Selects table audit behavior when appropriate traces are active.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "data-capture",
+          "syntax": "DATA CAPTURE { NONE | CHANGES }",
+          "required": "no",
+          "default": "NONE",
+          "values": "NONE or CHANGES",
+          "tags": ["attribute", "replication", "logging", "default"],
+          "summary": "Controls extra log information for data capture.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "restrict-on-drop",
+          "syntax": "WITH RESTRICT ON DROP",
+          "required": "no",
+          "default": "ordinary drop eligibility",
+          "values": "keyword",
+          "tags": ["attribute", "dependency", "cleanup"],
+          "summary": "Prevents ordinary drop of the table/containing objects until the restriction is removed or special handling is used.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "ccsid",
+          "syntax": "CCSID { ASCII | EBCDIC | UNICODE }",
+          "required": "no",
+          "default": "explicit table-space scheme or implicit database/installation default",
+          "values": "ASCII, EBCDIC, UNICODE",
+          "tags": ["encoding", "placement", "default"],
+          "summary": "Selects or confirms the base table-space encoding scheme.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "volatile",
+          "syntax": "{ NOT VOLATILE | VOLATILE } CARDINALITY",
+          "required": "no",
+          "default": "NOT VOLATILE",
+          "values": "VOLATILE or NOT VOLATILE",
+          "tags": ["attribute", "optimizer", "default"],
+          "summary": "Indicates highly variable cardinality and influences access-path preference.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "append",
+          "syntax": "APPEND { NO | YES }",
+          "required": "no",
+          "default": "NO",
+          "values": "NO or YES",
+          "tags": ["attribute", "insert", "default"],
+          "summary": "Controls append-style placement that disregards clustering for insertion/load.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "implicit-space-options",
+          "syntax": "[LOGGED|NOT LOGGED] [COMPRESS ...] [DSSIZE ...] [BUFFERPOOL ...] [MEMBER CLUSTER] [TRACKMOD ...] [PAGENUM ...]",
+          "required": "no",
+          "default": "subsystem/database defaults for the implicit table space",
+          "values": "eligible CREATE TABLE physical clauses",
+          "tags": ["implicit", "physical", "placement", "default"],
+          "summary": "Defines the base table space only when that space is created implicitly.",
+          "source_refs": ["ibm-create-table", "ibm-implicit-tablespace"]
+        },
+        {
+          "id": "key-label",
+          "syntax": "KEY LABEL <key-label-name> | NO KEY LABEL",
+          "required": "no",
+          "default": "storage-group/RACF/DFSMS selection path",
+          "values": "eligible ICSF key label or explicit absence",
+          "tags": ["encryption", "icsf", "racf", "storage"],
+          "summary": "Supplies the table-level encryption label for associated Db2-managed spaces.",
+          "source_refs": ["ibm-create-table"]
+        }
+      ],
+      "rules": [
+        {
+          "id": "definition-families-exclusive",
+          "kind": "conflict",
+          "clauses": ["explicit-elements", "like", "as-no-data", "mqt"],
+          "tags": ["definition-family", "negative"],
+          "text": "Explicit elements, LIKE, AS-result WITH NO DATA, and MQT are alternative definition families rather than combinable fragments.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "ordinary-column-type-required",
+          "kind": "requiredness",
+          "clauses": ["column-definition", "data-type"],
+          "tags": ["column", "generated", "negative"],
+          "text": "Ordinary columns require a type; omission is limited to generated timestamp forms for which IBM defines an implicit type.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "generated-default-conflict",
+          "kind": "conflict",
+          "clauses": ["default", "identity", "row-change-timestamp", "rowid", "transaction-start-id", "row-begin", "row-end"],
+          "tags": ["generated", "default", "negative"],
+          "text": "Identity, ROWID, temporal timestamp, row-change, transaction-start, and XML columns reject an ordinary DEFAULT clause as documented.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "identity-cardinality",
+          "kind": "cardinality",
+          "clauses": ["identity"],
+          "tags": ["generated", "identity", "negative"],
+          "text": "A table can have only one identity column and its type must be exact numeric with scale zero.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "primary-not-null",
+          "kind": "requiredness",
+          "clauses": ["primary-key", "not-null"],
+          "tags": ["constraint", "index", "negative"],
+          "text": "Every primary-key column must be NOT NULL and the table can have at most one primary key.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "constraint-index-enforcement",
+          "kind": "dependency",
+          "clauses": ["primary-key", "unique", "rowid", "in-explicit-tablespace"],
+          "tags": ["index", "incomplete", "implicit", "round-trip"],
+          "text": "Primary/unique keys and eligible BY DEFAULT ROWID need matching ordinary UNIQUE enforcing indexes; explicit-space dynamic SQL can leave the table incomplete until they exist, while eligible implicit/schema-processor paths can create them.",
+          "source_refs": ["ibm-create-table", "ibm-implicit-index"]
+        },
+        {
+          "id": "foreign-key-current-rules",
+          "kind": "default",
+          "clauses": ["foreign-key"],
+          "tags": ["referential", "current-rules", "default"],
+          "text": "An omitted delete rule resolves to RESTRICT under Db2 rules and NO ACTION under standard rules; record CURRENT RULES.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "set-null-requires-nullable",
+          "kind": "requiredness",
+          "clauses": ["foreign-key", "not-null"],
+          "tags": ["referential", "negative"],
+          "text": "ON DELETE SET NULL requires at least one nullable foreign-key column.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "check-language-restricted",
+          "kind": "restriction",
+          "clauses": ["check"],
+          "tags": ["constraint", "expression", "negative"],
+          "text": "CHECK uses the IBM-listed restricted condition language and is not an arbitrary SQL search condition; its text limit is 3800 bytes.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "system-period-columns",
+          "kind": "dependency",
+          "clauses": ["system-period", "row-begin", "row-end", "transaction-start-id"],
+          "tags": ["temporal", "period", "generated"],
+          "text": "SYSTEM_TIME requires matching generated row-begin/end columns; system-period data versioning/history is established separately and is not implied by CREATE TABLE alone.",
+          "source_refs": ["ibm-create-table", "ibm-temporal-concept"]
+        },
+        {
+          "id": "business-period-columns",
+          "kind": "requiredness",
+          "clauses": ["business-period", "not-null"],
+          "tags": ["temporal", "period", "constraint"],
+          "text": "BUSINESS_TIME columns must be matching DATE or TIMESTAMP(6) WITHOUT TIME ZONE, NOT NULL, and application-maintained; Db2 adds the corresponding order check.",
+          "source_refs": ["ibm-create-table", "ibm-temporal-concept"]
+        },
+        {
+          "id": "explicit-space-physical-conflict",
+          "kind": "context",
+          "clauses": ["in-explicit-tablespace", "implicit-space-options"],
+          "tags": ["placement", "implicit", "negative", "high-value"],
+          "text": "LOGGED/NOT LOGGED, COMPRESS, DSSIZE, BUFFERPOOL, MEMBER CLUSTER, TRACKMOD, and PAGENUM on CREATE TABLE are legal only for an implicitly created base table space, not an explicit target.",
+          "source_refs": ["ibm-create-table", "ibm-implicit-tablespace"]
+        },
+        {
+          "id": "implicit-type-from-partition-clause",
+          "kind": "type-resolution",
+          "clauses": ["in-database", "partition-by-size", "partition-by-range"],
+          "tags": ["implicit", "pbg", "pbr"],
+          "text": "Implicit creation with no partition clause or PARTITION BY SIZE yields PBG; PARTITION BY RANGE yields PBR.",
+          "source_refs": ["ibm-create-table", "ibm-implicit-tablespace"]
+        },
+        {
+          "id": "pbr-complete-partitions",
+          "kind": "requiredness",
+          "clauses": ["partition-by-range"],
+          "tags": ["pbr", "partition", "incomplete"],
+          "text": "Every physical PBR table-space partition requires a range element and boundaries must progress in key order.",
+          "source_refs": ["ibm-create-table", "ibm-pbr-create"]
+        },
+        {
+          "id": "pbr-boundary-enforced",
+          "kind": "range",
+          "clauses": ["partition-by-range"],
+          "tags": ["pbr", "boundary", "data-change"],
+          "text": "The last ending boundary is enforced; values beyond it are out of range, and mixed ASC/DESC/null/extrema behavior must be tested from the documented comparison rules.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "lob-support-objects",
+          "kind": "dependency",
+          "clauses": ["data-type", "rowid", "inline-length"],
+          "tags": ["lob", "implicit", "auxiliary", "index"],
+          "text": "LOB data requires ROWID plus a LOB table space, auxiliary table, and auxiliary index for each applicable LOB/partition; eligible implicit creation can supply them.",
+          "source_refs": ["ibm-create-table", "ibm-create-lob-tablespace"]
+        },
+        {
+          "id": "xml-support-objects",
+          "kind": "dependency",
+          "clauses": ["data-type"],
+          "tags": ["xml", "implicit", "index"],
+          "text": "The first XML column causes an implicit document-ID column and implicit XML storage objects; validate those dependencies, not just the base table row.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "capture-logging-conflict",
+          "kind": "conflict",
+          "clauses": ["data-capture", "implicit-space-options"],
+          "tags": ["replication", "logging", "negative"],
+          "text": "DATA CAPTURE CHANGES conflicts with NOT LOGGED.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "hash-current-unsupported",
+          "kind": "compatibility",
+          "clauses": [],
+          "tags": ["hash", "deprecated", "applcompat"],
+          "text": "Creating new hash-organized tables is unsupported at APPLCOMPAT V12R1M504 or later; keep grammar only for explicitly lower-compatibility regression cases.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "catalog-multirow-verification",
+          "kind": "verification",
+          "clauses": ["column-definition", "primary-key", "unique", "foreign-key", "check", "system-period", "business-period"],
+          "tags": ["catalog", "round-trip"],
+          "text": "Compare SYSTABLES, every SYSCOLUMNS row, constraint/relation rows, and enforcing/supporting indexes; parent-only comparison is incomplete.",
+          "source_refs": ["ibm-catalog-systables", "ibm-catalog-syscolumns", "ibm-catalog-syschecks", "ibm-catalog-sysrels", "ibm-catalog-sysforeignkeys", "ibm-catalog-sysindexes"]
+        }
+      ]
+    },
+    "index": {
+      "display_name": "INDEX",
+      "statements": ["CREATE INDEX"],
+      "chapter": "kb/objects/index.md",
+      "depends_on": ["target table", "database/storage group or VCAT", "active buffer pool", "eligible existing data for unique/expression/XML evaluation"],
+      "catalog_tables": ["SYSIBM.SYSINDEXES", "SYSIBM.SYSINDEXPART", "SYSIBM.SYSKEYS", "SYSIBM.SYSKEYTARGETS"],
+      "dimensions": [
+        "kind:ordinary|unique|unique-where-not-null|expression|xml|auxiliary|temporal",
+        "key_count:1|64|overflow",
+        "key_order:default|asc|desc|random|mixed",
+        "key_length:below|max|above",
+        "null_semantics:include|exclude-all-null|unique-null-bearing",
+        "included_columns:none|one|boundary|illegal",
+        "clustering:none|cluster|not-cluster",
+        "physical_shape:partitioning-index|dpsi|npi|pbg-nonpartitioned",
+        "padding:omitted|padded|not-padded",
+        "storage:database-default|stogroup|vcat|partition-override",
+        "free_space:freepage|pctfree",
+        "compression:no|yes-with-page-size",
+        "lifecycle:define|defer|copy|close",
+        "size:dssize|piecesize"
+      ],
+      "clauses": [
+        {
+          "id": "name",
+          "syntax": "CREATE ... INDEX <index-name>",
+          "required": "always",
+          "default": "qualifier from current SQL authorization context when omitted",
+          "values": "qualified or unqualified SQL identifier, maximum 128 characters",
+          "tags": ["identity", "qualification", "boundary"],
+          "summary": "Names the logical index; Db2 separately derives an eight-character physical index-space name.",
+          "source_refs": ["ibm-create-index", "ibm-index-names"]
+        },
+        {
+          "id": "unique",
+          "syntax": "UNIQUE",
+          "required": "no",
+          "default": "nonunique",
+          "values": "keyword",
+          "tags": ["uniqueness", "constraint", "default"],
+          "summary": "Prohibits duplicate keys and treats nulls as equal for ordinary uniqueness.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "where-not-null",
+          "syntax": "UNIQUE WHERE NOT NULL",
+          "required": "no",
+          "default": "ordinary UNIQUE null treatment",
+          "values": "keyword extension to UNIQUE",
+          "tags": ["uniqueness", "null", "constraint"],
+          "summary": "Enforces uniqueness only for non-null keys and cannot enforce a table primary/unique constraint.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "key-list",
+          "syntax": "ON <table-name> (<key> [, ...])",
+          "required": "conditional",
+          "default": "auxiliary indexes derive their key",
+          "values": "1-64 eligible nonduplicate key columns/expressions subject to key-length limits",
+          "tags": ["key", "boundary", "table"],
+          "summary": "Defines ordinary index keys on the target table.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "key-order",
+          "syntax": "<key> [ASC | DESC | RANDOM]",
+          "required": "no",
+          "default": "ASC",
+          "values": "ASC, DESC, RANDOM under form/type restrictions",
+          "tags": ["key", "ordering", "default", "partitioning"],
+          "summary": "Controls key ordering and participates in partitioning-index matching.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "expression-key",
+          "syntax": "ON <table-name> (<scalar-key-expression> [, ...])",
+          "required": "no",
+          "default": "ordinary column key",
+          "values": "restricted scalar expression referencing at least one target-table column, UTF-8 text up to 4000 bytes",
+          "tags": ["expression", "extended-index", "boundary"],
+          "summary": "Indexes a restricted computed scalar result.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "xmlpattern",
+          "syntax": "ON <table> (<xml-column>) GENERATE { KEY | KEYS } USING XMLPATTERN <pattern> AS SQL <type>",
+          "required": "no",
+          "default": "none",
+          "values": "restricted XML pattern and VARCHAR(1-1000), DECFLOAT, DATE, or TIMESTAMP(12) result",
+          "tags": ["xml", "expression", "boundary"],
+          "summary": "Generates SQL index keys from matching XML nodes.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "include",
+          "syntax": "INCLUDE (<column-name> [, ...])",
+          "required": "no",
+          "default": "no included columns",
+          "values": "eligible nonduplicate columns within count/length limits",
+          "tags": ["unique", "index-only", "boundary"],
+          "summary": "Adds non-enforcing payload columns to an eligible unique index.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "business-time",
+          "syntax": ", BUSINESS_TIME { WITH | WITHOUT } OVERLAPS",
+          "required": "no",
+          "default": "ordinary non-temporal key",
+          "values": "WITH OVERLAPS or WITHOUT OVERLAPS",
+          "tags": ["temporal", "period", "constraint"],
+          "summary": "Appends business-time end/begin columns for temporal referential or no-overlap uniqueness semantics.",
+          "source_refs": ["ibm-create-index", "ibm-temporal-concept"]
+        },
+        {
+          "id": "cluster",
+          "syntax": "CLUSTER | NOT CLUSTER",
+          "required": "no",
+          "default": "not selected as the clustering index by this clause",
+          "values": "CLUSTER or NOT CLUSTER",
+          "tags": ["clustering", "table", "default"],
+          "summary": "Selects whether this eligible index is the clustering index.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "partitioned",
+          "syntax": "PARTITIONED",
+          "required": "no",
+          "default": "nonpartitioned index",
+          "values": "keyword on an eligible PBR/range-partitioned table",
+          "tags": ["pbr", "dpsi", "partitioning-index", "physical"],
+          "summary": "Physically partitions the index; semantic partitioning-index status still depends on its leading key.",
+          "source_refs": ["ibm-create-index", "ibm-partitioned-indexes"]
+        },
+        {
+          "id": "padding",
+          "syntax": "NOT PADDED | PADDED",
+          "required": "no",
+          "default": "PADIX subsystem parameter when varying keys are present; ignored/padded for fixed keys",
+          "values": "NOT PADDED or PADDED",
+          "tags": ["key", "varying", "default", "boundary"],
+          "summary": "Controls storage of varying-length key values and changes key-length formulas.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "using-vcat",
+          "syntax": "USING VCAT <catalog-name>",
+          "required": "no",
+          "default": "Db2-managed storage using database default group",
+          "values": "eligible ICF catalog/alias",
+          "tags": ["storage", "user-managed", "context"],
+          "summary": "Selects user-managed index data sets where permitted.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "using-stogroup",
+          "syntax": "USING STOGROUP <name> [PRIQTY ...] [SECQTY ...] [ERASE ...]",
+          "required": "no",
+          "default": "database default storage group and Db2-calculated quantities",
+          "values": "eligible storage group and allocation options",
+          "tags": ["storage", "db2-managed", "default", "partition-override"],
+          "summary": "Selects Db2-managed index storage and allocation attributes.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "freepage",
+          "syntax": "FREEPAGE <integer>",
+          "required": "no",
+          "default": "0",
+          "values": "0-255",
+          "tags": ["free-space", "boundary"],
+          "summary": "Reserves periodic free index pages.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "pctfree",
+          "syntax": "PCTFREE <integer>",
+          "required": "no",
+          "default": "10",
+          "values": "0-99",
+          "tags": ["free-space", "boundary"],
+          "summary": "Reserves free space on index pages, with nonleaf behavior documented separately.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "gbpcache",
+          "syntax": "GBPCACHE { CHANGED | ALL | NONE }",
+          "required": "no",
+          "default": "CHANGED",
+          "values": "CHANGED, ALL, NONE",
+          "tags": ["data-sharing", "cache", "default", "partition-override"],
+          "summary": "Controls group-buffer-pool caching in data sharing.",
+          "source_refs": ["ibm-create-index", "ibm-gbpcache"]
+        },
+        {
+          "id": "define",
+          "syntax": "DEFINE { YES | NO }",
+          "required": "no",
+          "default": "inherits current base-table-space allocation state",
+          "values": "YES or NO",
+          "tags": ["allocation", "deferred", "default"],
+          "summary": "Controls immediate allocation of Db2-managed index data sets.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "compress",
+          "syntax": "COMPRESS { NO | YES }",
+          "required": "no",
+          "default": "NO",
+          "values": "NO or YES; YES requires 8K, 16K, or 32K buffer pool",
+          "tags": ["compression", "page-size", "default"],
+          "summary": "Selects index compression.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "null-keys",
+          "syntax": "INCLUDE NULL KEYS | EXCLUDE NULL KEYS",
+          "required": "no",
+          "default": "INCLUDE NULL KEYS",
+          "values": "INCLUDE or EXCLUDE all-null keys",
+          "tags": ["null", "default", "conflict"],
+          "summary": "EXCLUDE omits an entry only when every key column is null.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "partition-attributes",
+          "syntax": "PARTITION BY RANGE (PARTITION <n> [storage/free/cache/DSSIZE] [, ...])",
+          "required": "no",
+          "default": "index-level/database values",
+          "values": "eligible physical index partition numbers and overrides",
+          "tags": ["pbr", "partition", "override", "rpn"],
+          "summary": "Sets physical index-partition attributes; it does not redefine table range boundaries.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "bufferpool",
+          "syntax": "BUFFERPOOL <bpname>",
+          "required": "no",
+          "default": "database INDEXBP or installation default",
+          "values": "active 4K, 8K, 16K, or 32K pool",
+          "tags": ["page-size", "default", "resource"],
+          "summary": "Selects the index buffer pool and compression-capable page size.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "close",
+          "syntax": "CLOSE { YES | NO }",
+          "required": "no",
+          "default": "YES; DGTT behavior NO",
+          "values": "YES or NO",
+          "tags": ["lifecycle", "default"],
+          "summary": "Controls whether index data sets are eligible to close when unused.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "defer",
+          "syntax": "DEFER { NO | YES }",
+          "required": "no",
+          "default": "NO",
+          "values": "NO or YES",
+          "tags": ["build", "rebuild-pending", "default"],
+          "summary": "Defers building an eligible index on populated data until REBUILD INDEX.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "dssize",
+          "syntax": "DSSIZE <integer> G",
+          "required": "no",
+          "default": "inherits eligible PBR RPN base-space DSSIZE",
+          "values": "eligible index on PBR RPN table space",
+          "tags": ["pbr", "rpn", "size", "partition-override"],
+          "summary": "Controls index partition data-set size for PBR RPN only.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "piecesize",
+          "syntax": "PIECESIZE <integer> { K | M | G }",
+          "required": "no",
+          "default": "base-size-dependent Db2 behavior",
+          "values": "documented powers of two through 256 G, constrained by base table-space size",
+          "tags": ["npi", "size", "boundary"],
+          "summary": "Sets maximum data-set piece size for a nonpartitioned index.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "copy",
+          "syntax": "COPY { NO | YES }",
+          "required": "no",
+          "default": "NO",
+          "values": "NO or YES",
+          "tags": ["recovery", "lifecycle", "default"],
+          "summary": "Enables image-copy and RECOVER support for an eligible index.",
+          "source_refs": ["ibm-create-index"]
+        }
+      ],
+      "rules": [
+        {
+          "id": "key-count",
+          "kind": "limit",
+          "clauses": ["key-list", "include"],
+          "tags": ["key", "boundary"],
+          "text": "An index supports at most 64 key/included columns under the form-specific counting rules; duplicates are prohibited.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "key-length-formulas",
+          "kind": "limit",
+          "clauses": ["key-list", "padding"],
+          "tags": ["key", "boundary", "partitioning"],
+          "text": "Use IBM's separate padded/not-padded and partitioning/nonpartitioning formulas; partitioning keys are capped near 255 bytes and other keys near 2000 after nullable/varying/DECFLOAT overhead.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "expression-restrictions",
+          "kind": "restriction",
+          "clauses": ["expression-key", "key-order", "include"],
+          "tags": ["expression", "negative", "high-value"],
+          "text": "Expression keys use the restricted deterministic scalar grammar, cannot combine with INCLUDE/XML, and cannot specify DESC; execute against populated data to expose evaluation failures.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "xml-form-restrictions",
+          "kind": "restriction",
+          "clauses": ["xmlpattern", "key-order", "cluster", "partitioned", "padding", "include"],
+          "tags": ["xml", "negative", "high-value"],
+          "text": "XML indexes use the specialized key-generation grammar and cannot be clustered, partitioned, padded, or combined with ordinary ordering/expression/INCLUDE forms as documented.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "ordinary-unique-null-semantics",
+          "kind": "semantics",
+          "clauses": ["unique", "where-not-null"],
+          "tags": ["uniqueness", "null", "data-change"],
+          "text": "Ordinary UNIQUE treats null values as equal; UNIQUE WHERE NOT NULL permits multiple null-bearing keys but cannot enforce a table key constraint.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "include-requires-unique",
+          "kind": "requiredness",
+          "clauses": ["include", "unique", "expression-key", "xmlpattern"],
+          "tags": ["index-only", "negative"],
+          "text": "INCLUDE is limited to eligible unique ordinary indexes and rejects nonunique, expression/extended, XML, auxiliary, and other prohibited forms.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "temporal-overlaps",
+          "kind": "semantics",
+          "clauses": ["business-time", "unique"],
+          "tags": ["temporal", "constraint", "dependency"],
+          "text": "WITHOUT OVERLAPS supports temporal primary/unique enforcement; WITH OVERLAPS supports the temporal foreign-key side and cannot be UNIQUE.",
+          "source_refs": ["ibm-create-index", "ibm-create-table"]
+        },
+        {
+          "id": "partitioning-index-detected-by-key",
+          "kind": "type-resolution",
+          "clauses": ["key-list", "key-order", "partitioned"],
+          "tags": ["pbr", "partitioning-index", "dpsi", "npi", "high-value"],
+          "text": "A partitioning index is identified when its leading key matches the table partitioning columns/order/direction; PARTITIONED only requests physical alignment. A nonmatching PARTITIONED index is a DPSI; omission gives an NPI.",
+          "source_refs": ["ibm-create-index", "ibm-partitioned-indexes"]
+        },
+        {
+          "id": "partitioned-pbg-invalid",
+          "kind": "context",
+          "clauses": ["partitioned"],
+          "tags": ["pbg", "negative"],
+          "text": "PARTITIONED is not supported for an index on a PBG table.",
+          "source_refs": ["ibm-create-index", "ibm-pbg-concept"]
+        },
+        {
+          "id": "unique-partitioned-superset",
+          "kind": "requiredness",
+          "clauses": ["unique", "partitioned", "key-list", "include"],
+          "tags": ["pbr", "uniqueness", "negative"],
+          "text": "A unique physically partitioned index must contain the table partitioning columns in its key; INCLUDE does not satisfy that requirement.",
+          "source_refs": ["ibm-create-index", "ibm-partitioned-indexes"]
+        },
+        {
+          "id": "exclude-null-conflicts",
+          "kind": "conflict",
+          "clauses": ["null-keys", "unique", "business-time", "xmlpattern", "expression-key", "include"],
+          "tags": ["null", "negative"],
+          "text": "EXCLUDE NULL KEYS conflicts with UNIQUE, BUSINESS_TIME WITHOUT OVERLAPS, XML, expression keys, INCLUDE, and a key set that cannot be all null.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "padding-type-restrictions",
+          "kind": "context",
+          "clauses": ["padding", "key-list", "xmlpattern"],
+          "tags": ["varying", "binary", "xml", "negative"],
+          "text": "PADDED is prohibited for VARBINARY and XML; with no varying key the option is ignored with padded physical behavior.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "partition-override-precedence",
+          "kind": "precedence",
+          "clauses": ["partition-attributes", "using-stogroup", "freepage", "pctfree", "gbpcache", "dssize"],
+          "tags": ["pbr", "partition", "round-trip"],
+          "text": "Index-partition attributes override index-level values, which override database/default values; the clause does not change table data boundaries.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "compression-page-size",
+          "kind": "requiredness",
+          "clauses": ["compress", "bufferpool"],
+          "tags": ["compression", "page-size", "negative"],
+          "text": "COMPRESS YES requires an 8 KB, 16 KB, or 32 KB index buffer pool.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "dssize-rpn-only",
+          "kind": "context",
+          "clauses": ["dssize", "partitioned"],
+          "tags": ["pbr", "rpn", "negative"],
+          "text": "Index DSSIZE is valid only for an index on a PBR table space with relative page numbering.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "piecesize-nonpartitioned-only",
+          "kind": "context",
+          "clauses": ["piecesize", "partitioned"],
+          "tags": ["npi", "size", "negative"],
+          "text": "PIECESIZE applies to a nonpartitioned index and is bounded by the base table-space size attributes.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "defer-data-dependent",
+          "kind": "operational",
+          "clauses": ["defer"],
+          "tags": ["rebuild-pending", "data-state", "operational"],
+          "text": "DEFER YES leaves an eligible index on a populated table rebuild-pending; an empty-table index is not put into that state.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
+          "id": "enforcing-index-exactness",
+          "kind": "dependency",
+          "clauses": ["unique", "where-not-null", "key-list"],
+          "tags": ["constraint", "incomplete", "implicit"],
+          "text": "Primary/unique/eligible ROWID enforcement needs an ordinary UNIQUE index with the documented matching key; UNIQUE WHERE NOT NULL is insufficient.",
+          "source_refs": ["ibm-create-index", "ibm-implicit-index", "ibm-create-table"]
+        },
+        {
+          "id": "catalog-key-target-split",
+          "kind": "verification",
+          "clauses": ["key-list", "expression-key", "xmlpattern", "partitioned"],
+          "tags": ["catalog", "round-trip"],
+          "text": "Compare SYSINDEXES, every SYSINDEXPART row, SYSKEYS for ordinary keys, and SYSKEYTARGETS for expression/XML targets.",
+          "source_refs": ["ibm-catalog-sysindexes", "ibm-catalog-sysindexpart", "ibm-catalog-syskeys", "ibm-catalog-syskeytargets"]
+        }
+      ]
+    },
+    "trigger": {
+      "display_name": "TRIGGER",
+      "statements": ["CREATE TRIGGER (basic)", "CREATE TRIGGER (advanced)"],
+      "chapter": "kb/objects/trigger.md",
+      "depends_on": [
+        "local subject table for BEFORE or AFTER triggers",
+        "local subject view for INSTEAD OF triggers",
+        "all objects and local routines referenced by the triggered action",
+        "V12R1M500 or later application compatibility for advanced triggers"
+      ],
+      "catalog_tables": [
+        "SYSIBM.SYSTRIGGERS",
+        "SYSIBM.SYSTRIGGERS_STMT",
+        "SYSIBM.SYSPACKAGE",
+        "SYSIBM.SYSPACKDEP",
+        "SYSIBM.SYSENVIRONMENT"
+      ],
+      "body_statement_inventory": "kb/data/db2z13-trigger-body-statements.json",
+      "dimensions": [
+        "trigger_kind:basic|advanced",
+        "activation_time:before|after|instead_of",
+        "event:insert|delete|update|update_of",
+        "granularity:row|statement",
+        "subject:table|view",
+        "transition_data:old_row|new_row|old_table|new_table|combined",
+        "condition:omitted|true|false|unknown|subquery",
+        "body_shape:single|basic_atomic_list|advanced_compound|nested_compound",
+        "body_family:validation|dml|cursor|handler|dynamic_sql|ddl|diagnostics",
+        "advanced_versioning:create_v1|add_version|replace_version|replace_object",
+        "security:not_secured|secured|row_column_access_control",
+        "bind_option:omitted|explicit_default|explicit_nondefault",
+        "cascading:none|same_level|nested|self_recursive|sixteen_level_boundary",
+        "round_trip:text|catalog|package|dependency|activation_order"
+      ],
+      "clauses": [
+        {
+          "id": "name",
+          "syntax": "CREATE [OR REPLACE] TRIGGER <trigger-name>",
+          "required": "always",
+          "default": "unqualified name uses the applicable SQL schema rules",
+          "values": "qualified or unqualified SQL identifier; also names the trigger package",
+          "tags": ["identity", "package"],
+          "summary": "Names both the trigger and its implicitly created trigger package.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "or-replace",
+          "syntax": "OR REPLACE",
+          "required": "advanced only, optional",
+          "default": "CREATE a new trigger and reject a conflicting name",
+          "values": "present or omitted",
+          "tags": ["advanced", "replacement", "activation-order"],
+          "summary": "Replaces an existing advanced or basic definition subject to version rules; replacement changes the create timestamp and can change activation order.",
+          "source_refs": ["ibm-create-trigger-advanced", "ibm-trigger-convert", "ibm-trigger-activation-order"]
+        },
+        {
+          "id": "version",
+          "syntax": "VERSION {V1 | <trigger-version-id>}",
+          "required": "advanced only, optional",
+          "default": "V1 for the initial advanced version; zero-length version for a basic trigger",
+          "values": "trigger version identifier",
+          "tags": ["advanced", "versioning"],
+          "summary": "Adds or replaces an advanced trigger version while preserving the shared activation attributes required across versions.",
+          "source_refs": ["ibm-create-trigger-advanced", "ibm-catalog-systriggers"]
+        },
+        {
+          "id": "activation-time",
+          "syntax": "{[NO CASCADE] BEFORE | AFTER | INSTEAD OF}",
+          "required": "always",
+          "default": "none",
+          "values": "BEFORE or AFTER for a table; INSTEAD OF for a view",
+          "tags": ["activation", "table", "view"],
+          "summary": "Controls whether the action runs before or after a table change, or replaces an attempted change to a view.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "event",
+          "syntax": "{INSERT | DELETE | UPDATE [OF <column-name> [, ...]]}",
+          "required": "always",
+          "default": "UPDATE without OF responds to every current and subsequently added column",
+          "values": "one triggering operation; optional unique column list for UPDATE",
+          "tags": ["event", "insert", "delete", "update"],
+          "summary": "Selects the data-change operation that activates the trigger.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "subject",
+          "syntax": "ON {<table-name> | <view-name>}",
+          "required": "always",
+          "default": "none",
+          "values": "eligible local base table or eligible local view",
+          "tags": ["subject", "dependency", "table", "view"],
+          "summary": "BEFORE and AFTER use a qualifying base table; INSTEAD OF uses a qualifying view.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "referencing-row",
+          "syntax": "REFERENCING [OLD [ROW] [AS] <correlation-name>] [NEW [ROW] [AS] <correlation-name>]",
+          "required": "optional and event-dependent",
+          "default": "no row correlation names",
+          "values": "at most one OLD and one NEW unique correlation name",
+          "tags": ["transition", "row", "variable"],
+          "summary": "Exposes old and new column values as transition variables; ROW is part of the advanced grammar and omitted in the basic grammar.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "referencing-table",
+          "syntax": "REFERENCING [OLD_TABLE [AS] <table-identifier>] [NEW_TABLE [AS] <table-identifier>]",
+          "required": "optional and event-, time-, and granularity-dependent",
+          "default": "no transition tables",
+          "values": "at most one OLD_TABLE and one NEW_TABLE unique table identifier",
+          "tags": ["transition", "table", "set"],
+          "summary": "Exposes the complete affected row set through read-only transition tables where the transition matrix permits them.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "granularity",
+          "syntax": "FOR EACH {ROW | STATEMENT}",
+          "required": "always",
+          "default": "none",
+          "values": "ROW for every activation time; STATEMENT only for AFTER",
+          "tags": ["row", "statement", "activation"],
+          "summary": "Chooses one action per affected row or one action per triggering statement.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "mode-db2sql",
+          "syntax": "MODE DB2SQL",
+          "required": "required for basic; prohibited for advanced",
+          "default": "absence selects advanced parsing when the definition otherwise qualifies",
+          "values": "present or absent",
+          "tags": ["basic", "advanced", "discriminator"],
+          "summary": "The decisive syntax marker that requests a basic trigger.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-trigger-concept", "ibm-trigger-convert"]
+        },
+        {
+          "id": "when",
+          "syntax": "WHEN (<search-condition>)",
+          "required": "optional; prohibited for INSTEAD OF",
+          "default": "execute the body for every activation",
+          "values": "search condition evaluated per row or per statement granularity",
+          "tags": ["condition", "predicate"],
+          "summary": "Guards the triggered body; only TRUE executes it.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "basic-body",
+          "syntax": "<triggered-SQL-statement> | BEGIN ATOMIC <triggered-SQL-statement>; [...] END",
+          "required": "basic trigger only",
+          "default": "none",
+          "values": "only the basic statement matrix in db2z13-trigger-body-statements.json",
+          "tags": ["basic", "body", "multiple-statements"],
+          "summary": "Runs one allowed statement or an ordered ATOMIC list; SQL PL declarations and flow-control statements are not basic-trigger syntax.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-sql-reference-pdf"]
+        },
+        {
+          "id": "advanced-body",
+          "syntax": "<SQL-control-statement> | <triggered-SQL-statement>",
+          "required": "advanced trigger only",
+          "default": "none",
+          "values": "one direct statement or one SQL PL control statement, normally a compound statement for multiple nested statements",
+          "tags": ["advanced", "body", "sql-pl", "multiple-statements"],
+          "summary": "Uses SQL PL to nest the documented trigger subset of SQL-procedure-statement inside one outer control statement.",
+          "source_refs": ["ibm-create-trigger-advanced", "ibm-sqlpl", "ibm-sql-procedure-statement"]
+        },
+        {
+          "id": "wrapped",
+          "syntax": "WRAPPED <obfuscated-statement-text>",
+          "required": "optional alternative definition",
+          "default": "readable trigger definition",
+          "values": "output of the WRAP scalar function",
+          "tags": ["obfuscation", "round-trip"],
+          "summary": "Stores an obfuscated definition; WRAPPED is not allowed on a static CREATE statement.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced", "ibm-catalog-systriggers"]
+        },
+        {
+          "id": "debug-mode",
+          "syntax": "{ALLOW | DISALLOW | DISABLE} DEBUG MODE",
+          "required": "advanced only, optional",
+          "default": "derived from CURRENT DEBUG MODE",
+          "values": "ALLOW, DISALLOW, or irreversible-for-that-version DISABLE",
+          "tags": ["advanced", "debug", "versioning"],
+          "summary": "Controls whether a trigger version can be debugged; DISABLE cannot later be changed for that version.",
+          "source_refs": ["ibm-create-trigger-advanced", "ibm-catalog-systriggers"]
+        },
+        {
+          "id": "qualifier-path",
+          "syntax": "QUALIFIER <schema-name> | SQL PATH <schema-name> [, ...]",
+          "required": "advanced only, optional",
+          "default": "context-derived qualifier and system path plus qualifier",
+          "values": "eligible schema and SQL path names",
+          "tags": ["advanced", "resolution", "bind-option"],
+          "summary": "Controls resolution of unqualified objects, types, functions, and procedures in the body.",
+          "source_refs": ["ibm-create-trigger-advanced", "ibm-catalog-syspackage"]
+        },
+        {
+          "id": "asutime-wlm",
+          "syntax": "ASUTIME {NO LIMIT | LIMIT <integer>} | WLM ENVIRONMENT FOR DEBUG MODE <name>",
+          "required": "advanced only, optional",
+          "default": "ASUTIME NO LIMIT and the installation default debug WLM environment",
+          "values": "ASUTIME 1-2147483647 or no limit; eligible WLM environment name",
+          "tags": ["advanced", "resource", "debug"],
+          "summary": "Bounds service units for one invocation and selects the debug environment.",
+          "source_refs": ["ibm-create-trigger-advanced", "ibm-catalog-systriggers"]
+        },
+        {
+          "id": "currency-isolation",
+          "syntax": "CURRENT DATA {NO | YES} | CONCURRENT ACCESS RESOLUTION {USE CURRENTLY COMMITTED | WAIT FOR OUTCOME} | ISOLATION LEVEL {CS | RS | RR | UR}",
+          "required": "advanced only, optional",
+          "default": "CURRENT DATA NO; other defaults follow the documented trigger package options",
+          "values": "documented cursor currency, concurrent-access, and isolation values",
+          "tags": ["advanced", "concurrency", "bind-option"],
+          "summary": "Controls read currency, lock-conflict behavior, and isolation for SQL in the trigger package.",
+          "source_refs": ["ibm-create-trigger-advanced", "ibm-catalog-syspackage"]
+        },
+        {
+          "id": "dynamic-encoding",
+          "syntax": "DYNAMICRULES {RUN | BIND} | APPLICATION ENCODING SCHEME {ASCII | EBCDIC | UNICODE}",
+          "required": "advanced only, optional",
+          "default": "DYNAMICRULES RUN; encoding is derived from the default application encoding scheme",
+          "values": "documented dynamic SQL behavior and encoding scheme",
+          "tags": ["advanced", "dynamic-sql", "encoding", "bind-option"],
+          "summary": "Defines dynamic-SQL authorization/resolution behavior and the encoding of SQL variables.",
+          "source_refs": ["ibm-create-trigger-advanced", "ibm-trigger-concept", "ibm-catalog-syspackage"]
+        },
+        {
+          "id": "explain-write",
+          "syntax": "{WITHOUT | WITH} EXPLAIN | {WITHOUT | WITH} IMMEDIATE WRITE",
+          "required": "advanced only, optional",
+          "default": "WITHOUT EXPLAIN and WITHOUT IMMEDIATE WRITE",
+          "values": "WITH or WITHOUT",
+          "tags": ["advanced", "explain", "bind-option"],
+          "summary": "Controls explain capture and immediate writes for the advanced trigger package.",
+          "source_refs": ["ibm-create-trigger-advanced", "ibm-catalog-syspackage"]
+        },
+        {
+          "id": "optimization-release",
+          "syntax": "OPTHINT {'' | <string-constant>} | RELEASE AT {COMMIT | DEALLOCATE} | FOR UPDATE CLAUSE {REQUIRED | OPTIONAL}",
+          "required": "advanced only, optional",
+          "default": "empty OPTHINT, RELEASE AT COMMIT, and FOR UPDATE CLAUSE REQUIRED",
+          "values": "documented optimization hint, release, and cursor-update choices",
+          "tags": ["advanced", "optimization", "cursor", "bind-option"],
+          "summary": "Controls optimization hints, package resource release, and positioned-update cursor requirements.",
+          "source_refs": ["ibm-create-trigger-advanced", "ibm-catalog-syspackage"]
+        },
+        {
+          "id": "formats-rounding",
+          "syntax": "ROUNDING <rounding-mode> | DATE FORMAT <format> | DECIMAL(<precision>[,<scale>]) | TIME FORMAT <format>",
+          "required": "advanced only, optional",
+          "default": "current or subsystem-derived documented values",
+          "values": "documented DECFLOAT rounding modes, datetime formats, and decimal arithmetic precision/scale",
+          "tags": ["advanced", "format", "rounding", "bind-option"],
+          "summary": "Defines arithmetic and datetime representation behavior for body statements.",
+          "source_refs": ["ibm-create-trigger-advanced", "ibm-catalog-syspackage"]
+        },
+        {
+          "id": "secured",
+          "syntax": "{NOT SECURED | SECURED}",
+          "required": "optional; SECURED is required when row or column access control applies to the subject table or an underlying view table",
+          "default": "NOT SECURED",
+          "values": "NOT SECURED or SECURED",
+          "tags": ["security", "row-access-control", "column-access-control"],
+          "summary": "Asserts the audit discipline required for secure trigger execution.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced", "ibm-catalog-systriggers"]
+        },
+        {
+          "id": "data-sensitivity",
+          "syntax": "{BUSINESS_TIME | SYSTEM_TIME | ARCHIVE} SENSITIVE {YES | NO}",
+          "required": "advanced only, optional",
+          "default": "YES for each sensitivity",
+          "values": "YES or NO independently for each sensitivity",
+          "tags": ["advanced", "temporal", "archive", "bind-option"],
+          "summary": "Controls whether temporal special registers and archive state affect body statements.",
+          "source_refs": ["ibm-create-trigger-advanced", "ibm-catalog-syspackage"]
+        },
+        {
+          "id": "applcompat",
+          "syntax": "APPLCOMPAT <applcompat-level>",
+          "required": "advanced only, optional",
+          "default": "V12R1M500",
+          "values": "V12R1M500 or higher supported level",
+          "tags": ["advanced", "application-compatibility", "bind-option"],
+          "summary": "Selects SQL behavior for statements in the advanced trigger body.",
+          "source_refs": ["ibm-create-trigger-advanced", "ibm-catalog-syspackage", "ibm-catalog-sysenvironment"]
+        },
+        {
+          "id": "concentrate-statements",
+          "syntax": "CONCENTRATE STATEMENTS {OFF | WITH LITERALS}",
+          "required": "advanced only, optional",
+          "default": "OFF",
+          "values": "OFF or WITH LITERALS",
+          "tags": ["advanced", "dynamic-sql", "statement-cache", "bind-option"],
+          "summary": "Controls literal concentration for dynamic statements prepared by the trigger.",
+          "source_refs": ["ibm-create-trigger-advanced", "ibm-catalog-syspackage"]
+        }
+      ],
+      "rules": [
+        {
+          "id": "basic-advanced-discriminator",
+          "kind": "requiredness",
+          "clauses": ["mode-db2sql", "advanced-body", "basic-body"],
+          "tags": ["basic", "advanced", "negative"],
+          "text": "MODE DB2SQL is required for a basic trigger and must be absent for an advanced trigger; SYSTRIGGERS.SQLPL is blank for basic and Y for advanced.",
+          "source_refs": ["ibm-trigger-concept", "ibm-create-trigger-basic", "ibm-create-trigger-advanced", "ibm-catalog-systriggers"]
+        },
+        {
+          "id": "advanced-level-gate",
+          "kind": "compatibility",
+          "clauses": ["advanced-body", "applcompat"],
+          "tags": ["advanced", "application-compatibility", "negative"],
+          "text": "Advanced triggers require application compatibility V12R1M500 or higher; the advanced APPLCOMPAT option also accepts only V12R1M500 or higher.",
+          "source_refs": ["ibm-trigger-concept", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "subject-time-pairing",
+          "kind": "mutual-exclusion",
+          "clauses": ["activation-time", "subject"],
+          "tags": ["table", "view", "negative"],
+          "text": "BEFORE and AFTER require an eligible base table; INSTEAD OF requires an eligible view and only one INSTEAD OF trigger is allowed for each operation on that view.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "subject-table-eligibility",
+          "kind": "prohibition",
+          "clauses": ["subject", "activation-time"],
+          "tags": ["table", "subject", "negative"],
+          "text": "A BEFORE or AFTER subject must be an existing local base table, not a materialized query table, clone, temporary table, auxiliary table, alias, synonym, real-time statistics table, accelerator-only table, catalog table, or directory table.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "subject-view-eligibility",
+          "kind": "prohibition",
+          "clauses": ["subject", "activation-time"],
+          "tags": ["view", "subject", "instead-of", "negative"],
+          "text": "An INSTEAD OF subject must be an eligible local view: symmetric-view relationships, mixed encoding/CCSID, ROWID or restricted underlying column types, field procedures, disallowed all-catalog/all-DGTT/all-clone bases, and dependent views make it ineligible under the documented view restrictions.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "statement-granularity-after-only",
+          "kind": "context",
+          "clauses": ["activation-time", "granularity"],
+          "tags": ["statement", "before", "instead-of", "negative"],
+          "text": "FOR EACH STATEMENT is valid only for AFTER; BEFORE and INSTEAD OF require FOR EACH ROW.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "update-of-instead-prohibited",
+          "kind": "context",
+          "clauses": ["event", "activation-time"],
+          "tags": ["update", "instead-of", "negative"],
+          "text": "UPDATE OF column-name cannot be specified for an INSTEAD OF trigger; every listed column must belong to the subject table and appear once.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "transition-event-matrix",
+          "kind": "context",
+          "clauses": ["event", "activation-time", "granularity", "referencing-row", "referencing-table"],
+          "tags": ["transition", "matrix", "negative"],
+          "text": "OLD is available for DELETE/UPDATE; NEW for INSERT/UPDATE. BEFORE row triggers allow variables but no transition tables; AFTER/INSTEAD OF row triggers allow matching variables and tables; AFTER statement triggers allow matching tables but no variables.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "transition-name-uniqueness",
+          "kind": "cardinality",
+          "clauses": ["referencing-row", "referencing-table"],
+          "tags": ["transition", "name", "negative"],
+          "text": "At most one OLD, NEW, OLD_TABLE, and NEW_TABLE declaration is allowed, and every correlation name and table identifier in REFERENCING must be unique from every other one.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "transition-mutability",
+          "kind": "context",
+          "clauses": ["activation-time", "referencing-row", "referencing-table"],
+          "tags": ["transition", "assignment", "negative"],
+          "text": "Transition tables are read-only. Only NEW transition variables in BEFORE INSERT or BEFORE UPDATE can be assigned; AFTER and INSTEAD OF transition variables cannot be modified.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "transition-xml-restriction",
+          "kind": "data-type",
+          "clauses": ["referencing-row", "referencing-table", "advanced-body"],
+          "tags": ["transition", "xml", "negative"],
+          "text": "An XML transition variable or an XML column of a transition table cannot be referenced by an SQL-procedure-statement in a trigger body.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "when-instead-prohibited",
+          "kind": "context",
+          "clauses": ["when", "activation-time"],
+          "tags": ["condition", "instead-of", "negative"],
+          "text": "WHEN cannot be specified for an INSTEAD OF trigger; a BEFORE trigger condition fullselect cannot reference the subject table.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced", "ibm-trigger-create-task"]
+        },
+        {
+          "id": "basic-body-closed-set",
+          "kind": "allowed-set",
+          "clauses": ["basic-body", "activation-time"],
+          "tags": ["basic", "body", "statement-matrix"],
+          "text": "A basic body contains only the 12 documented statement families, with activation-time restrictions recorded in db2z13-trigger-body-statements.json; BEGIN ATOMIC only sequences that same closed set.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-sql-reference-pdf"]
+        },
+        {
+          "id": "advanced-body-layering",
+          "kind": "requiredness",
+          "clauses": ["advanced-body", "activation-time"],
+          "tags": ["advanced", "body", "sql-pl", "multiple-statements"],
+          "text": "An advanced body is one direct triggered statement or one SQL control statement. Multiple statements require a control statement such as a compound block, whose nested statements come from the 35 trigger-supported SQL-procedure-statement rows.",
+          "source_refs": ["ibm-create-trigger-advanced", "ibm-sqlpl", "ibm-sql-procedure-statement"]
+        },
+        {
+          "id": "advanced-ddl-subset",
+          "kind": "allowed-set",
+          "clauses": ["advanced-body", "activation-time"],
+          "tags": ["advanced", "ddl", "create", "negative"],
+          "text": "Within an SQL PL control statement, advanced triggers allow CREATE TABLE at any activation time (without LOB or XML columns), and CREATE INDEX or CREATE VIEW only for AFTER/INSTEAD OF. CREATE STOGROUP, DATABASE, and TABLESPACE are excluded matrix rows; CREATE TRIGGER is absent from the SQL-procedure-statement grammar.",
+          "source_refs": ["ibm-sql-procedure-statement", "ibm-create-table", "ibm-create-index"]
+        },
+        {
+          "id": "before-side-effect-restrictions",
+          "kind": "context",
+          "clauses": ["activation-time", "basic-body", "advanced-body"],
+          "tags": ["before", "dml", "routine", "negative"],
+          "text": "A BEFORE body cannot contain DELETE, INSERT, MERGE, REFRESH TABLE, TRUNCATE, UPDATE, or SELECT FROM a data-change statement, and cannot directly or indirectly invoke a routine containing the broader side-effect list documented by CREATE TRIGGER.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced", "ibm-sql-procedure-statement"]
+        },
+        {
+          "id": "body-reference-scope",
+          "kind": "context",
+          "clauses": ["basic-body", "advanced-body", "subject"],
+          "tags": ["current-server", "host-variable", "dependency", "negative"],
+          "text": "Body statements cannot use host variables or undefined transition variables, cannot reference declared temporary tables, and can directly reference only current-server tables, views, routines, and functions; referenced objects must exist when the definition is created.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "basic-parameter-marker-prohibition",
+          "kind": "prohibition",
+          "clauses": ["basic-body"],
+          "tags": ["basic", "parameter-marker", "negative"],
+          "text": "A basic trigger body statement must not reference a parameter marker.",
+          "source_refs": ["ibm-create-trigger-basic"]
+        },
+        {
+          "id": "table-locator-reference-prohibition",
+          "kind": "prohibition",
+          "clauses": ["advanced-body", "referencing-table"],
+          "tags": ["advanced", "transition", "table-locator", "negative"],
+          "text": "A table-locator-reference element must not be specified in a trigger body, although a transition table can be passed to a routine with TABLE before its table identifier as documented.",
+          "source_refs": ["ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "hex-graphic-constant-prohibition",
+          "kind": "prohibition",
+          "clauses": ["basic-body", "advanced-body"],
+          "tags": ["constant", "gx", "negative"],
+          "text": "CREATE TRIGGER and ALTER TRIGGER statements cannot contain a hexadecimal graphic string (GX) constant.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "body-transaction-control",
+          "kind": "prohibition",
+          "clauses": ["advanced-body"],
+          "tags": ["transaction", "call", "negative"],
+          "text": "A trigger cannot directly or indirectly call a procedure that issues COMMIT, CONNECT, RELEASE connection, RELEASE SAVEPOINT, ROLLBACK without TO SAVEPOINT, SAVEPOINT, or SET CONNECTION, and cannot call a procedure defined COMMIT ON RETURN.",
+          "source_refs": ["ibm-create-trigger-advanced", "ibm-sql-procedure-statement"]
+        },
+        {
+          "id": "business-time-column-not-modifiable",
+          "kind": "prohibition",
+          "clauses": ["basic-body", "advanced-body"],
+          "tags": ["business-time", "temporal", "negative"],
+          "text": "A trigger body statement must not modify a column that is part of a BUSINESS_TIME period.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "advanced-compound-atomicity",
+          "kind": "context",
+          "clauses": ["advanced-body"],
+          "tags": ["advanced", "compound", "atomic", "negative"],
+          "text": "The outermost compound statement of an advanced trigger defaults to ATOMIC and cannot specify NOT ATOMIC; nested compound statements default to NOT ATOMIC, and ATOMIC cannot be nested inside an ATOMIC compound.",
+          "source_refs": ["ibm-sqlpl-compound"]
+        },
+        {
+          "id": "return-not-in-trigger",
+          "kind": "prohibition",
+          "clauses": ["advanced-body"],
+          "tags": ["advanced", "sql-pl", "return", "negative"],
+          "text": "RETURN appears in the SQL-control-statement overview but its statement-specific restriction prohibits RETURN in every trigger.",
+          "source_refs": ["ibm-sqlpl", "ibm-sqlpl-return"]
+        },
+        {
+          "id": "security-rcac",
+          "kind": "requiredness",
+          "clauses": ["secured", "subject"],
+          "tags": ["security", "row-access-control", "column-access-control", "negative"],
+          "text": "SECURED is mandatory when row or column access control applies to the subject table, or to an underlying table of the subject view.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "execution-authority-owner",
+          "kind": "authorization",
+          "clauses": ["name", "basic-body", "advanced-body"],
+          "tags": ["authorization", "owner", "execution"],
+          "text": "The user who issues the activating DML does not need authority to execute the trigger body; the body executes with the authority of the trigger owner.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced", "ibm-trigger-create-task"]
+        },
+        {
+          "id": "wrapped-dynamic-only",
+          "kind": "prohibition",
+          "clauses": ["wrapped"],
+          "tags": ["wrapped", "static-sql", "negative"],
+          "text": "WRAPPED obfuscated statement text can be executed only for a dynamic CREATE TRIGGER statement; WRAPPED is prohibited on a static CREATE statement.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "version-shared-attributes",
+          "kind": "versioning",
+          "clauses": ["version", "activation-time", "event", "subject", "granularity", "referencing-row", "referencing-table"],
+          "tags": ["advanced", "versioning", "negative"],
+          "text": "All versions share activation time, event, subject table/view, and granularity; REFERENCING content and body/options can differ by version.",
+          "source_refs": ["ibm-create-trigger-advanced", "ibm-catalog-systriggers"]
+        },
+        {
+          "id": "dual-applcompat-records",
+          "kind": "verification",
+          "clauses": ["applcompat", "advanced-body"],
+          "tags": ["advanced", "application-compatibility", "catalog"],
+          "text": "Definition processing uses CURRENT APPLICATION COMPATIBILITY and is recorded through SYSTRIGGERS.ENVID to SYSENVIRONMENT.APPLCOMPAT; body SQL uses the trigger APPLCOMPAT option and is recorded in SYSPACKAGE.APPLCOMPAT.",
+          "source_refs": ["ibm-create-trigger-advanced", "ibm-catalog-systriggers", "ibm-catalog-sysenvironment", "ibm-catalog-syspackage"]
+        },
+        {
+          "id": "trigger-package-type",
+          "kind": "verification",
+          "clauses": ["name", "mode-db2sql", "version"],
+          "tags": ["package", "catalog", "basic", "advanced"],
+          "text": "The trigger schema/name becomes the package collection/name; SYSPACKAGE.TYPE is T for a basic trigger package and 1 for an advanced trigger package.",
+          "source_refs": ["ibm-trigger-packages", "ibm-catalog-syspackage"]
+        },
+        {
+          "id": "cascade-depth-and-atomicity",
+          "kind": "operational",
+          "clauses": ["activation-time", "basic-body", "advanced-body"],
+          "tags": ["cascade", "recursion", "boundary", "rollback"],
+          "text": "Only AFTER triggers cascade to deeper levels; Db2 permits 16 nested trigger/routine/function levels and rejects the 17th, backing out Db2 changes in the chain.",
+          "source_refs": ["ibm-trigger-cascading", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "activation-order-create-time",
+          "kind": "ordering",
+          "clauses": ["or-replace", "activation-time", "event", "subject"],
+          "tags": ["activation-order", "replacement", "round-trip"],
+          "text": "Db2 runs all BEFORE triggers before AFTER triggers. Within the same subject/event/time, creation timestamp determines order; for two row triggers, the earlier trigger processes every affected row before the next trigger starts. Dropping/recreating or whole-trigger OR REPLACE can move a trigger later.",
+          "source_refs": ["ibm-trigger-activation-order", "ibm-create-trigger-advanced", "ibm-catalog-systriggers"]
+        },
+        {
+          "id": "embedded-semicolon-terminator",
+          "kind": "tooling",
+          "clauses": ["basic-body", "advanced-body"],
+          "tags": ["spufi", "dsntep2", "terminator", "multiple-statements"],
+          "text": "SPUFI, the Db2 command line processor, and DSNTEP2 can truncate CREATE TRIGGER at embedded semicolons when semicolon is the outer terminator; use a different outer SQL terminator for compound bodies.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "pending-definition-change",
+          "kind": "operational",
+          "clauses": ["subject"],
+          "tags": ["pending-ddl", "negative"],
+          "text": "CREATE TRIGGER is not allowed on a table with pending definition changes.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "catalog-verification-set",
+          "kind": "verification",
+          "clauses": ["name", "version", "secured", "debug-mode", "applcompat"],
+          "tags": ["catalog", "package", "dependency", "round-trip"],
+          "text": "Compare SYSTRIGGERS definition/version/type/text, SYSPACKAGE package attributes, SYSPACKDEP dependencies, and SYSENVIRONMENT definition APPLCOMPAT; compare CREATEDTS separately when activation order is under test.",
+          "source_refs": ["ibm-catalog-systriggers", "ibm-catalog-systriggers-stmt", "ibm-catalog-syspackage", "ibm-catalog-syspackdep", "ibm-catalog-sysenvironment"]
+        }
+      ]
+    }
+  }
+}

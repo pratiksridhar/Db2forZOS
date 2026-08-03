@@ -1,0 +1,122 @@
+{
+  "schema_version": "1.0.0",
+  "id": "DB2Z13-TABLESPACE-TYPE-001",
+  "title": "NUMPARTS without MAXPARTITIONS creates a PBR RPN table space",
+  "description": "Proves type resolution and preserves the explicit relative-page-number choice through an OFS round trip.",
+  "object": "tablespace",
+  "category": "round_trip",
+  "status": "design",
+  "product_context": {
+    "release": "Db2 13 for z/OS",
+    "function_level": "V13R1M509",
+    "applcompat": "V13R1M509",
+    "current_rules": "DB2",
+    "data_sharing": false,
+    "member": null,
+    "subsystem_parameters": {
+      "PAGESET_PAGENUM": "RELATIVE",
+      "DPSEGSZ": 32
+    },
+    "active_buffer_pools": ["BP0"],
+    "storage_context": {
+      "extended_format": true,
+      "extended_addressability": true
+    }
+  },
+  "source_refs": [
+    "ibm-create-tablespace",
+    "ibm-pbr-create",
+    "ibm-catalog-systablespace",
+    "ibm-catalog-systablepart"
+  ],
+  "variation": {
+    "primary_clause": "tablespace.numparts",
+    "dimensions": [
+      "type:pbr",
+      "page_numbering:relative",
+      "partition_count:4",
+      "dssize:8g"
+    ],
+    "explicitness": "explicit_nondefault",
+    "boundary_position": "not_applicable",
+    "companion_case_ids": [
+      "DB2Z13-TABLESPACE-TYPE-002",
+      "DB2Z13-TABLESPACE-TYPE-003"
+    ]
+  },
+  "parameters": {
+    "STOGROUP": "OFSSG001",
+    "DATABASE": "OFSDB001",
+    "SOURCE_TABLESPACE": "OFSTSP01",
+    "RECREATE_TABLESPACE": "OFSTSP02"
+  },
+  "prerequisites": [
+    "OFSDB001 exists and defaults to OFSSG001 and BP0",
+    "The test authorization ID can create table spaces in OFSDB001",
+    "DFSMS supports extended format and extended addressability"
+  ],
+  "setup_sql": [],
+  "action_sql": [
+    "CREATE TABLESPACE OFSTSP01 IN OFSDB001 BUFFERPOOL BP0 NUMPARTS 4 PAGENUM RELATIVE DSSIZE 8 G SEGSIZE 32 USING STOGROUP OFSSG001 PRIQTY -1 SECQTY -1 ERASE NO",
+    "COMMIT"
+  ],
+  "expected": {
+    "outcome": "success",
+    "failure_phase": "none",
+    "sqlcode": 0,
+    "sqlstate": "00000",
+    "catalog_assertions": [
+      "SYSIBM.SYSTABLESPACE has exactly one OFSDB001.OFSTSP01 row and identifies a partition-by-range UTS",
+      "SYSIBM.SYSTABLEPART has four rows numbered 1 through 4",
+      "Relative page numbering and an 8 GB DSSIZE are effective for every partition"
+    ],
+    "warnings": [],
+    "notes": "The later CREATE TABLE must define all four range partitions before the table is usable."
+  },
+  "ofs_validation": {
+    "generation_target": "OFSDB001.OFSTSP01",
+    "generation_options": {
+      "include_storage": true,
+      "include_explicit_defaults": true
+    },
+    "name_map": {
+      "OFSDB001.OFSTSP01": "OFSDB001.OFSTSP02"
+    },
+    "generated_ddl_must_include": [
+      "NUMPARTS 4",
+      "PAGENUM RELATIVE",
+      "DSSIZE 8 G"
+    ],
+    "generated_ddl_must_exclude": [
+      "MAXPARTITIONS"
+    ],
+    "comparison_policy": {
+      "semantic_fields": [
+        "table-space type",
+        "page-numbering scheme",
+        "partition count",
+        "DSSIZE",
+        "buffer pool",
+        "storage group"
+      ],
+      "ignored_fields": [
+        "PSID",
+        "instance/version identifiers",
+        "creation timestamp",
+        "statistics"
+      ],
+      "notes": "Compare the parent SYSTABLESPACE row and all SYSTABLEPART rows."
+    }
+  },
+  "cleanup_sql": [
+    "DROP TABLESPACE OFSDB001.OFSTSP02",
+    "DROP TABLESPACE OFSDB001.OFSTSP01",
+    "COMMIT"
+  ],
+  "artifacts": {
+    "source_ddl": "artifacts/DB2Z13-TABLESPACE-TYPE-001/source.sql",
+    "ofs_generated_ddl": "artifacts/DB2Z13-TABLESPACE-TYPE-001/ofs-generated.sql",
+    "catalog_before": "artifacts/DB2Z13-TABLESPACE-TYPE-001/source-catalog.txt",
+    "catalog_after": "artifacts/DB2Z13-TABLESPACE-TYPE-001/recreated-catalog.txt"
+  }
+}

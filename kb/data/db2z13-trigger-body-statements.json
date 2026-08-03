@@ -1,0 +1,516 @@
+{
+  "schema_version": "1.0.0",
+  "title": "IBM Db2 13 for z/OS CREATE TRIGGER body statement inventory",
+  "baseline": {
+    "product": "IBM Db2 for z/OS",
+    "release": "13",
+    "documentation_reviewed": "2026-07-19",
+    "authority": "Official IBM documentation only",
+    "notes": "Syntax strings are compact test-authoring summaries. Follow the linked IBM statement syntax diagram for every nested subgrammar and statement-specific restriction."
+  },
+  "source_refs": [
+    "ibm-create-trigger-basic",
+    "ibm-create-trigger-advanced",
+    "ibm-sqlpl",
+    "ibm-sql-procedure-statement",
+    "ibm-sql-reference-pdf"
+  ],
+  "statement_syntax": {
+    "sql-control-statement": {
+      "name": "SQL-control-statement",
+      "syntax": "<assignment | CALL | CASE | compound | FOR | GET DIAGNOSTICS | GOTO | IF | ITERATE | LEAVE | LOOP | REPEAT | RESIGNAL | SIGNAL | WHILE>",
+      "summary": "One SQL PL control statement. RETURN is listed in the SQL PL overview but is explicitly prohibited in a trigger.",
+      "source_refs": ["ibm-sqlpl", "ibm-sqlpl-return"]
+    },
+    "allocate-cursor": {
+      "name": "ALLOCATE CURSOR",
+      "syntax": "ALLOCATE <cursor-name> CURSOR FOR RESULT SET <result-set-locator-variable>",
+      "summary": "Allocates a cursor for a result set locator returned by a procedure.",
+      "source_refs": ["ibm-sql-reference-pdf"]
+    },
+    "alter-function": {
+      "name": "ALTER FUNCTION",
+      "syntax": "ALTER FUNCTION <function-designator> <external|sourced|compiled-SQL|inlined-SQL|SQL-table alter form>",
+      "summary": "Only the function forms listed by IBM's SQL-procedure-statement matrix are admitted; use the matching ALTER FUNCTION syntax diagram.",
+      "source_refs": ["ibm-sql-procedure-statement", "ibm-sql-reference-pdf"]
+    },
+    "associate-locators": {
+      "name": "ASSOCIATE LOCATORS",
+      "syntax": "ASSOCIATE RESULT SET LOCATORS (<locator-variable> [, ...]) WITH PROCEDURE <procedure-name>",
+      "summary": "Captures result set locator values returned by an earlier CALL.",
+      "source_refs": ["ibm-sql-reference-pdf"]
+    },
+    "call": {
+      "name": "CALL",
+      "syntax": "CALL <procedure-name> [(<SQL-variable|transition-variable|expression|NULL> [, ...])]",
+      "summary": "Invokes a local procedure; transaction-control and BEFORE-trigger restrictions still apply transitively.",
+      "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced", "ibm-sql-reference-pdf"]
+    },
+    "close": {
+      "name": "CLOSE",
+      "syntax": "CLOSE <cursor-name>",
+      "summary": "Closes a declared or allocated cursor.",
+      "source_refs": ["ibm-sql-reference-pdf"]
+    },
+    "comment": {
+      "name": "COMMENT",
+      "syntax": "COMMENT ON <object-designator> IS {<string-constant> | NULL}",
+      "summary": "Adds or removes a catalog comment by using one of the statement's object-specific forms.",
+      "source_refs": ["ibm-sql-reference-pdf"]
+    },
+    "create-index": {
+      "name": "CREATE INDEX",
+      "syntax": "CREATE [UNIQUE [WHERE NOT NULL]] INDEX <index-name> ON <table-name> <key-definition> [<index-options>]",
+      "summary": "Uses the complete CREATE INDEX grammar already modeled by this KB.",
+      "source_refs": ["ibm-create-index", "ibm-sql-procedure-statement"]
+    },
+    "create-table": {
+      "name": "CREATE TABLE",
+      "syntax": "CREATE TABLE <table-name> <table-definition> [<placement-and-table-options>]",
+      "summary": "Uses the complete CREATE TABLE grammar already modeled by this KB, but a trigger-body CREATE TABLE cannot include LOB or XML columns.",
+      "source_refs": ["ibm-create-table", "ibm-sql-procedure-statement"]
+    },
+    "create-view": {
+      "name": "CREATE VIEW",
+      "syntax": "CREATE VIEW <view-name> [(<column-name> [, ...])] AS <fullselect> [WITH {CASCADED | LOCAL} CHECK OPTION]",
+      "summary": "Creates a view using the statement-specific fullselect and check-option rules.",
+      "source_refs": ["ibm-sql-reference-pdf", "ibm-sql-procedure-statement"]
+    },
+    "declare-cursor": {
+      "name": "DECLARE CURSOR",
+      "syntax": "DECLARE <cursor-name> [<sensitivity>] [SCROLL] CURSOR [<holdability>] [<returnability>] [<rowset-positioning>] FOR {<select-statement> | <statement-name>}",
+      "summary": "Declares a static or prepared-statement cursor in a compound block.",
+      "source_refs": ["ibm-sql-reference-pdf"]
+    },
+    "delete-searched": {
+      "name": "DELETE (searched)",
+      "syntax": "[WITH <common-table-expression>] DELETE FROM <target> [<include-columns>] [WHERE <search-condition>]",
+      "summary": "Deletes qualifying target rows; positioned DELETE is a different syntax path.",
+      "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced", "ibm-sql-reference-pdf"]
+    },
+    "drop": {
+      "name": "DROP",
+      "syntax": "DROP {TABLE <table-name> | VIEW <view-name> | INDEX <index-name>} [<statement-specific-options>]",
+      "summary": "The trigger subset permits only DROP TABLE, DROP VIEW, and DROP INDEX.",
+      "source_refs": ["ibm-sql-procedure-statement", "ibm-sql-reference-pdf"]
+    },
+    "execute": {
+      "name": "EXECUTE",
+      "syntax": "EXECUTE <statement-name> [INTO <target> [, ...]] [USING <input-value> [, ...]]",
+      "summary": "Executes a statement prepared under a declared statement name.",
+      "source_refs": ["ibm-sql-reference-pdf"]
+    },
+    "execute-immediate": {
+      "name": "EXECUTE IMMEDIATE",
+      "syntax": "EXECUTE IMMEDIATE <string-expression>",
+      "summary": "Prepares and executes one dynamically constructed SQL statement.",
+      "source_refs": ["ibm-sql-reference-pdf"]
+    },
+    "explain": {
+      "name": "EXPLAIN",
+      "syntax": "EXPLAIN <explainable-statement-or-dynamic-statement-cache-form>",
+      "summary": "Uses one of the documented EXPLAIN forms; required explain tables and privileges remain prerequisites.",
+      "source_refs": ["ibm-sql-reference-pdf"]
+    },
+    "fetch": {
+      "name": "FETCH",
+      "syntax": "FETCH <cursor-name> INTO <target> [, ...]",
+      "summary": "In SQL PL trigger bodies, FETCH cannot specify orientation, multiple-row fetch, WITH CONTINUE, or CURRENT CONTINUE.",
+      "source_refs": ["ibm-sql-procedure-statement", "ibm-sql-reference-pdf"]
+    },
+    "fullselect": {
+      "name": "fullselect",
+      "syntax": "[WITH <common-table-expression>] <fullselect>",
+      "summary": "A stand-alone query supported only by basic triggers; a BEFORE-trigger fullselect cannot reference the subject table.",
+      "source_refs": ["ibm-create-trigger-basic", "ibm-sql-reference-pdf"]
+    },
+    "get-diagnostics": {
+      "name": "GET DIAGNOSTICS",
+      "syntax": "GET [CURRENT | STACKED] DIAGNOSTICS <target> = <statement|condition|connection|combined information item> [, ...]",
+      "summary": "Retrieves diagnostics for the previous statement; error diagnostics must be fetched as the first executable handler statement.",
+      "source_refs": ["ibm-get-diagnostics", "ibm-create-trigger-advanced"]
+    },
+    "grant": {
+      "name": "GRANT",
+      "syntax": "GRANT <privilege-or-authority-list> [ON <object>] TO <grantee-list> [<grant-options>]",
+      "summary": "Uses the applicable object-specific GRANT form. IBM's trigger matrix links notes 4 and 7; note 7's text is CREATE TABLE-specific, so no extra GRANT rule is inferred from it.",
+      "source_refs": ["ibm-sql-procedure-statement", "ibm-sql-reference-pdf"]
+    },
+    "insert": {
+      "name": "INSERT",
+      "syntax": "INSERT INTO <target> [(<column> [, ...])] {VALUES <row> [, ...] | <fullselect> | DEFAULT VALUES} [<insert-options>]",
+      "summary": "Inserts one or more rows using the statement-specific atomicity and include-column forms.",
+      "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced", "ibm-sql-reference-pdf"]
+    },
+    "label": {
+      "name": "LABEL",
+      "syntax": "LABEL ON <object-designator> IS <string-constant>",
+      "summary": "Sets the label for an eligible Db2 object by using the matching object form.",
+      "source_refs": ["ibm-sql-reference-pdf"]
+    },
+    "lock-table": {
+      "name": "LOCK TABLE",
+      "syntax": "LOCK TABLE <table-name> [PART <partition-number>] IN {SHARE | EXCLUSIVE} MODE",
+      "summary": "Acquires an explicit table or eligible partition lock.",
+      "source_refs": ["ibm-sql-reference-pdf"]
+    },
+    "merge": {
+      "name": "MERGE",
+      "syntax": "MERGE INTO <target> [AS <correlation>] USING <source> ON <search-condition> <WHEN MATCHED|NOT MATCHED clauses>",
+      "summary": "Applies conditional update, delete, or insert operations using the full MERGE grammar.",
+      "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced", "ibm-sql-reference-pdf"]
+    },
+    "open": {
+      "name": "OPEN",
+      "syntax": "OPEN <cursor-name> [USING <input-value> [, ...]]",
+      "summary": "Opens a declared cursor, optionally supplying values for parameter markers in a prepared select.",
+      "source_refs": ["ibm-sql-reference-pdf"]
+    },
+    "prepare": {
+      "name": "PREPARE",
+      "syntax": "PREPARE <statement-name> [ATTRIBUTES <attribute-string>] FROM <statement-string-expression>",
+      "summary": "Prepares a dynamic statement for EXECUTE or for a cursor declared against the statement name.",
+      "source_refs": ["ibm-sql-reference-pdf"]
+    },
+    "refresh-table": {
+      "name": "REFRESH TABLE",
+      "syntax": "REFRESH TABLE <materialized-query-table-name>",
+      "summary": "Refreshes an eligible materialized query table.",
+      "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced", "ibm-sql-reference-pdf"]
+    },
+    "rename": {
+      "name": "RENAME",
+      "syntax": "RENAME {TABLE <source-table> TO <new-table-identifier> | INDEX <source-index> TO <new-index-identifier>}",
+      "summary": "Renames an eligible table or index; a table with a trigger defined on it cannot itself be renamed.",
+      "source_refs": ["ibm-sql-reference-pdf"]
+    },
+    "revoke": {
+      "name": "REVOKE",
+      "syntax": "REVOKE <privilege-or-authority-list> [ON <object>] FROM <grantee-list> [<revoke-options>]",
+      "summary": "Uses the applicable object-specific REVOKE form.",
+      "source_refs": ["ibm-sql-reference-pdf"]
+    },
+    "savepoint": {
+      "name": "SAVEPOINT",
+      "syntax": "SAVEPOINT <savepoint-name> [UNIQUE] ON ROLLBACK RETAIN CURSORS [ON ROLLBACK RETAIN LOCKS]",
+      "summary": "Sets a savepoint; direct use is excluded from BEFORE triggers and procedures containing it cannot be called by a trigger.",
+      "source_refs": ["ibm-create-trigger-advanced", "ibm-sql-procedure-statement", "ibm-sql-reference-pdf"]
+    },
+    "select-into": {
+      "name": "SELECT INTO",
+      "syntax": "SELECT <select-list> INTO <target> [, ...] <table-expression>",
+      "summary": "Retrieves a single result row into SQL or transition-compatible targets.",
+      "source_refs": ["ibm-sql-reference-pdf"]
+    },
+    "set-assignment": {
+      "name": "SET assignment-statement",
+      "syntax": "SET <assignment-target> = <expression> [, ...]",
+      "summary": "Assigns transition variables, SQL variables, array elements, or supported global variables according to context; a basic trigger target must be a transition variable.",
+      "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced", "ibm-sql-reference-pdf"]
+    },
+    "set-special-register": {
+      "name": "SET special-register",
+      "syntax": "SET <settable-special-register> = <replacement-value>",
+      "summary": "Allowed in an advanced trigger except SET CURRENT PACKAGE PATH and SET CURRENT PACKAGESET.",
+      "source_refs": ["ibm-sql-procedure-statement", "ibm-sql-reference-pdf"]
+    },
+    "signal": {
+      "name": "SIGNAL",
+      "syntax": "SIGNAL {SQLSTATE [VALUE] <sqlstate> | <condition-name>} [SET MESSAGE_TEXT = <diagnostic-string-expression>]",
+      "summary": "Raises an application condition; the legacy parenthesized diagnostic expression is trigger-only compatibility syntax.",
+      "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced", "ibm-sqlpl-signal"]
+    },
+    "truncate": {
+      "name": "TRUNCATE",
+      "syntax": "TRUNCATE TABLE <table-name> [DROP STORAGE | REUSE STORAGE] [IGNORE DELETE TRIGGERS | RESTRICT WHEN DELETE TRIGGERS] IMMEDIATE",
+      "summary": "Deletes all rows using the statement's storage and delete-trigger choices.",
+      "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced", "ibm-sql-reference-pdf"]
+    },
+    "update-searched": {
+      "name": "UPDATE (searched)",
+      "syntax": "[WITH <common-table-expression>] UPDATE <target> SET <assignment-clause> [, ...] [WHERE <search-condition>]",
+      "summary": "Updates qualifying target rows; positioned UPDATE is a different syntax path.",
+      "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced", "ibm-sql-reference-pdf"]
+    },
+    "values": {
+      "name": "VALUES",
+      "syntax": "VALUES <row-value-expression> [, ...]",
+      "summary": "A stand-alone VALUES statement supported only by basic triggers.",
+      "source_refs": ["ibm-create-trigger-basic", "ibm-sql-reference-pdf"]
+    },
+    "values-into": {
+      "name": "VALUES INTO",
+      "syntax": "VALUES <expression> [, ...] INTO <target> [, ...]",
+      "summary": "Assigns one row of expression results to targets.",
+      "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced", "ibm-sql-reference-pdf"]
+    }
+  },
+  "basic": {
+    "kind_marker": "MODE DB2SQL",
+    "body_syntax": "<triggered-SQL-statement> | BEGIN ATOMIC <triggered-SQL-statement>; [...] END",
+    "notes": [
+      "The BEGIN ATOMIC list can contain only the same closed triggered-SQL-statement set.",
+      "The statements execute in source order.",
+      "Basic SET assignment targets must be transition variables.",
+      "Stand-alone fullselect and VALUES are basic-only body forms."
+    ],
+    "statements": [
+      {"id": "call", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"]},
+      {"id": "delete-searched", "activation_times": ["AFTER", "INSTEAD OF"]},
+      {"id": "fullselect", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"]},
+      {"id": "insert", "activation_times": ["AFTER", "INSTEAD OF"]},
+      {"id": "merge", "activation_times": ["AFTER", "INSTEAD OF"]},
+      {"id": "refresh-table", "activation_times": ["AFTER", "INSTEAD OF"]},
+      {"id": "set-assignment", "activation_times": ["BEFORE"], "restrictions": ["Target must be a transition variable."]},
+      {"id": "signal", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"]},
+      {"id": "truncate", "activation_times": ["AFTER", "INSTEAD OF"]},
+      {"id": "update-searched", "activation_times": ["AFTER", "INSTEAD OF"]},
+      {"id": "values", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"]},
+      {"id": "values-into", "activation_times": ["BEFORE"]}
+    ]
+  },
+  "advanced": {
+    "kind_marker": "MODE DB2SQL must be absent",
+    "minimum_applcompat": "V12R1M500",
+    "body_syntax": "<SQL-control-statement> | <triggered-SQL-statement>",
+    "notes": [
+      "The body is one outer statement. Use a compound SQL-control-statement for multiple statements.",
+      "Nested statements in a control statement are limited to the trigger-supported rows of SQL-procedure-statement.",
+      "Stand-alone fullselect and VALUES are not advanced triggered-SQL-statements; use SELECT INTO and VALUES INTO.",
+      "Activation-time restrictions apply recursively to statements nested in control statements."
+    ],
+    "repository_ddl_subset": [
+      {
+        "id": "create-stogroup",
+        "statement": "CREATE STOGROUP",
+        "status": "excluded matrix row",
+        "activation_times": [],
+        "source_refs": ["ibm-sql-procedure-statement"]
+      },
+      {
+        "id": "create-database",
+        "statement": "CREATE DATABASE",
+        "status": "excluded matrix row",
+        "activation_times": [],
+        "source_refs": ["ibm-sql-procedure-statement"]
+      },
+      {
+        "id": "create-tablespace",
+        "statement": "CREATE TABLESPACE",
+        "status": "excluded matrix row",
+        "activation_times": [],
+        "source_refs": ["ibm-sql-procedure-statement"]
+      },
+      {
+        "id": "create-table",
+        "statement": "CREATE TABLE",
+        "status": "supported nested row",
+        "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"],
+        "restrictions": ["The created table must not include LOB or XML columns."],
+        "source_refs": ["ibm-sql-procedure-statement", "ibm-create-table"]
+      },
+      {
+        "id": "create-index",
+        "statement": "CREATE INDEX",
+        "status": "supported nested row",
+        "activation_times": ["AFTER", "INSTEAD OF"],
+        "source_refs": ["ibm-sql-procedure-statement", "ibm-create-index"]
+      },
+      {
+        "id": "create-trigger",
+        "statement": "CREATE TRIGGER",
+        "status": "not listed in SQL-procedure-statement grammar",
+        "activation_times": [],
+        "source_refs": ["ibm-sql-procedure-statement", "ibm-create-trigger-advanced"]
+      }
+    ],
+    "direct_statements": [
+      {"id": "call", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"]},
+      {"id": "delete-searched", "activation_times": ["AFTER", "INSTEAD OF"]},
+      {"id": "get-diagnostics", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"]},
+      {"id": "insert", "activation_times": ["AFTER", "INSTEAD OF"]},
+      {"id": "merge", "activation_times": ["AFTER", "INSTEAD OF"]},
+      {"id": "refresh-table", "activation_times": ["AFTER", "INSTEAD OF"]},
+      {"id": "set-assignment", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"]},
+      {"id": "signal", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"]},
+      {"id": "truncate", "activation_times": ["AFTER", "INSTEAD OF"]},
+      {"id": "update-searched", "activation_times": ["AFTER", "INSTEAD OF"]},
+      {"id": "values-into", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"]}
+    ],
+    "sql_procedure_statement_matrix": {
+      "allowed": [
+        {"id": "sql-control-statement", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"], "restrictions": ["Nested content inherits every statement-specific and BEFORE-trigger restriction."]},
+        {"id": "allocate-cursor", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"]},
+        {"id": "alter-function", "activation_times": ["AFTER", "INSTEAD OF"]},
+        {"id": "associate-locators", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"]},
+        {"id": "call", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"]},
+        {"id": "close", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"]},
+        {"id": "comment", "activation_times": ["AFTER", "INSTEAD OF"]},
+        {"id": "create-index", "activation_times": ["AFTER", "INSTEAD OF"], "restrictions": ["Must be nested in an SQL-control-statement; it is not an advanced direct triggered-SQL-statement."]},
+        {"id": "create-table", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"], "restrictions": ["Must not include LOB or XML columns.", "Must be nested in an SQL-control-statement; it is not an advanced direct triggered-SQL-statement."]},
+        {"id": "create-view", "activation_times": ["AFTER", "INSTEAD OF"], "restrictions": ["Must be nested in an SQL-control-statement; it is not an advanced direct triggered-SQL-statement."]},
+        {"id": "declare-cursor", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"]},
+        {"id": "delete-searched", "activation_times": ["AFTER", "INSTEAD OF"]},
+        {"id": "drop", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"], "restrictions": ["Only DROP TABLE, DROP VIEW, and DROP INDEX are allowed."]},
+        {"id": "execute", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"]},
+        {"id": "execute-immediate", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"]},
+        {"id": "explain", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"]},
+        {"id": "fetch", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"], "restrictions": ["No fetch orientation, multiple-row fetch, WITH CONTINUE, or CURRENT CONTINUE."]},
+        {"id": "get-diagnostics", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"]},
+        {"id": "grant", "activation_times": ["AFTER", "INSTEAD OF"], "restrictions": ["IBM's table also links its CREATE TABLE LOB/XML note to GRANT; that note text is not treated as a GRANT semantic rule."]},
+        {"id": "insert", "activation_times": ["AFTER", "INSTEAD OF"]},
+        {"id": "label", "activation_times": ["AFTER", "INSTEAD OF"]},
+        {"id": "lock-table", "activation_times": ["AFTER", "INSTEAD OF"]},
+        {"id": "merge", "activation_times": ["AFTER", "INSTEAD OF"]},
+        {"id": "open", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"]},
+        {"id": "prepare", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"]},
+        {"id": "refresh-table", "activation_times": ["AFTER", "INSTEAD OF"]},
+        {"id": "rename", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"]},
+        {"id": "revoke", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"]},
+        {"id": "savepoint", "activation_times": ["AFTER", "INSTEAD OF"]},
+        {"id": "select-into", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"]},
+        {"id": "set-assignment", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"]},
+        {"id": "set-special-register", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"], "restrictions": ["SET CURRENT PACKAGE PATH and SET CURRENT PACKAGESET are excluded."]},
+        {"id": "truncate", "activation_times": ["AFTER", "INSTEAD OF"]},
+        {"id": "update-searched", "activation_times": ["AFTER", "INSTEAD OF"]},
+        {"id": "values-into", "activation_times": ["BEFORE", "AFTER", "INSTEAD OF"]}
+      ],
+    "excluded": [
+      "ALTER DATABASE",
+      "ALTER INDEX",
+      "ALTER MASK",
+        "ALTER PERMISSION",
+        "ALTER PROCEDURE (external, SQL - external, or SQL - native)",
+        "ALTER SEQUENCE",
+        "ALTER STOGROUP",
+        "ALTER TABLE",
+        "ALTER TABLESPACE",
+        "ALTER TRIGGER",
+        "ALTER TRUSTED CONTEXT",
+        "ALTER VIEW",
+        "COMMIT",
+        "CONNECT",
+        "CREATE ALIAS",
+        "CREATE DATABASE",
+        "CREATE FUNCTION",
+        "CREATE GLOBAL TEMPORARY TABLE",
+        "CREATE PROCEDURE (external)",
+        "CREATE ROLE",
+        "CREATE SEQUENCE",
+        "CREATE STOGROUP",
+        "CREATE TABLESPACE",
+        "CREATE TRUSTED CONTEXT",
+        "CREATE TYPE (array)",
+        "CREATE TYPE (distinct)",
+      "CREATE VARIABLE",
+      "DECLARE GLOBAL TEMPORARY TABLE",
+      "EXCHANGE",
+        "RELEASE connection",
+        "RELEASE SAVEPOINT",
+        "ROLLBACK (with TO SAVEPOINT clause)",
+        "ROLLBACK (without TO SAVEPOINT clause)",
+        "SET CONNECTION"
+      ]
+    },
+    "control_statements": [
+      {
+        "id": "assignment",
+        "trigger_supported": true,
+        "syntax": "[<label>:] SET <assignment-clause>",
+        "source_refs": ["ibm-sqlpl", "ibm-sql-reference-pdf"]
+      },
+      {
+        "id": "call",
+        "trigger_supported": true,
+        "syntax": "[<label>:] CALL <procedure-name> [(<argument> [, ...])]",
+        "source_refs": ["ibm-sqlpl", "ibm-sql-reference-pdf"]
+      },
+      {
+        "id": "case",
+        "trigger_supported": true,
+        "syntax": "[<label>:] CASE [<expression>] WHEN <expression-or-condition> THEN <SQL-procedure-statement>; [...] [ELSE <SQL-procedure-statement>;] END CASE",
+        "source_refs": ["ibm-sqlpl-case"]
+      },
+      {
+        "id": "compound",
+        "trigger_supported": true,
+        "syntax": "[<label>:] BEGIN [ATOMIC|NOT ATOMIC] <declarations>; <SQL-procedure-statement>; [...] END [<label>]",
+        "restrictions": ["The outermost advanced-trigger compound statement is ATOMIC by default and cannot specify NOT ATOMIC."],
+        "source_refs": ["ibm-sqlpl-compound"]
+      },
+      {
+        "id": "for",
+        "trigger_supported": true,
+        "syntax": "[<label>:] FOR [<loop-name> AS] [<cursor-name> CURSOR [WITH|WITHOUT HOLD] FOR] <select-statement> DO <SQL-procedure-statement>; [...] END FOR [<label>]",
+        "source_refs": ["ibm-sqlpl-for"]
+      },
+      {
+        "id": "get-diagnostics",
+        "trigger_supported": true,
+        "syntax": "GET [CURRENT|STACKED] DIAGNOSTICS <target> = <diagnostic-item> [, ...]",
+        "source_refs": ["ibm-get-diagnostics"]
+      },
+      {
+        "id": "goto",
+        "trigger_supported": true,
+        "syntax": "[<label>:] GOTO <target-label>",
+        "source_refs": ["ibm-sqlpl", "ibm-sql-reference-pdf"]
+      },
+      {
+        "id": "if",
+        "trigger_supported": true,
+        "syntax": "[<label>:] IF <condition> THEN <statement>; [...] [ELSEIF <condition> THEN <statement>; [...]] [ELSE <statement>; [...]] END IF",
+        "source_refs": ["ibm-sqlpl-if"]
+      },
+      {
+        "id": "iterate",
+        "trigger_supported": true,
+        "syntax": "[<label>:] ITERATE <target-loop-label>",
+        "source_refs": ["ibm-sqlpl", "ibm-sql-reference-pdf"]
+      },
+      {
+        "id": "leave",
+        "trigger_supported": true,
+        "syntax": "[<label>:] LEAVE <target-compound-or-loop-label>",
+        "source_refs": ["ibm-sqlpl", "ibm-sql-reference-pdf"]
+      },
+      {
+        "id": "loop",
+        "trigger_supported": true,
+        "syntax": "[<label>:] LOOP <SQL-procedure-statement>; [...] END LOOP [<label>]",
+        "source_refs": ["ibm-sqlpl-loop"]
+      },
+      {
+        "id": "repeat",
+        "trigger_supported": true,
+        "syntax": "[<label>:] REPEAT <SQL-procedure-statement>; [...] UNTIL <condition> END REPEAT [<label>]",
+        "source_refs": ["ibm-sqlpl-repeat"]
+      },
+      {
+        "id": "resignal",
+        "trigger_supported": true,
+        "syntax": "[<label>:] RESIGNAL [{SQLSTATE [VALUE] <sqlstate> | <condition-name>}] [SET MESSAGE_TEXT = <expression>]",
+        "source_refs": ["ibm-sqlpl-resignal"]
+      },
+      {
+        "id": "return",
+        "trigger_supported": false,
+        "syntax": "[<label>:] RETURN [<expression>|NULL|<fullselect>]",
+        "restrictions": ["The RETURN statement must not be specified in a trigger."],
+        "source_refs": ["ibm-sqlpl-return"]
+      },
+      {
+        "id": "signal",
+        "trigger_supported": true,
+        "syntax": "[<label>:] SIGNAL {SQLSTATE [VALUE] <sqlstate> | <condition-name>} [SET MESSAGE_TEXT = <expression>]",
+        "source_refs": ["ibm-sqlpl-signal"]
+      },
+      {
+        "id": "while",
+        "trigger_supported": true,
+        "syntax": "[<label>:] WHILE <condition> DO <SQL-procedure-statement>; [...] END WHILE [<label>]",
+        "source_refs": ["ibm-sqlpl-while"]
+      }
+    ]
+  }
+}
