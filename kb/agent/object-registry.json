@@ -1,0 +1,110 @@
+{
+  "schema_version": "1.0.0",
+  "purpose": "Agent-facing object inventory. It separates normalized IBM-derived objects from planned generation targets so an AI agent can route requests without inferring repository scope from prose.",
+  "baseline": {
+    "product": "IBM Db2 for z/OS",
+    "release": "13",
+    "normalized_kb": "kb/data/db2z13-create-ddl.json",
+    "agent_policy": "Use normalized objects as source-derived truth. Use extension_candidate objects only as recipe scaffolds until their IBM-derived syntax chapter and JSON model are added."
+  },
+  "objects": [
+    {
+      "id": "stogroup",
+      "status": "normalized",
+      "display_name": "STOGROUP",
+      "normalized_object": "stogroup",
+      "spec": "kb/agent/specs/table.json#dependency-note",
+      "default_agent_role": "dependency_fixture",
+      "capabilities_provided": [
+        "storage_group"
+      ]
+    },
+    {
+      "id": "database",
+      "status": "normalized",
+      "display_name": "DATABASE",
+      "normalized_object": "database",
+      "spec": "kb/agent/specs/table.json#dependency-note",
+      "default_agent_role": "dependency_fixture",
+      "capabilities_provided": [
+        "database_container"
+      ]
+    },
+    {
+      "id": "tablespace",
+      "status": "normalized",
+      "display_name": "TABLESPACE",
+      "normalized_object": "tablespace",
+      "spec": "kb/agent/specs/table.json#dependency-note",
+      "default_agent_role": "dependency_fixture",
+      "capabilities_provided": [
+        "explicit_table_space"
+      ]
+    },
+    {
+      "id": "table",
+      "status": "normalized",
+      "display_name": "TABLE",
+      "normalized_object": "table",
+      "spec": "kb/agent/specs/table.json",
+      "default_agent_role": "primary_or_fixture",
+      "capabilities_provided": [
+        "selectable_source",
+        "updatable_source",
+        "trigger_subject_before_after",
+        "index_target"
+      ]
+    },
+    {
+      "id": "index",
+      "status": "normalized",
+      "display_name": "INDEX",
+      "normalized_object": "index",
+      "spec": "kb/agent/specs/table.json#dependency-note",
+      "default_agent_role": "dependent_object",
+      "capabilities_provided": [
+        "access_path",
+        "constraint_enforcement"
+      ]
+    },
+    {
+      "id": "trigger",
+      "status": "normalized",
+      "display_name": "TRIGGER",
+      "normalized_object": "trigger",
+      "spec": "kb/agent/specs/trigger.json",
+      "default_agent_role": "primary",
+      "capabilities_required": [
+        "trigger_subject_before_after",
+        "trigger_subject_instead_of"
+      ]
+    },
+    {
+      "id": "procedure",
+      "status": "normalized",
+      "display_name": "PROCEDURE",
+      "normalized_object": "procedure",
+      "spec": "kb/agent/specs/table.json#dependency-note",
+      "default_agent_role": "primary_or_trigger_dependency",
+      "capabilities_provided": [
+        "callable_routine"
+      ]
+    },
+    {
+      "id": "view",
+      "status": "extension_candidate",
+      "display_name": "VIEW",
+      "normalized_object": null,
+      "spec": "kb/agent/specs/view.json",
+      "default_agent_role": "primary_or_fixture",
+      "capabilities_required": [
+        "selectable_source"
+      ],
+      "capabilities_provided": [
+        "selectable_source",
+        "trigger_subject_instead_of"
+      ],
+      "normalization_gap": "CREATE VIEW is intentionally agent-scaffolded here because the user wants future view generation. Add kb/objects/view.md and a normalized object entry before treating view syntax as IBM-derived KB truth."
+    }
+  ]
+}

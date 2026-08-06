@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0.0",
+  "id": "eligible_simple_view",
+  "object": "view",
+  "status": "extension_candidate_agent_scaffold",
+  "purpose": "Simple updatable view fixture suitable as an INSTEAD OF trigger subject after CREATE VIEW normalization is completed.",
+  "provides_capabilities": [
+    "selectable_source",
+    "eligible_view",
+    "trigger_subject_instead_of"
+  ],
+  "requires_capabilities": [
+    "updatable_source"
+  ],
+  "parameters": [
+    "VIEW_SCHEMA",
+    "VIEW_NAME",
+    "BASE_SCHEMA",
+    "BASE_TABLE"
+  ],
+  "setup_sql": [
+    "CREATE VIEW {{VIEW_SCHEMA}}.{{VIEW_NAME}} AS SELECT ID, STATUS, AMOUNT FROM {{BASE_SCHEMA}}.{{BASE_TABLE}} WHERE STATUS <> 'X'",
+    "COMMIT"
+  ],
+  "cleanup_sql": [
+    "DROP VIEW {{VIEW_SCHEMA}}.{{VIEW_NAME}}",
+    "COMMIT"
+  ]
+}

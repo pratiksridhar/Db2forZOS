@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "template": "kb/templates/simple-view.template.sql",
+  "object": "view",
+  "kind": "simple_projection",
+  "outer_terminator": "!",
+  "required_tokens": [
+    "VIEW_SCHEMA",
+    "VIEW_NAME",
+    "BASE_SCHEMA",
+    "BASE_TABLE"
+  ],
+  "requires_capabilities": [
+    "selectable_source"
+  ],
+  "covers": [
+    "view_shape:simple_projection",
+    "updatability:updatable"
+  ],
+  "must_include": [
+    "CREATE VIEW",
+    "SELECT ID, STATUS, AMOUNT"
+  ]
+}

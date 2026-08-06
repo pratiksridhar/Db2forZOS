@@ -1,0 +1,64 @@
+{
+  "schema_version": "1.0.0",
+  "object": "table",
+  "status": "agent_ready_from_normalized_kb",
+  "normalized_kb_object": "table",
+  "human_chapter": "kb/objects/table.md",
+  "agent_summary": "Use tables as both primary test objects and fixtures for views, indexes, procedures, and triggers. Prefer fixture capabilities over hard-coded table names.",
+  "dependency-note": "This file also gives agents a routing note for stogroup, database, tablespace, index, and procedure until those objects receive individual agent specs.",
+  "statements": [
+    "CREATE TABLE"
+  ],
+  "dependencies": {
+    "requires": [
+      "database_container or explicit_table_space"
+    ],
+    "optional": [
+      "storage_group",
+      "index",
+      "lob_support_objects",
+      "xml_support_objects"
+    ],
+    "create_after": [
+      "stogroup",
+      "database",
+      "tablespace"
+    ],
+    "drop_before": [
+      "tablespace",
+      "database",
+      "stogroup"
+    ]
+  },
+  "capabilities_provided": [
+    "selectable_source",
+    "updatable_source",
+    "trigger_subject_before_after",
+    "index_target"
+  ],
+  "generation_families": [
+    {
+      "id": "explicit_object_stack",
+      "template": "kb/templates/object-stack.template.sql"
+    },
+    {
+      "id": "implicit_pbg_table",
+      "template": "kb/templates/pbg-table.template.sql"
+    },
+    {
+      "id": "explicit_pbr_table",
+      "template": "kb/templates/pbr-table.template.sql"
+    },
+    {
+      "id": "fixture_simple_base_table",
+      "fixture": "kb/agent/fixtures/base-table-simple.json"
+    }
+  ],
+  "must_validate_rules": [
+    "table.placement-exclusive",
+    "table.explicit-space-physical-conflict",
+    "table.partitioning-exclusive",
+    "table.implicit-type-from-partition-clause",
+    "table.constraint-index-enforcement"
+  ]
+}

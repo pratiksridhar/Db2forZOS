@@ -1,0 +1,84 @@
+{
+  "schema_version": "1.0.0",
+  "object": "trigger",
+  "status": "agent_ready_from_normalized_kb",
+  "normalized_kb_object": "trigger",
+  "human_chapter": "kb/objects/trigger.md",
+  "body_inventory": "kb/data/db2z13-trigger-body-statements.json",
+  "agent_summary": "Generate triggers by first choosing kind, subject capability, activation/event/granularity, transition data, body layer, then package/version/security options. Do not infer body legality from general SQL PL; use the body inventory.",
+  "statements": [
+    "CREATE TRIGGER (basic)",
+    "CREATE TRIGGER (advanced)"
+  ],
+  "dependencies": {
+    "requires_one_subject_capability": [
+      "trigger_subject_before_after",
+      "trigger_subject_instead_of"
+    ],
+    "optional": [
+      "selectable_source",
+      "callable_routine",
+      "audit_table",
+      "diagnostic_table"
+    ],
+    "create_after": [
+      "table",
+      "view",
+      "procedure"
+    ],
+    "drop_before": [
+      "view",
+      "table",
+      "procedure"
+    ]
+  },
+  "generation_flow": [
+    "Select trigger_kind: basic or advanced.",
+    "Select subject: local_base_table for BEFORE/AFTER, eligible_view for INSTEAD OF.",
+    "Select activation_time, event, and granularity; validate kb/agent/rules/trigger.json.",
+    "Select transition declarations from the structured transition matrix.",
+    "Select body family from kb/data/db2z13-trigger-body-statements.json.",
+    "For advanced multi-statement or DDL bodies, wrap nested rows in one SQL-control-statement such as BEGIN ATOMIC ... END.",
+    "Attach catalog assertions for SYSTRIGGERS, SYSPACKAGE, SYSPACKDEP, and SYSENVIRONMENT when advanced APPLCOMPAT matters."
+  ],
+  "generation_families": [
+    {
+      "id": "basic_before_validation",
+      "recipe": "kb/agent/recipes/trigger/basic-before-validation.json"
+    },
+    {
+      "id": "basic_after_audit",
+      "template": "kb/templates/basic-trigger.template.sql"
+    },
+    {
+      "id": "advanced_compound_diagnostics",
+      "template": "kb/templates/advanced-trigger.template.sql"
+    },
+    {
+      "id": "advanced_ddl_body",
+      "recipe": "kb/agent/recipes/trigger/advanced-after-ddl-create-table-index-view.json"
+    }
+  ],
+  "must_validate_rules": [
+    "trigger.basic-advanced-discriminator",
+    "trigger.subject-time-pairing",
+    "trigger.statement-granularity-after-only",
+    "trigger.transition-event-matrix",
+    "trigger.basic-body-closed-set",
+    "trigger.advanced-body-layering",
+    "trigger.advanced-ddl-subset",
+    "trigger.security-rcac",
+    "trigger.dual-applcompat-records"
+  ],
+  "catalog_oracle": {
+    "semantic_tables": [
+      "SYSIBM.SYSTRIGGERS",
+      "SYSIBM.SYSTRIGGERS_STMT",
+      "SYSIBM.SYSPACKAGE",
+      "SYSIBM.SYSPACKDEP",
+      "SYSIBM.SYSENVIRONMENT"
+    ],
+    "compare_text": true,
+    "compare_activation_timestamp_only_when": "activation_order is a test dimension"
+  }
+}

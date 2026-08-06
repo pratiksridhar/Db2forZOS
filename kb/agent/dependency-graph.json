@@ -1,0 +1,131 @@
+{
+  "schema_version": "1.0.0",
+  "purpose": "Create/drop ordering and capability routing for agent-composed DDL fixtures.",
+  "capabilities": {
+    "storage_group": {
+      "provided_by": [
+        "stogroup"
+      ],
+      "used_by": [
+        "database",
+        "tablespace",
+        "index"
+      ]
+    },
+    "database_container": {
+      "provided_by": [
+        "database"
+      ],
+      "used_by": [
+        "tablespace",
+        "table"
+      ]
+    },
+    "explicit_table_space": {
+      "provided_by": [
+        "tablespace"
+      ],
+      "used_by": [
+        "table"
+      ]
+    },
+    "selectable_source": {
+      "provided_by": [
+        "table",
+        "view"
+      ],
+      "used_by": [
+        "view",
+        "trigger_body",
+        "procedure_body"
+      ]
+    },
+    "updatable_source": {
+      "provided_by": [
+        "table",
+        "simple_updatable_view"
+      ],
+      "used_by": [
+        "view_check_option",
+        "instead_of_trigger_subject"
+      ]
+    },
+    "index_target": {
+      "provided_by": [
+        "table"
+      ],
+      "used_by": [
+        "index"
+      ]
+    },
+    "trigger_subject_before_after": {
+      "provided_by": [
+        "local_base_table"
+      ],
+      "used_by": [
+        "trigger"
+      ]
+    },
+    "trigger_subject_instead_of": {
+      "provided_by": [
+        "eligible_view"
+      ],
+      "used_by": [
+        "trigger"
+      ]
+    },
+    "callable_routine": {
+      "provided_by": [
+        "procedure"
+      ],
+      "used_by": [
+        "trigger_body",
+        "procedure_body"
+      ]
+    }
+  },
+  "default_create_order": [
+    "stogroup",
+    "database",
+    "tablespace",
+    "table",
+    "index",
+    "view",
+    "procedure",
+    "trigger"
+  ],
+  "default_drop_order": [
+    "trigger",
+    "procedure",
+    "view",
+    "index",
+    "table",
+    "tablespace",
+    "database",
+    "stogroup"
+  ],
+  "implicit_creation_paths": [
+    {
+      "id": "implicit_base_tablespace_from_create_table",
+      "root_statement": "CREATE TABLE",
+      "creates_capabilities": [
+        "explicit_table_space",
+        "selectable_source",
+        "updatable_source"
+      ],
+      "normalized_rules": [
+        "table.implicit-type-from-partition-clause",
+        "table.explicit-space-physical-conflict"
+      ]
+    },
+    {
+      "id": "eligible_view_for_instead_of_trigger",
+      "root_statement": "CREATE VIEW",
+      "creates_capabilities": [
+        "selectable_source",
+        "trigger_subject_instead_of"
+      ],
+      "agent_spec": "kb/agent/specs/view.json"
+    }
+  ]
+}

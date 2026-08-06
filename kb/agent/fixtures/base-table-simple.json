@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0.0",
+  "id": "base_table_simple",
+  "object": "table",
+  "purpose": "Small local base table fixture for view, index, procedure, and trigger generation.",
+  "provides_capabilities": [
+    "selectable_source",
+    "updatable_source",
+    "trigger_subject_before_after",
+    "index_target",
+    "local_base_table"
+  ],
+  "requires_capabilities": [
+    "database_container"
+  ],
+  "parameters": [
+    "SCHEMA",
+    "TABLE",
+    "DATABASE"
+  ],
+  "setup_sql": [
+    "CREATE TABLE {{SCHEMA}}.{{TABLE}} (ID INTEGER NOT NULL, STATUS CHAR(1) NOT NULL WITH DEFAULT 'A', AMOUNT DECIMAL(9,2), UPDATED_AT TIMESTAMP NOT NULL GENERATED ALWAYS FOR EACH ROW ON UPDATE AS ROW CHANGE TIMESTAMP, PRIMARY KEY (ID)) IN DATABASE {{DATABASE}}",
+    "COMMIT"
+  ],
+  "cleanup_sql": [
+    "DROP TABLE {{SCHEMA}}.{{TABLE}}",
+    "COMMIT"
+  ],
+  "catalog_assertions": [
+    "SYSIBM.SYSTABLES has one base-table row",
+    "SYSIBM.SYSCOLUMNS contains ID, STATUS, AMOUNT, and UPDATED_AT"
+  ]
+}

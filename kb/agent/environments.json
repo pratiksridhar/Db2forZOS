@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0.0",
+  "purpose": "Named environment assumptions an agent can cite in generated test-case JSON instead of inventing subsystem context.",
+  "environments": [
+    {
+      "id": "db2z13_fl509_default",
+      "product_context": {
+        "release": "Db2 13 for z/OS",
+        "function_level": "V13R1M509",
+        "applcompat": "V13R1M509",
+        "current_rules": "DB2",
+        "data_sharing": false,
+        "member": null,
+        "subsystem_parameters": {
+          "PAGESET_PAGENUM": "RELATIVE",
+          "DPSEGSZ": 32,
+          "DEFAULT_INSERT_ALGORITHM": "0"
+        },
+        "active_buffer_pools": [
+          "BP0"
+        ],
+        "storage_context": {
+          "extended_format": true,
+          "extended_addressability": true
+        }
+      },
+      "agent_use": "Default assumption for design-only generated cases. Replace with the real subsystem context before marking a case ready."
+    },
+    {
+      "id": "db2z13_advanced_trigger_minimum",
+      "product_context": {
+        "release": "Db2 13 for z/OS",
+        "function_level": "V13R1M500_or_higher",
+        "applcompat": "V12R1M500_or_higher",
+        "current_rules": "DB2"
+      },
+      "agent_use": "Minimum compatibility gate for advanced trigger generation."
+    }
+  ]
+}

@@ -1,0 +1,145 @@
+{
+  "schema_version": "1.0.0",
+  "object": "trigger",
+  "purpose": "Agent-first coverage dimensions for systematic trigger case generation.",
+  "dimensions": [
+    {
+      "id": "trigger_kind",
+      "values": [
+        "basic",
+        "advanced"
+      ],
+      "pairwise_with": [
+        "body_shape",
+        "body_family"
+      ]
+    },
+    {
+      "id": "activation_time",
+      "values": [
+        "before",
+        "after",
+        "instead_of"
+      ],
+      "pairwise_with": [
+        "event",
+        "granularity",
+        "transition_data"
+      ]
+    },
+    {
+      "id": "event",
+      "values": [
+        "insert",
+        "delete",
+        "update",
+        "update_of"
+      ],
+      "negative_boundaries": [
+        "instead_of + update_of"
+      ]
+    },
+    {
+      "id": "granularity",
+      "values": [
+        "row",
+        "statement"
+      ],
+      "negative_boundaries": [
+        "before + statement",
+        "instead_of + statement"
+      ]
+    },
+    {
+      "id": "subject",
+      "values": [
+        "eligible_base_table",
+        "eligible_view",
+        "ineligible_table",
+        "ineligible_view"
+      ]
+    },
+    {
+      "id": "transition_data",
+      "values": [
+        "old_row",
+        "new_row",
+        "old_table",
+        "new_table",
+        "combined",
+        "illegal_for_context",
+        "duplicate_name"
+      ]
+    },
+    {
+      "id": "body_shape",
+      "values": [
+        "single",
+        "basic_atomic_list",
+        "advanced_compound",
+        "nested_compound",
+        "wrapped"
+      ]
+    },
+    {
+      "id": "body_family",
+      "values": [
+        "validation",
+        "dml",
+        "diagnostics",
+        "cursor",
+        "handler",
+        "dynamic_sql",
+        "ddl",
+        "routine_call"
+      ]
+    },
+    {
+      "id": "advanced_versioning",
+      "values": [
+        "create_v1",
+        "add_version",
+        "replace_version",
+        "replace_object"
+      ]
+    },
+    {
+      "id": "security",
+      "values": [
+        "not_secured",
+        "secured",
+        "rcac_required_negative"
+      ]
+    },
+    {
+      "id": "bind_option",
+      "values": [
+        "omitted",
+        "explicit_default",
+        "explicit_nondefault",
+        "duplicate_negative"
+      ]
+    },
+    {
+      "id": "cascading",
+      "values": [
+        "none",
+        "same_level",
+        "nested",
+        "self_recursive",
+        "sixteen_level_boundary",
+        "seventeen_level_negative"
+      ]
+    },
+    {
+      "id": "round_trip_oracle",
+      "values": [
+        "text",
+        "catalog",
+        "package",
+        "dependency",
+        "activation_order"
+      ]
+    }
+  ]
+}

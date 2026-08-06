@@ -26,7 +26,7 @@ class KnowledgeBaseTests(unittest.TestCase):
     def test_exact_requested_object_set(self) -> None:
         self.assertEqual(
             set(self.data["objects"]),
-            {"stogroup", "database", "tablespace", "table", "index", "trigger"},
+            {"stogroup", "database", "tablespace", "table", "index", "trigger", "procedure"},
         )
 
     def test_normalized_ids_are_unique(self) -> None:
@@ -82,6 +82,8 @@ class KnowledgeBaseTests(unittest.TestCase):
             "basic-trigger",
             "advanced-trigger",
             "advanced-trigger-ddl-body",
+            "native-sql-procedure",
+            "external-procedure",
         ):
             self.assertTrue((ROOT / "kb" / "templates" / f"{name}.template.sql").is_file())
         self.assertTrue(TRIGGER_BODY_PATH.is_file())
@@ -108,6 +110,32 @@ class KnowledgeBaseTests(unittest.TestCase):
             self.assertIn(statement, ddl)
         self.assertGreaterEqual(sum(text.count("END!") for text in (basic, advanced, ddl)), 3)
 
+    def test_procedure_templates_select_current_definition_kinds(self) -> None:
+        native = (ROOT / "kb" / "templates" / "native-sql-procedure.template.sql").read_text(
+            encoding="utf-8"
+        )
+        external = (ROOT / "kb" / "templates" / "external-procedure.template.sql").read_text(
+            encoding="utf-8"
+        )
+        native_sql = "\n".join(line for line in native.splitlines() if not line.startswith("--"))
+        self.assertIn("LANGUAGE SQL", native_sql)
+        self.assertIn("BEGIN", native_sql)
+        self.assertIn("END!", native_sql)
+        self.assertNotIn("FENCED", native_sql)
+        self.assertNotIn("EXTERNAL", native_sql)
+        self.assertIn("LANGUAGE COBOL", external)
+        self.assertIn("EXTERNAL NAME", external)
+        self.assertIn("WLM ENVIRONMENT", external)
+        self.assertNotIn("LANGUAGE SQL", external)
+
+        catalog = (ROOT / "kb" / "test-design" / "catalog-verification.sql").read_text(
+            encoding="utf-8"
+        )
+        for table in ("SYSROUTINES", "SYSPARMS", "SYSPACKAGE", "SYSPACKDEP", "SYSROUTINEAUTH"):
+            self.assertIn(f"SYSIBM.{table}", catalog)
+        self.assertIn("TYPE   = 'N'", catalog)
+        self.assertIn("DTYPE   = 'N'", catalog)
+
     def test_case_sample_has_schema_required_fields_and_known_sources(self) -> None:
         required = set(self.schema["required"])
         self.assertFalse(required - set(self.sample), f"sample missing: {required - set(self.sample)}")
@@ -119,10 +147,12 @@ class KnowledgeBaseTests(unittest.TestCase):
         for source_id in self.sample["source_refs"]:
             self.assertIn(source_id, self.data["sources"])
 
-    def test_test_case_schema_accepts_trigger_identifiers(self) -> None:
+    def test_test_case_schema_accepts_trigger_and_procedure_identifiers(self) -> None:
         pattern = re.compile(self.schema["properties"]["id"]["pattern"])
         self.assertRegex("DB2Z13-TRIGGER-BODY-DDL-001", pattern)
         self.assertIn("trigger", self.schema["properties"]["object"]["enum"])
+        self.assertRegex("DB2Z13-PROCEDURE-VERSION-001", pattern)
+        self.assertIn("procedure", self.schema["properties"]["object"]["enum"])
 
     def test_source_manifest_mentions_every_normalized_source(self) -> None:
         manifest = (ROOT / "kb" / "sources.md").read_text(encoding="utf-8")
@@ -320,6 +350,165 @@ class KnowledgeBaseTests(unittest.TestCase):
         for statement_id in required_ids:
             self.assertTrue(self.trigger_body["statement_syntax"][statement_id]["syntax"])
 
+    def test_create_table_syntax_matches_critical_ibm_diagram_paths(self) -> None:
+        table = self.data["objects"]["table"]
+        clauses = {row["id"]: row for row in table["clauses"]}
+        rules = {row["id"]: row for row in table["rules"]}
+
+        self.assertEqual(clauses["default"]["syntax"], "[ WITH ] DEFAULT [ <default-value> ]")
+        self.assertEqual(
+            clauses["identity"]["syntax"],
+            "GENERATED [ ALWAYS | BY DEFAULT ] AS IDENTITY [(identity-options)]",
+        )
+        self.assertEqual(
+            clauses["row-change-timestamp"]["syntax"],
+            "GENERATED [ ALWAYS | BY DEFAULT ] FOR EACH ROW ON UPDATE AS ROW CHANGE TIMESTAMP",
+        )
+        self.assertEqual(
+            clauses["rowid"]["syntax"],
+            "ROWID NOT NULL GENERATED [ ALWAYS | BY DEFAULT ]",
+        )
+        for clause_id in (
+            "transaction-start-id",
+            "row-begin",
+            "row-end",
+            "generated-provenance",
+        ):
+            self.assertIn("GENERATED [ ALWAYS ]", clauses[clause_id]["syntax"])
+
+        required_clause_ids = {
+            "copy-options",
+            "xml-type-modifier",
+            "column-constraint",
+            "in-accelerator",
+            "organization-by-hash",
+            "partition-hash-space",
+            "editproc",
+            "validproc",
+            "obid",
+            "logged",
+            "compress",
+            "dssize",
+            "bufferpool",
+            "member-cluster",
+            "trackmod",
+            "pagenum",
+        }
+        self.assertFalse(required_clause_ids - set(clauses))
+
+        required_rule_ids = {
+            "top-level-clause-order-cardinality",
+            "column-clause-cardinality",
+            "copy-options-context",
+            "copy-options-order-cardinality",
+            "mqt-option-cardinality",
+            "generated-keyword-default",
+            "identity-option-order-separators",
+            "xml-modifier-rules",
+            "placement-exclusive",
+            "partitioning-exclusive",
+            "dssize-every-conflict",
+            "pagenum-relative-requires-partitioning",
+            "accelerator-restrictions",
+            "hash-cross-clause-restrictions",
+            "compatibility-synonyms",
+        }
+        self.assertFalse(required_rule_ids - set(rules))
+        self.assertIn("must not be specified with LIKE", rules["copy-options-context"]["text"])
+        self.assertEqual(
+            rules["hash-current-unsupported"]["clauses"],
+            ["organization-by-hash", "partition-hash-space"],
+        )
+
+        compatibility_text = rules["compatibility-synonyms"]["text"]
+        for spelling in (
+            "NOCACHE",
+            "NOCYCLE",
+            "NOMINVALUE",
+            "NOMAXVALUE",
+            "NOORDER",
+            "DEFINITION ONLY",
+            "CREATE SUMMARY TABLE",
+            "TIMEZONE",
+        ):
+            self.assertIn(spelling, compatibility_text)
+
+        chapter = (ROOT / table["chapter"]).read_text(encoding="utf-8")
+        self.assertNotIn("GENERATED { ALWAYS | BY DEFAULT } ROWID", chapter)
+        self.assertNotIn("[ WITH DEFAULT | DEFAULT <default-value> ]", chapter)
+        self.assertIn("<column-name> ROWID NOT NULL GENERATED [ ALWAYS | BY DEFAULT ]", chapter)
+        self.assertIn("must not be specified with `LIKE`", chapter)
+
+
+    def test_agent_layer_json_and_references_are_valid(self) -> None:
+        agent_root = ROOT / "kb" / "agent"
+        self.assertTrue((agent_root / "README.md").is_file())
+        self.assertTrue((agent_root / "TASKS.md").is_file())
+
+        agent_json = {}
+        for path in [*agent_root.rglob("*.json"), *(ROOT / "kb" / "templates").glob("*.manifest.json")]:
+            relative = path.relative_to(ROOT).as_posix()
+            with self.subTest(path=relative):
+                agent_json[relative] = json.loads(path.read_text(encoding="utf-8"))
+                self.assertEqual(agent_json[relative]["schema_version"], "1.0.0")
+
+        registry = agent_json["kb/agent/object-registry.json"]
+        registry_objects = {row["id"]: row for row in registry["objects"]}
+        self.assertIn("trigger", registry_objects)
+        self.assertIn("view", registry_objects)
+        self.assertEqual(registry_objects["trigger"]["status"], "normalized")
+        self.assertEqual(registry_objects["view"]["status"], "extension_candidate")
+        for object_id, row in registry_objects.items():
+            if row["status"] == "normalized":
+                self.assertIn(row["normalized_object"], self.data["objects"], object_id)
+            spec = row.get("spec", "").split("#", 1)[0]
+            if spec:
+                self.assertTrue((ROOT / spec).is_file(), f"missing spec for {object_id}: {spec}")
+
+        for recipe_path in (agent_root / "recipes").glob("*/*.json"):
+            recipe = json.loads(recipe_path.read_text(encoding="utf-8"))
+            self.assertIn(recipe["object"], registry_objects)
+            self.assertTrue((ROOT / recipe["template"]).is_file(), recipe_path)
+            for fixture in recipe.get("fixtures", []):
+                self.assertTrue((ROOT / fixture).is_file(), recipe_path)
+            self.assertTrue(recipe.get("covers"), recipe_path)
+            self.assertIn(recipe["expected"]["failure_phase"], self.schema["$defs"]["expected_failure_phase"]["enum"] if "$defs" in self.schema and "expected_failure_phase" in self.schema["$defs"] else {"none", "prepare_or_execute", "data_set_allocation", "data_change", "rebuild_or_utility", "ofs_generation", "recreate"})
+
+    def test_agent_template_manifests_match_templates(self) -> None:
+        for manifest_path in (ROOT / "kb" / "templates").glob("*.manifest.json"):
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            template_path = ROOT / manifest["template"]
+            self.assertTrue(template_path.is_file(), manifest_path)
+            template = template_path.read_text(encoding="utf-8")
+            for token in manifest.get("required_tokens", []):
+                self.assertIn("{{" + token + "}}", template, manifest_path)
+            for required in manifest.get("must_include", []):
+                self.assertIn(required, template, manifest_path)
+            for forbidden in manifest.get("must_exclude", []):
+                self.assertNotIn(forbidden, template, manifest_path)
+
+    def test_agent_cli_smoke(self) -> None:
+        commands = [
+            ["registry"],
+            ["spec", "trigger"],
+            ["spec", "view", "--json"],
+            ["recipes"],
+            ["recipes", "--object", "trigger"],
+            ["show-recipe", "trigger_basic_before_validation"],
+            ["fixtures"],
+            ["validate"],
+        ]
+        for command in commands:
+            completed = subprocess.run(
+                [sys.executable, str(ROOT / "tools" / "agent.py"), *command],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertTrue(completed.stdout.strip(), command)
+
     def test_cli_smoke_and_search(self) -> None:
         commands = [
             ["objects"],
@@ -331,6 +520,10 @@ class KnowledgeBaseTests(unittest.TestCase):
             ["show", "trigger", "advanced-ddl-subset"],
             ["rules", "trigger", "--tag", "body"],
             ["dimensions", "trigger"],
+            ["clauses", "procedure"],
+            ["show", "procedure", "kind-discriminator"],
+            ["rules", "procedure", "--tag", "versioning"],
+            ["dimensions", "procedure"],
             ["trigger-statements", "basic"],
             ["trigger-statements", "direct", "--activation", "AFTER"],
             ["trigger-statements", "nested", "--activation", "BEFORE"],

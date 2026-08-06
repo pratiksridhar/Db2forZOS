@@ -29,8 +29,9 @@ CREATE TABLE <table-name>
   | IN DATABASE <database-name>
   | IN ACCELERATOR <accelerator-name> ]
   [ <partitioning-clause> ]
-  [ <deprecated-organization-clause> ]
-  [ EDITPROC <program-name> [ WITH | WITHOUT ROW ATTRIBUTES ] ]
+  [ <organization-clause> ]
+  [ EDITPROC <program-name>
+      [ WITH ROW ATTRIBUTES | WITHOUT ROW ATTRIBUTES ] ]
   [ VALIDPROC <program-name> ]
   [ AUDIT { NONE | CHANGES | ALL } ]
   [ OBID <integer> ]
@@ -49,7 +50,7 @@ CREATE TABLE <table-name>
   [ KEY LABEL <key-label-name> | NO KEY LABEL ]
 ```
 
-Many physical clauses in the lower half are valid only when Db2 implicitly creates the base table space. See “Placement and physical clauses.”
+The diagram's repeat path permits the optional top-level clauses in accepted permutations. The sequence above is the preferred KB rendering, not a requirement that every statement use that order. A top-level clause can be specified at most once. Many physical clauses in the lower half are valid only when Db2 implicitly creates the base table space. See “Placement and physical clauses.”
 
 ## Explicit table elements
 
@@ -66,14 +67,14 @@ Many physical clauses in the lower half are valid only when Db2 implicitly creat
   [ NOT NULL ]
   [ <generated-clause> ]
   [ <single-column-constraint> ]
-  [ WITH DEFAULT | DEFAULT <default-value> ]
+  [ [ WITH ] DEFAULT [ <default-value> ] ]
   [ FIELDPROC <program-name> [ ( <constant> [, ...] ) ] ]
   [ AS SECURITY LABEL ]
   [ IMPLICITLY HIDDEN ]
   [ INLINE LENGTH <integer> ]
 ```
 
-The data type can be omitted only for generated timestamp/transaction forms where IBM defines an implicit type. Ordinary columns require a built-in or distinct type.
+The data type can be omitted only for generated timestamp/transaction forms where IBM defines an implicit type. Ordinary columns require a built-in or distinct type. Column clauses follow the diagram's repeat path, so supported permutations are legal, but the same column clause cannot be specified more than once.
 
 ### Column count and row size
 
@@ -106,13 +107,33 @@ This is a compact CREATE inventory; the IBM data-type reference remains authorit
 | XML | `XML` optionally constrained by registered `XMLSCHEMA` specifications and a global `ELEMENT` |
 | User-defined | `<distinct-type-name>`; restrictions of the source type continue to apply |
 
+### XML type modifiers
+
+```text
+<XML-type> ::=
+  XML [ ( <XML-type-modifier> ) ]
+
+<XML-type-modifier> ::=
+  XMLSCHEMA <XML-schema-specification> [, ...]
+  [ ELEMENT <element-name> ]
+
+<XML-schema-specification> ::=
+    ID <registered-XML-schema-name>
+  | URI { <target-namespace> | NO NAMESPACE }
+      [ LOCATION <schema-location> ]
+```
+
+Each `XMLSCHEMA` entry identifies a registered XML schema by ID or by namespace, optionally qualified by a schema location. `ELEMENT` identifies the global element. Exercise multiple comma-separated schema specifications as well as ID, URI, `NO NAMESPACE`, `LOCATION`, and `ELEMENT` branches.
+
+Column-level `CCSID` modifiers belong only to eligible character or graphic string types in an EBCDIC table. A column generated from a non-deterministic expression cannot specify `CCSID 1200` or `CCSID 1208`.
+
 High-value type cases include each alias spelling, omitted versus explicit defaults, every min/max, overflow by one, mixed/Unicode subtype behavior, page-size-sensitive varying strings, inline versus out-of-line LOBs, XML modifiers, distinct types, and unsupported types in accelerator-only tables.
 
 ## Nullability and defaults
 
 Omitting `NOT NULL` makes a normal column nullable. For a non-identity column, omission of both `NOT NULL` and `DEFAULT` is effectively `DEFAULT NULL`. Identity columns are implicitly not null.
 
-`DEFAULT` can use a compatible constant, `SESSION_USER`/`USER`, `CURRENT SQLID`, `NULL`, or an eligible cast-function form. A value-less `WITH DEFAULT` selects the type default:
+`DEFAULT` can use a compatible constant, `SESSION_USER`/`USER`, `CURRENT SQLID`, `NULL`, or an eligible cast-function form. The diagram permits both `DEFAULT` and `WITH DEFAULT`, with or without a following value. A value-less `DEFAULT` or `WITH DEFAULT` selects the type default:
 
 | Type family | Type default |
 |---|---|
@@ -132,16 +153,15 @@ Do not specify `DEFAULT` for identity, ROWID, row-change timestamp, row-begin, r
 
 ```text
 <generated-clause> ::=
-    GENERATED { ALWAYS | BY DEFAULT } AS IDENTITY [ ( <identity-options> ) ]
-  | GENERATED { ALWAYS | BY DEFAULT }
-      FOR EACH ROW ON UPDATE AS ROW CHANGE TIMESTAMP
-  | GENERATED { ALWAYS | BY DEFAULT } ROWID
-  | GENERATED ALWAYS AS TRANSACTION START ID
-  | GENERATED ALWAYS AS ROW { BEGIN | START | END }
-  | GENERATED ALWAYS AS ( <non-deterministic-expression> )
+    GENERATED [ ALWAYS | BY DEFAULT ]
+      [ AS IDENTITY [ ( <identity-options> ) ]
+      | FOR EACH ROW ON UPDATE AS ROW CHANGE TIMESTAMP ]
+  | GENERATED [ ALWAYS ] AS TRANSACTION START ID
+  | GENERATED [ ALWAYS ] AS ROW { BEGIN | START | END }
+  | GENERATED [ ALWAYS ] AS ( <non-deterministic-expression> )
 ```
 
-`ALWAYS` is the default/recommended general choice. `BY DEFAULT` permits a supplied value for identity and eligible ROWID/row-change forms, with extra uniqueness/index implications.
+`ALWAYS` is the default when neither `ALWAYS` nor `BY DEFAULT` is written. `BY DEFAULT` permits a supplied value for identity and eligible ROWID/row-change forms, with extra uniqueness/index implications. The apparently empty suffix on the first diagram branch applies only when the column's data type is `ROWID`: write `<column-name> ROWID NOT NULL GENERATED [ ALWAYS | BY DEFAULT ]`; do not append `ROWID` after `GENERATED`.
 
 ### Identity
 
@@ -157,6 +177,7 @@ AS IDENTITY (
 )
 ```
 
+- The option stack can be supplied in accepted permutations. Commas may separate identity options, but are not required; do not specify an identity option more than once.
 - One identity column per table; exact numeric type with scale zero.
 - Defaults: increment 1, `NO MINVALUE`, `NO MAXVALUE`, `NO CYCLE`, `CACHE 20`, `NO ORDER`; start resolves from direction and endpoints.
 - `CACHE n` has minimum 2. `CYCLE` can generate duplicates; identity itself does not imply uniqueness.
@@ -174,7 +195,7 @@ AS IDENTITY (
 | client/server special register | exact required VARCHAR/CHAR type documented for the selected register; nullable, no default |
 | package session variable | exact documented VARCHAR type; nullable, no default |
 
-Non-deterministic generated-expression sources are limited to the IBM-listed client/server special registers and `SYSIBM.PACKAGE_NAME`, `PACKAGE_SCHEMA`, or `PACKAGE_VERSION` session variables. These columns cannot use `CCSID 1200`, `CCSID 1208`, or `FIELDPROC`.
+The complete generated-expression inventory is `DATA CHANGE OPERATION`, `CURRENT CLIENT_ACCTNG`, `CURRENT CLIENT_APPLNAME`, `CURRENT CLIENT_CORR_TOKEN`, `CURRENT CLIENT_USERID`, `CURRENT CLIENT_WRKSTNNAME`, `CURRENT SERVER`, `CURRENT SQLID`, `SESSION_USER` (`USER` is a synonym), `SYSIBM.PACKAGE_NAME`, `SYSIBM.PACKAGE_SCHEMA`, and `SYSIBM.PACKAGE_VERSION`. These columns cannot use `CCSID 1200`, `CCSID 1208`, or `FIELDPROC`.
 
 ## Column attributes
 
@@ -205,7 +226,18 @@ Non-deterministic generated-expression sources are limited to the IBM-listed cli
 - An explicit table space plus ordinary dynamic SQL can leave the table unavailable until matching enforcing unique indexes are created. The schema processor or an implicit table space can create them implicitly.
 - `BUSINESS_TIME WITHOUT OVERLAPS` adds end then begin columns to the enforcement key and makes the non-period portion unique over time.
 
-Single-column `PRIMARY KEY`, `UNIQUE`, `REFERENCES`, and `CHECK` forms can be written inside the column definition under the same semantic restrictions.
+Single-column constraints have this diagram form:
+
+```text
+<single-column-constraint> ::=
+  [ CONSTRAINT <constraint-name> ]
+  { PRIMARY KEY
+  | UNIQUE
+  | <references-clause>
+  | CHECK ( <check-condition> ) }
+```
+
+The column-level foreign-key spelling starts with `REFERENCES`, not `FOREIGN KEY`. These forms have the same semantic restrictions as their table-level counterparts.
 
 ### Referential constraints
 
@@ -254,12 +286,13 @@ PERIOD FOR BUSINESS_TIME
 
 ### LIKE
 
-`LIKE table-or-view` copies column names and descriptions but not the table's keys, indexes, table-space placement, or most generated semantics. Important selectable copy options are:
+`LIKE table-or-view` copies column names and descriptions but not the table's keys, indexes, table-space placement, or most generated semantics. Copy-option clauses can appear in accepted permutations and each can be specified at most once. For `LIKE`, the selectable options are:
 
 - `INCLUDING` or `EXCLUDING IDENTITY COLUMN ATTRIBUTES` (default excludes)
 - `INCLUDING` or `EXCLUDING ROW CHANGE TIMESTAMP COLUMN ATTRIBUTES` (default excludes)
-- `EXCLUDING COLUMN DEFAULTS`, `INCLUDING COLUMN DEFAULTS`, or `USING TYPE DEFAULTS`
 - `EXCLUDING XML TYPE MODIFIERS`
+
+The column-default choices—`EXCLUDING COLUMN DEFAULTS`, `INCLUDING COLUMN DEFAULTS`, and `USING TYPE DEFAULTS`—belong to the AS-result/fullselect copy-options path and must not be specified with `LIKE`. `EXCLUDING XML TYPE MODIFIERS` is required when the LIKE source has an XML type modifier but the target should not; it is not supported for a LIKE view containing XML.
 
 Test source table versus source view, hidden columns, identity/timestamp/default options, inline LOB inheritance, ROWID behavior, and fields/procedures. A source cannot be an auxiliary or clone table; accelerator-only sources are excluded.
 
@@ -272,7 +305,7 @@ WITH NO DATA
 [ <copy-options> ]
 ```
 
-The result determines column name/type/length/precision/scale/nullability. Provide a name list when the result contains duplicates or unnamed expressions. Keys and other table attributes are not inherited. Generated attributes are not inherited. This form creates no rows.
+The result determines column name/type/length/precision/scale/nullability. Provide a name list when the result contains duplicates or unnamed expressions. Keys and other table attributes are not inherited. Generated attributes are not inherited. This form creates no rows. Its copy-options path can select `EXCLUDING COLUMN DEFAULTS`, `INCLUDING COLUMN DEFAULTS`, or `USING TYPE DEFAULTS`; these three alternatives are mutually exclusive.
 
 ### Materialized query table
 
@@ -285,7 +318,7 @@ REFRESH DEFERRED
 [ ENABLE | DISABLE QUERY OPTIMIZATION ]
 ```
 
-System maintenance and query optimization are defaults. User-maintained MQTs permit supported data-change/LOAD/REFRESH paths. The fullselect has substantial IBM restrictions; use the CREATE statement source for exhaustive MQT query legality.
+System maintenance and query optimization are defaults. User-maintained MQTs permit supported data-change/LOAD/REFRESH paths. The refresh-option clauses can appear in accepted permutations, but each can be specified at most once. The fullselect has substantial IBM restrictions; use the CREATE statement source for exhaustive MQT query legality.
 
 ## Placement and physical clauses
 
@@ -311,7 +344,11 @@ Omitting `IN` creates/chooses an implicit database named `DSNnnnnn` and creates 
 
 ### Accelerator-only
 
-`IN ACCELERATOR` stores rows only in the accelerator and leaves definitions in the Db2 catalog. It forbids many shared clauses and data types. Because execution depends on accelerator configuration, keep these cases in a separately tagged environment suite.
+```text
+IN ACCELERATOR <accelerator-name>
+```
+
+`IN ACCELERATOR` stores rows only in the accelerator and leaves definitions in the Db2 catalog. It requires an explicit column-definition family; it cannot be combined with `LIKE`, an AS-result table, or an MQT. Accelerator-only definitions reject defaults, identity, `FIELDPROC`, security-label and hidden-column attributes, inline length, periods, constraints, partitioning, `VALIDPROC`, and the shared physical/table attributes that the IBM description excludes. Unsupported types include DECFLOAT, LOB, ROWID, `TIMESTAMP WITH TIME ZONE`, and XML. Because execution depends on accelerator configuration, keep these cases in a separately tagged environment suite and use the official statement description for the complete environment-dependent restriction list.
 
 ## Partitioning clause
 
@@ -337,6 +374,7 @@ PARTITION BY [ RANGE ]
   PARTITION <physical-number>
   ENDING AT ( <constant> | MAXVALUE | MINVALUE [, ...] )
   [ INCLUSIVE ]
+  [ HASH SPACE <integer> { K | M | G } ]
 ```
 
 - `RANGE` is optional in current syntax.
@@ -353,7 +391,7 @@ PARTITION BY [ RANGE ]
 
 | Clause | Meaning/default and legality |
 |---|---|
-| `EDITPROC` | Whole-row transformation exit; optional row attributes. Numerous generated/LOB/XML/security restrictions. |
+| `EDITPROC` | Whole-row transformation exit; optional row attributes. `WITH ROW ATTRIBUTES` is the suboption default. Numerous generated/LOB/XML/security restrictions. |
 | `VALIDPROC` | Row validation exit; one at a time; not accelerator-only. |
 | `AUDIT` | `NONE` default, `CHANGES`, or `ALL`; effective only with appropriate traces. |
 | `OBID` | Explicit internal object identifier greater than 1 and never previously used in the database; normally omit. |
@@ -390,22 +428,51 @@ The first XML column causes an implicit BIGINT document-ID column. Db2 creates t
 
 ## Deprecated hash organization
 
-`ORGANIZE BY HASH (...) HASH SPACE ...` and per-partition hash-space clauses are deprecated. At application compatibility V12R1M504 and higher, creating new hash-organized tables is not supported. Retain the grammar only for low-compatibility recovery/regression tests; do not use it in new-object templates.
+```text
+<organization-clause> ::=
+  ORGANIZE BY HASH [ UNIQUE ]
+    ( <column-name> [, ...] )
+    [ HASH SPACE <integer> { K | M | G } ]
+
+<partition-hash-space> ::=
+  HASH SPACE <integer> { K | M | G }
+```
+
+The organization-level hash-space default is `64 M`. A partition-level value is legal only when the table uses `ORGANIZE BY HASH UNIQUE`; if omitted, the partition inherits the organization-level hash-space value. Hash organization conflicts with `APPEND YES`, basic row format, `IN ACCELERATOR`, and `MEMBER CLUSTER`; an explicitly placed PBR hash table cannot use `PAGENUM RELATIVE`. At application compatibility V12R1M504 and higher, creating new hash-organized tables is not supported. Retain this grammar only for explicitly lower-compatibility recovery/regression tests; do not use it in new-object templates.
+
+## Compatibility syntax
+
+Keep these accepted spellings in parse and round-trip tests, but emit the current spelling in new-object templates:
+
+| Compatibility spelling | Current spelling/meaning |
+|---|---|
+| `NOCACHE` | `NO CACHE` |
+| `NOCYCLE` | `NO CYCLE` |
+| `NOMINVALUE` | `NO MINVALUE` |
+| `NOMAXVALUE` | `NO MAXVALUE` |
+| `NOORDER` | `NO ORDER` |
+| `PART <n> VALUES ...` | `PARTITION <n> ENDING AT ...` |
+| `VALUES ...` | `ENDING AT ...` |
+| `DEFINITION ONLY` | `WITH NO DATA` |
+| `CREATE SUMMARY TABLE` | compatibility spelling for a materialized query-table definition, with `SUMMARY` between `CREATE` and `TABLE` |
+| `TIMEZONE` | `TIME ZONE` |
 
 ## High-value OFS test dimensions
 
 1. All four definition families, with legal and illegal copy-option combinations.
 2. Data-type alias/default/min/max matrices across all four page sizes.
-3. Nullable versus `NOT NULL`; omitted default, value-less default, explicit type default, explicit constant, and forbidden generated-column default.
-4. Every generated-column subtype and its exact type/nullability/default companion negatives.
+3. Nullable versus `NOT NULL`; omitted default, `DEFAULT`, `WITH DEFAULT`, valued forms, explicit constant, and forbidden generated-column default.
+4. Every generated-column subtype, omitted/explicit `ALWAYS`, legal `BY DEFAULT`, ROWID token order, and exact type/nullability/default companion negatives.
 5. Column-level versus table-level constraint spellings; enforcing-index incomplete versus implicit-index-complete behavior.
 6. Simple, composite, self/parent, cascading, nullable, unenforced, and temporal referential constraints.
 7. System, business, and bitemporal period foundations; inclusive/exclusive and no-overlap behavior.
 8. Existing explicit versus database-implicit versus fully implicit placement, including rejection of implicit-space clauses with an explicit space.
 9. PBG versus PBR, mixed ASC/DESC boundaries, nullable keys, partial limit keys, extrema, and out-of-range last partitions.
-10. LOB inline/out-of-line and explicit/implicit support objects; XML type modifiers and implicit XML objects.
+10. LOB inline/out-of-line and explicit/implicit support objects; all XML schema-specification branches and implicit XML objects.
 11. Encoding, hidden, field/security procedures, auditing, capture, volatility, append, key-label, and restrict-on-drop attributes.
-12. Deprecated hash/non-UTS cases only under explicitly recorded lower `APPLCOMPAT`.
+12. Top-level, column, copy, identity, and MQT option permutations plus duplicate-clause negatives.
+13. Accelerator-only restriction negatives in an accelerator-enabled environment.
+14. Compatibility spellings and deprecated hash/non-UTS cases only under explicitly recorded compatibility context.
 
 ## Catalog assertions
 

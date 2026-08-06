@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.0.0",
+  "object": "view",
+  "status": "extension_candidate_agent_scaffold",
+  "purpose": "Conservative agent constraints for planned CREATE VIEW case generation. Promote to normalized rules only after IBM CREATE VIEW docs are captured.",
+  "constraints": [
+    {
+      "id": "view_requires_selectable_source",
+      "if": {
+        "object": "view"
+      },
+      "requires_capability": "selectable_source"
+    },
+    {
+      "id": "check_option_requires_updatable_view",
+      "if": {
+        "check_option": [
+          "local",
+          "cascaded"
+        ]
+      },
+      "requires": {
+        "updatability": "updatable"
+      },
+      "negative_case": true,
+      "expected_failure_phase": "prepare_or_execute"
+    },
+    {
+      "id": "simple_projection_is_default_updatable_fixture",
+      "if": {
+        "view_shape": "simple_projection",
+        "source_capability": "updatable_source"
+      },
+      "provides_capability": [
+        "selectable_source",
+        "eligible_view",
+        "trigger_subject_instead_of"
+      ]
+    },
+    {
+      "id": "join_union_aggregate_default_read_only",
+      "if": {
+        "view_shape": [
+          "join",
+          "union",
+          "aggregate"
+        ]
+      },
+      "default": {
+        "updatability": "read_only"
+      },
+      "notes": "Use as a planned negative boundary for CHECK OPTION until view syntax is normalized."
+    }
+  ]
+}

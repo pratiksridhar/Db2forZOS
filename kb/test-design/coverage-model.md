@@ -105,14 +105,17 @@ Keep a second textual assertion set for tokens OFS must emit or omit. Text asser
 
 - explicit elements, `LIKE`, `AS ... WITH NO DATA`, and MQT definition families;
 - data-type aliases, defaulted parameters, every documented minimum/maximum, and page-size row fit;
-- nullable/not-null and omitted/value-less/typed/constant defaults;
-- each generated-column form with required type, nullability, and forbidden-default companions;
+- nullable/not-null and omitted, `DEFAULT`, `WITH DEFAULT`, valued, and forbidden defaults;
+- each generated-column form with omitted/explicit `ALWAYS`, legal `BY DEFAULT`, correct ROWID token order, required type, nullability, and forbidden-default companions;
 - column/table forms of primary, unique, foreign, temporal, and check constraints;
 - explicit table-space placement, implicit space in an existing database, and fully implicit placement;
 - PBG/PBR, composite mixed-direction partitions, null placement, partial keys, extrema, and out-of-range values;
-- LOB and XML implicit/supporting objects;
+- `LIKE` versus AS-result copy-option legality, option permutations, and duplicate-option negatives;
+- LOB and XML implicit/supporting objects, including every XML schema-specification branch;
 - table attributes such as audit, capture, volatility, append, procedures, hidden columns, restrict-on-drop, and key labels;
-- deprecated hash/non-UTS paths only under a recorded compatible environment.
+- top-level, column, identity, and MQT option permutations plus duplicate-clause negatives;
+- accelerator-only syntax and restriction negatives in an accelerator-enabled environment; and
+- compatibility synonyms and deprecated hash/non-UTS paths only under a recorded compatible environment.
 
 ### INDEX
 
@@ -139,6 +142,22 @@ Keep a second textual assertion set for tokens OFS must emit or omit. Text asser
 - same-event activation order and cascade-depth boundaries at valid level 16 and rejected level 17; and
 - outer statement-terminator handling for compound bodies.
 
+### PROCEDURE
+
+- native SQL versus current external versus deprecated external SQL recognition, with native SQL as the default SQL-procedure generation path;
+- zero/one/many parameters; `IN`, `OUT`, and `INOUT`; scalar and table-locator forms; type, subtype, CCSID, and ordinal preservation;
+- one-statement and compound SQL PL bodies with declarations, handlers, cursors, control flow, diagnostics, dynamic SQL, and nested routines;
+- data-access declarations crossed with actual read/change behavior and local nested-routine behavior;
+- omitted and explicit defaults for determinism, result sets, commit behavior, special-register inheritance, qualifier/path, package owner, and bind options;
+- native `V1`, added/replaced versions, active-version state, whole-definition replacement, and forbidden signature/table-parameter/autonomous changes;
+- native package `TYPE='N'`, version, `APPLCOMPAT`, validity, owner, qualifier/path, and `SYSPACKDEP.DTYPE='N'` dependencies;
+- `DYNAMIC RESULT SETS` boundaries, actual returned cursor count, and `WITH HOLD` interaction with commit on return;
+- `COMMIT ON RETURN NO/YES`, nested invocation prohibition, and autonomous parameter/result-set/global-variable boundaries;
+- COBOL/C external registration with executable name, parameter style, package path/collection, WLM, program type, security, and first-invocation evidence;
+- Java and REXX language/linkage option matrices, including prohibited option pairs and REXX output-parameter ordering;
+- deprecated external SQL preservation as a compatibility case, without using it as a new-object template; and
+- distinct outer SQL terminator handling for compound native bodies.
+
 ## Interaction policy
 
 Exhaustive Cartesian products are not useful. Use this rule:
@@ -164,10 +183,10 @@ Classify fields before comparing:
 | operational state/statistics | normally ignore unless targeted; examples: REORGP, cardinality, space statistics |
 | authorization provenance | compare under a dedicated ownership case; examples: creator, owner |
 
-Never compare only the parent row. Table spaces and indexes need partition rows; tables need column and constraint rows; LOB/XML cases need their support objects; unique/primary/ROWID cases need enforcing indexes and key rows. Triggers need definition/version rows, externalized statement text where present, trigger-package attributes, package dependencies, definition environment, and observable activation order when replacement is tested.
+Never compare only the parent row. Table spaces and indexes need partition rows; tables need column and constraint rows; LOB/XML cases need their support objects; unique/primary/ROWID cases need enforcing indexes and key rows. Triggers need definition/version rows, externalized statement text where present, trigger-package attributes, package dependencies, definition environment, and observable activation order when replacement is tested. Procedures need routine/version rows, ordered parameter rows, native package options/dependencies, grants when targeted, and separate first-call evidence for external program/WLM readiness.
 
 ## Cleanup and isolation
 
-Cleanup is part of the case, not an ad-hoc shell step. Resolve exact target names, drop in reverse dependency order, and never wildcard a shared database or schema. A typical explicit stack drops triggers first, then table (and its dependent indexes), table space if still present, database, then storage group. A trigger that creates DDL objects at activation needs exact-name cleanup for those runtime effects before it can fire again. `WITH RESTRICT ON DROP`, temporal dependencies, pending states, and externally managed data sets need dedicated cleanup instructions.
+Cleanup is part of the case, not an ad-hoc shell step. Resolve exact target names, drop in reverse dependency order, and never wildcard a shared database or schema. A typical explicit stack drops procedures and triggers first, then table (and its dependent indexes), table space if still present, database, then storage group. A trigger that creates DDL objects at activation needs exact-name cleanup for those runtime effects before it can fire again. `WITH RESTRICT ON DROP`, temporal dependencies, pending states, and externally managed data sets need dedicated cleanup instructions.
 
 Preserve failed generated DDL and catalog snapshots before cleanup; they are the evidence needed to diagnose whether the defect is discovery, serialization, ordering, or Db2 legality.

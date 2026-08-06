@@ -1,6 +1,6 @@
 # Object model and DDL dependency graph
 
-## The six objects at a glance
+## The seven objects at a glance
 
 Db2 separates logical data design from physical storage, but the boundaries are intentionally permeable: defaults flow downward, and a `CREATE TABLE` can cause several physical objects to appear implicitly.
 
@@ -29,9 +29,14 @@ Trigger
   -> belongs to a local subject table (BEFORE/AFTER) or view (INSTEAD OF)
   -> owns an implicitly created trigger package and dependencies on body objects
   -> can read transition rows/tables and run a basic or advanced triggered action
+
+Procedure
+  -> is invoked explicitly with CALL or from another routine/trigger
+  -> is native SQL with an implicitly bound versioned package, or external with a separately prepared program
+  -> owns parameters, execution attributes, privileges, and dependencies on body/program artifacts
 ```
 
-Official IBM concepts behind this model are indexed as `ibm-stogroup-concept`, `ibm-database-concept`, `ibm-tablespace-concept`, `ibm-table-concept`, `ibm-index-concept`, and `ibm-trigger-concept` in [sources.md](sources.md).
+Official IBM concepts behind this model are indexed as `ibm-stogroup-concept`, `ibm-database-concept`, `ibm-tablespace-concept`, `ibm-table-concept`, `ibm-index-concept`, `ibm-trigger-concept`, and `ibm-procedure-concept` in [sources.md](sources.md).
 
 ## Storage group
 
@@ -105,6 +110,12 @@ A trigger is executable behavior attached to a data-change event. `BEFORE` and `
 
 The body relationship is deliberately asymmetric. An advanced trigger can contain supported `CREATE TABLE`, `CREATE INDEX`, or `CREATE VIEW` statements inside an SQL control block, but it cannot contain `CREATE STOGROUP`, `CREATE DATABASE`, `CREATE TABLESPACE`, or `CREATE TRIGGER`. Those runtime-created objects are effects of firing the trigger, not children in the trigger catalog hierarchy. Keep them in isolated fixtures and collect both trigger-package evidence and the created-object catalog rows.
 
+## Procedure
+
+A procedure is an executable routine registered at the current server. A native SQL procedure contains an SQL PL body and Db2 implicitly binds a package for each version. A current external procedure instead points to a separately prepared host-language load module or Java method and runs in an external WLM-managed address space. The older external SQL procedure form is deprecated and remains only a compatibility target.
+
+Procedure dependencies are behavioral rather than containment relationships. A native body can depend on tables, views, routines, and other objects through its package; an external definition depends operationally on its program, WLM environment, external package, and security configuration. A trigger can invoke an eligible procedure, and a procedure with a table-locator parameter can be invoked only from a trigger action. Drop procedures before dropping body dependencies in a clean OFS fixture so package invalidation and restrictive dependencies do not obscure the target test.
+
 ## Explicit creation path
 
 The most controlled OFS test stack is:
@@ -116,6 +127,7 @@ CREATE TABLESPACE ... IN database ... USING STOGROUP ...
 CREATE TABLE ... IN database.table-space
 CREATE [UNIQUE] INDEX ... ON table ... USING STOGROUP ...
 CREATE TRIGGER ... ON table ...
+CREATE PROCEDURE ... LANGUAGE SQL ...
 ```
 
 This isolates inheritance and makes every object independently retrievable for generated-DDL comparison.
@@ -136,4 +148,4 @@ An implicit base table space can bring along enforcing primary/unique indexes, a
 
 ## Drop-order implication for disposable tests
 
-For a clean explicit stack, dependency order is the reverse of creation order: trigger, indexes, table, table space, database, then storage group. A table drop can remove dependent triggers and indexes, and a database or table-space drop can cascade through contained objects depending on the statement used. Test harness cleanup should resolve exact names first and avoid broad wildcard drops. A trigger-body DDL case must first drop the exact view/index/table created by activation, then drop the trigger and its ordinary subject stack.
+For a clean explicit stack, dependency order is the reverse of creation order: procedures, triggers, indexes, table, table space, database, then storage group. A table drop can remove dependent triggers and indexes and invalidate dependent packages; a database or table-space drop can cascade through contained objects depending on the statement used. Test harness cleanup should resolve exact names first and avoid broad wildcard drops. A trigger-body DDL case must first drop the exact view/index/table created by activation, then drop the trigger and its ordinary subject stack.

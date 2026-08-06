@@ -4,7 +4,7 @@
   "baseline": {
     "product": "IBM Db2 for z/OS",
     "release": "13",
-    "documentation_reviewed": "2026-07-19",
+    "documentation_reviewed": "2026-08-03",
     "latest_reviewed_function_level": "V13R1M509",
     "current_uts_baseline": "APPLCOMPAT V12R1M504 or later",
     "authority": "Official IBM documentation only",
@@ -194,6 +194,62 @@
     "ibm-trigger-packages": {
       "title": "Trigger packages",
       "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=trigger-packages"
+    },
+    "ibm-create-procedure-overview": {
+      "title": "CREATE PROCEDURE statement (overview)",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-create-procedure-overview"
+    },
+    "ibm-create-procedure-native": {
+      "title": "CREATE PROCEDURE statement (SQL - native procedure)",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-create-procedure-sql-native"
+    },
+    "ibm-create-procedure-external": {
+      "title": "CREATE PROCEDURE statement (external procedure)",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-create-procedure-external"
+    },
+    "ibm-create-procedure-sql-external-deprecated": {
+      "title": "CREATE PROCEDURE statement (SQL - external procedure) (deprecated)",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-create-procedure-sql-external-deprecated"
+    },
+    "ibm-procedure-concept": {
+      "title": "Routines in Db2 for z/OS: functions and procedures",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=concepts-routines-functions-procedures"
+    },
+    "ibm-procedure-create-native-task": {
+      "title": "Creating native SQL procedures",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=procedures-creating-native-sql"
+    },
+    "ibm-procedure-create-external-task": {
+      "title": "Creating external stored procedures",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=procedures-creating-external-stored"
+    },
+    "ibm-procedure-create-external-sql-task": {
+      "title": "Creating external SQL procedures (deprecated)",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=procedures-creating-external-sql-deprecated"
+    },
+    "ibm-procedure-multiple-versions": {
+      "title": "Multiple versions of native SQL procedures",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=procedures-multiple-versions-native-sql"
+    },
+    "ibm-procedure-package-copies": {
+      "title": "Making copies of a package for a native SQL procedure",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=procedures-making-copies-package-native-sql-procedure"
+    },
+    "ibm-procedure-body": {
+      "title": "SQL procedure body",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=procedures-sql-procedure-body"
+    },
+    "ibm-catalog-sysroutines": {
+      "title": "SYSIBM.SYSROUTINES catalog table",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=tables-sysroutines"
+    },
+    "ibm-catalog-sysparms": {
+      "title": "SYSIBM.SYSPARMS catalog table",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=tables-sysparms"
+    },
+    "ibm-catalog-sysroutineauth": {
+      "title": "SYSIBM.SYSROUTINEAUTH catalog table",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=spaces-sysroutineauth"
     },
     "ibm-sqlpl": {
       "title": "SQL procedural language (SQL PL)",
@@ -1052,15 +1108,16 @@
         "placement:explicit-space|implicit-space-in-database|fully-implicit|accelerator",
         "data_type:family|alias|parameter-default|min|max|overflow",
         "nullability:nullable|not-null",
-        "default:omitted|with-default|explicit-type|constant|forbidden",
-        "generated:identity|row-change|rowid|transaction-start|row-begin|row-end|provenance",
+        "default:omitted|default-keyword|with-default|explicit-value|forbidden",
+        "generated:identity|row-change|rowid|transaction-start|row-begin|row-end|provenance|always-omitted",
         "constraint:primary|unique|foreign|check|temporal",
         "period:none|system|business-exclusive|business-inclusive|both",
         "partitioning:pbg|pbr|mixed-direction|nullable|partial-key|extrema",
         "lob:inline|out-of-line|explicit-support|implicit-support",
-        "xml:plain|type-modifier|implicit-support",
-        "attributes:procedure|audit|capture|volatile|append|hidden|key-label|restrict-drop",
-        "compatibility:current|deprecated-hash-low-applcompat"
+        "xml:plain|registered-id|uri|no-namespace|location|element|implicit-support",
+        "attributes:editproc|validproc|obid|audit|capture|volatile|append|hidden|key-label|restrict-drop",
+        "clause_order:preferred|permuted|duplicate",
+        "compatibility:current|synonym|deprecated-hash-low-applcompat"
       ],
       "clauses": [
         {
@@ -1114,6 +1171,16 @@
           "source_refs": ["ibm-create-table"]
         },
         {
+          "id": "copy-options",
+          "syntax": "[INCLUDING|EXCLUDING IDENTITY COLUMN ATTRIBUTES] [INCLUDING|EXCLUDING ROW CHANGE TIMESTAMP COLUMN ATTRIBUTES] [EXCLUDING COLUMN DEFAULTS|INCLUDING COLUMN DEFAULTS|USING TYPE DEFAULTS] [EXCLUDING XML TYPE MODIFIERS]",
+          "required": "no",
+          "default": "generated attributes excluded; column-default behavior depends on definition family",
+          "values": "context-sensitive LIKE or AS-result attribute-copy choices",
+          "tags": ["copy", "like", "as-result", "context", "default"],
+          "summary": "Selects which eligible source-column attributes are copied; not every choice is legal in every definition family.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
           "id": "column-definition",
           "syntax": "<column-name> [<data-type>] [NOT NULL] [generated] [constraint] [default] [attributes]",
           "required": "conditional",
@@ -1134,6 +1201,16 @@
           "source_refs": ["ibm-create-table"]
         },
         {
+          "id": "xml-type-modifier",
+          "syntax": "XML (XMLSCHEMA <xml-schema-specification> [, ...] [ELEMENT <element-name>]) where <xml-schema-specification> is ID <registered-name> or URI {<target-namespace>|NO NAMESPACE} [LOCATION <schema-location>]",
+          "required": "no",
+          "default": "unconstrained XML type",
+          "values": "one or more registered schema specifications and optional global element",
+          "tags": ["xml", "type", "modifier", "schema", "syntax"],
+          "summary": "Constrains XML values by registered schemas selected by ID or namespace/location and optionally by global element.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
           "id": "not-null",
           "syntax": "NOT NULL",
           "required": "no",
@@ -1145,7 +1222,7 @@
         },
         {
           "id": "default",
-          "syntax": "WITH DEFAULT | DEFAULT <default-value>",
+          "syntax": "[ WITH ] DEFAULT [ <default-value> ]",
           "required": "no",
           "default": "DEFAULT NULL for eligible nullable ordinary columns when omitted",
           "values": "type default, compatible constant, eligible special value, NULL, or eligible cast",
@@ -1155,7 +1232,7 @@
         },
         {
           "id": "identity",
-          "syntax": "GENERATED { ALWAYS | BY DEFAULT } AS IDENTITY [(identity-options)]",
+          "syntax": "GENERATED [ ALWAYS | BY DEFAULT ] AS IDENTITY [(identity-options)]",
           "required": "no",
           "default": "ALWAYS behavior; increment 1, no cycle, cache 20, no order, derived bounds/start",
           "values": "one eligible exact-numeric scale-zero column per table",
@@ -1165,7 +1242,7 @@
         },
         {
           "id": "row-change-timestamp",
-          "syntax": "GENERATED { ALWAYS | BY DEFAULT } FOR EACH ROW ON UPDATE AS ROW CHANGE TIMESTAMP",
+          "syntax": "GENERATED [ ALWAYS | BY DEFAULT ] FOR EACH ROW ON UPDATE AS ROW CHANGE TIMESTAMP",
           "required": "no",
           "default": "none",
           "values": "one TIMESTAMP(6) WITHOUT TIME ZONE NOT NULL column",
@@ -1175,7 +1252,7 @@
         },
         {
           "id": "rowid",
-          "syntax": "GENERATED { ALWAYS | BY DEFAULT } ROWID",
+          "syntax": "ROWID NOT NULL GENERATED [ ALWAYS | BY DEFAULT ]",
           "required": "no",
           "default": "Db2 can add an implicit hidden ROWID for LOB support",
           "values": "eligible ROWID NOT NULL column",
@@ -1185,7 +1262,7 @@
         },
         {
           "id": "transaction-start-id",
-          "syntax": "GENERATED ALWAYS AS TRANSACTION START ID",
+          "syntax": "GENERATED [ ALWAYS ] AS TRANSACTION START ID",
           "required": "no",
           "default": "implicit TIMESTAMP(12) WITHOUT TIME ZONE when type is omitted",
           "values": "one eligible precision-12 timestamp column",
@@ -1195,7 +1272,7 @@
         },
         {
           "id": "row-begin",
-          "syntax": "GENERATED ALWAYS AS ROW { BEGIN | START }",
+          "syntax": "GENERATED [ ALWAYS ] AS ROW { BEGIN | START }",
           "required": "no",
           "default": "implicit precision-12 timestamp where type omission is supported",
           "values": "one precision-12 timestamp NOT NULL column",
@@ -1205,7 +1282,7 @@
         },
         {
           "id": "row-end",
-          "syntax": "GENERATED ALWAYS AS ROW END",
+          "syntax": "GENERATED [ ALWAYS ] AS ROW END",
           "required": "no",
           "default": "implicit precision-12 timestamp where type omission is supported",
           "values": "one precision-12 timestamp NOT NULL column",
@@ -1215,10 +1292,10 @@
         },
         {
           "id": "generated-provenance",
-          "syntax": "GENERATED ALWAYS AS (<eligible special-register-or-session-variable expression>)",
+          "syntax": "GENERATED [ ALWAYS ] AS (<eligible non-deterministic expression>)",
           "required": "no",
           "default": "none",
-          "values": "IBM-listed client/server special registers and package session variables with required type",
+          "values": "DATA CHANGE OPERATION; CURRENT CLIENT_ACCTNG; CURRENT CLIENT_APPLNAME; CURRENT CLIENT_CORR_TOKEN; CURRENT CLIENT_USERID; CURRENT CLIENT_WRKSTNNAME; CURRENT SERVER; CURRENT SQLID; SESSION_USER or USER; SYSIBM.PACKAGE_NAME; SYSIBM.PACKAGE_SCHEMA; SYSIBM.PACKAGE_VERSION",
           "tags": ["generated", "provenance", "expression"],
           "summary": "Generates client, server, operation, or package provenance data from the limited supported set.",
           "source_refs": ["ibm-create-table"]
@@ -1261,6 +1338,16 @@
           "values": "BLOB/CLOB 0-32680 bytes; DBCLOB 0-16340 double-byte characters, within declared maximum",
           "tags": ["lob", "inline", "boundary", "uts"],
           "summary": "Sets inline LOB storage in the base UTS row.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "column-constraint",
+          "syntax": "[CONSTRAINT <name>] {PRIMARY KEY | UNIQUE | REFERENCES <parent> [(<columns>)] [ON DELETE ...] | CHECK (<check-condition>)}",
+          "required": "no",
+          "default": "none",
+          "values": "one single-column constraint form",
+          "tags": ["column", "constraint", "syntax"],
+          "summary": "Defines a column-level key, reference, or check; the foreign-key spelling begins with REFERENCES, not FOREIGN KEY.",
           "source_refs": ["ibm-create-table"]
         },
         {
@@ -1344,6 +1431,16 @@
           "source_refs": ["ibm-create-table", "ibm-implicit-tablespace"]
         },
         {
+          "id": "in-accelerator",
+          "syntax": "IN ACCELERATOR <accelerator-name>",
+          "required": "no",
+          "default": "Db2-resident table placement",
+          "values": "configured accelerator name",
+          "tags": ["placement", "accelerator", "environment", "restriction"],
+          "summary": "Creates a cataloged table whose rows exist only in the accelerator, subject to the accelerator-only definition restrictions.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
           "id": "partition-by-size",
           "syntax": "PARTITION BY SIZE [EVERY <integer> G]",
           "required": "no",
@@ -1355,13 +1452,53 @@
         },
         {
           "id": "partition-by-range",
-          "syntax": "PARTITION BY [RANGE] (<expressions>) (PARTITION <n> ENDING AT (...) [INCLUSIVE] [, ...])",
+          "syntax": "PARTITION BY [RANGE] (<expressions>) (PARTITION <n> ENDING AT (...) [INCLUSIVE] [HASH SPACE <integer> {K|M|G}] [, ...])",
           "required": "conditional",
           "default": "ASC direction; range keyword optional",
           "values": "up to 64 eligible columns and one element per physical partition",
           "tags": ["partition", "pbr", "boundary", "implicit"],
           "summary": "Defines the logical range key, order, null handling, and ending boundary of every PBR partition.",
           "source_refs": ["ibm-create-table", "ibm-pbr-create"]
+        },
+        {
+          "id": "organization-by-hash",
+          "syntax": "ORGANIZE BY HASH [UNIQUE] (<column-name> [, ...]) [HASH SPACE <integer> {K|M|G}]",
+          "required": "no",
+          "default": "no hash organization; HASH SPACE 64 M when organization is specified without a size",
+          "values": "eligible hash-key columns and optional hash-space size",
+          "tags": ["hash", "deprecated", "compatibility", "applcompat"],
+          "summary": "Defines deprecated hash organization for explicitly lower-compatibility regression cases.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "partition-hash-space",
+          "syntax": "HASH SPACE <integer> {K|M|G}",
+          "required": "no",
+          "default": "inherit the organization-level HASH SPACE value",
+          "values": "eligible per-partition hash-space size",
+          "tags": ["hash", "partition", "deprecated", "compatibility"],
+          "summary": "Overrides hash space for one partition and is legal only with ORGANIZE BY HASH.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "editproc",
+          "syntax": "EDITPROC <program-name> [WITH ROW ATTRIBUTES | WITHOUT ROW ATTRIBUTES]",
+          "required": "no",
+          "default": "no edit procedure; WITH ROW ATTRIBUTES when EDITPROC is specified without a suboption",
+          "values": "eligible edit procedure and optional row-attribute mode",
+          "tags": ["attribute", "procedure", "row", "restriction"],
+          "summary": "Applies a whole-row transformation exit subject to generated, LOB, XML, and security restrictions.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "validproc",
+          "syntax": "VALIDPROC <program-name>",
+          "required": "no",
+          "default": "no validation procedure",
+          "values": "eligible validation procedure",
+          "tags": ["attribute", "procedure", "validation", "restriction"],
+          "summary": "Names the row-validation exit for an eligible non-accelerator table.",
+          "source_refs": ["ibm-create-table"]
         },
         {
           "id": "audit",
@@ -1371,6 +1508,16 @@
           "values": "NONE, CHANGES, ALL",
           "tags": ["attribute", "audit", "default"],
           "summary": "Selects table audit behavior when appropriate traces are active.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "obid",
+          "syntax": "OBID <integer>",
+          "required": "no",
+          "default": "Db2 assigns the internal object identifier",
+          "values": "integer greater than 1 that was never previously used in the database",
+          "tags": ["attribute", "identifier", "boundary", "operational"],
+          "summary": "Requests an explicit internal object identifier; ordinary definitions should omit it.",
           "source_refs": ["ibm-create-table"]
         },
         {
@@ -1424,13 +1571,73 @@
           "source_refs": ["ibm-create-table"]
         },
         {
-          "id": "implicit-space-options",
-          "syntax": "[LOGGED|NOT LOGGED] [COMPRESS ...] [DSSIZE ...] [BUFFERPOOL ...] [MEMBER CLUSTER] [TRACKMOD ...] [PAGENUM ...]",
+          "id": "logged",
+          "syntax": "LOGGED | NOT LOGGED",
           "required": "no",
-          "default": "subsystem/database defaults for the implicit table space",
-          "values": "eligible CREATE TABLE physical clauses",
-          "tags": ["implicit", "physical", "placement", "default"],
-          "summary": "Defines the base table space only when that space is created implicitly.",
+          "default": "LOGGED",
+          "values": "LOGGED or NOT LOGGED",
+          "tags": ["implicit", "physical", "logging", "default"],
+          "summary": "Selects logging for an implicitly created base table space.",
+          "source_refs": ["ibm-create-table", "ibm-implicit-tablespace"]
+        },
+        {
+          "id": "compress",
+          "syntax": "COMPRESS {NO | YES [FIXEDLENGTH | HUFFMAN]}",
+          "required": "no",
+          "default": "IMPTSCMP subsystem parameter",
+          "values": "NO, YES, YES FIXEDLENGTH, or YES HUFFMAN",
+          "tags": ["implicit", "physical", "compression", "default"],
+          "summary": "Selects compression for an implicitly created base table space.",
+          "source_refs": ["ibm-create-table", "ibm-implicit-tablespace"]
+        },
+        {
+          "id": "dssize",
+          "syntax": "DSSIZE <integer> G",
+          "required": "no",
+          "default": "IMPDSSIZE subsystem parameter",
+          "values": "eligible data-set size in gigabytes",
+          "tags": ["implicit", "physical", "dssize", "boundary", "default"],
+          "summary": "Sets data-set size for an implicitly created base table space and conflicts with PARTITION BY SIZE EVERY.",
+          "source_refs": ["ibm-create-table", "ibm-implicit-tablespace"]
+        },
+        {
+          "id": "bufferpool",
+          "syntax": "BUFFERPOOL <bpname>",
+          "required": "no",
+          "default": "Db2 selects an active pool from table-space defaults and required row size",
+          "values": "eligible active 4K, 8K, 16K, or 32K buffer pool",
+          "tags": ["implicit", "physical", "bufferpool", "page-size", "default"],
+          "summary": "Selects the buffer pool for an implicitly created base table space.",
+          "source_refs": ["ibm-create-table", "ibm-implicit-tablespace"]
+        },
+        {
+          "id": "member-cluster",
+          "syntax": "MEMBER CLUSTER",
+          "required": "no",
+          "default": "no member clustering",
+          "values": "keyword",
+          "tags": ["implicit", "physical", "data-sharing", "clustering"],
+          "summary": "Uses available-space placement for an implicitly created base table space.",
+          "source_refs": ["ibm-create-table", "ibm-implicit-tablespace"]
+        },
+        {
+          "id": "trackmod",
+          "syntax": "TRACKMOD {YES | NO}",
+          "required": "no",
+          "default": "IMPTKMOD subsystem parameter",
+          "values": "YES or NO",
+          "tags": ["implicit", "physical", "tracking", "default"],
+          "summary": "Selects modified-page tracking for an implicitly created base table space.",
+          "source_refs": ["ibm-create-table", "ibm-implicit-tablespace"]
+        },
+        {
+          "id": "pagenum",
+          "syntax": "PAGENUM {RELATIVE | ABSOLUTE}",
+          "required": "no",
+          "default": "PAGESET_PAGENUM subsystem parameter for an implicit PBR table space",
+          "values": "RELATIVE or ABSOLUTE",
+          "tags": ["implicit", "physical", "pbr", "rpn", "default"],
+          "summary": "Selects relative or absolute page numbering for an implicitly created PBR table space.",
           "source_refs": ["ibm-create-table", "ibm-implicit-tablespace"]
         },
         {
@@ -1454,6 +1661,38 @@
           "source_refs": ["ibm-create-table"]
         },
         {
+          "id": "top-level-clause-order-cardinality",
+          "kind": "syntax",
+          "clauses": ["in-explicit-tablespace", "in-database", "in-accelerator", "partition-by-size", "partition-by-range", "organization-by-hash", "editproc", "validproc", "audit", "obid", "data-capture", "restrict-on-drop", "ccsid", "volatile", "logged", "compress", "append", "dssize", "bufferpool", "member-cluster", "trackmod", "pagenum", "key-label"],
+          "tags": ["syntax", "order", "cardinality", "negative"],
+          "text": "The top-level repeat path permits accepted clause permutations, but the same top-level clause must not be specified more than once.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "copy-options-context",
+          "kind": "context",
+          "clauses": ["like", "as-no-data", "copy-options"],
+          "tags": ["copy", "like", "as-result", "negative", "syntax"],
+          "text": "EXCLUDING COLUMN DEFAULTS, INCLUDING COLUMN DEFAULTS, and USING TYPE DEFAULTS are AS-result/fullselect choices and must not be specified with LIKE; LIKE supports the documented identity, row-change-timestamp, and EXCLUDING XML TYPE MODIFIERS choices.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "copy-options-order-cardinality",
+          "kind": "syntax",
+          "clauses": ["copy-options"],
+          "tags": ["copy", "syntax", "order", "cardinality", "negative"],
+          "text": "Applicable copy-option clauses can appear in accepted permutations, each option can be specified at most once, and the three column-default choices are mutually exclusive.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "mqt-option-cardinality",
+          "kind": "syntax",
+          "clauses": ["mqt"],
+          "tags": ["mqt", "syntax", "order", "cardinality", "negative"],
+          "text": "MQT refresh-option clauses can appear in accepted permutations, but each option can be specified at most once.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
           "id": "ordinary-column-type-required",
           "kind": "requiredness",
           "clauses": ["column-definition", "data-type"],
@@ -1462,9 +1701,49 @@
           "source_refs": ["ibm-create-table"]
         },
         {
+          "id": "column-clause-cardinality",
+          "kind": "syntax",
+          "clauses": ["column-definition", "data-type", "not-null", "identity", "row-change-timestamp", "rowid", "transaction-start-id", "row-begin", "row-end", "generated-provenance", "column-constraint", "default", "fieldproc", "security-label", "implicitly-hidden", "inline-length"],
+          "tags": ["column", "syntax", "order", "cardinality", "negative"],
+          "text": "Eligible column clauses follow the diagram's repeat path and can appear in supported permutations, but the same specific column clause or constraint form must not be specified more than once.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "generated-keyword-default",
+          "kind": "default",
+          "clauses": ["identity", "row-change-timestamp", "rowid", "transaction-start-id", "row-begin", "row-end", "generated-provenance"],
+          "tags": ["generated", "always", "default", "syntax"],
+          "text": "ALWAYS is optional and is the default after GENERATED. BY DEFAULT is an alternative only for identity, eligible ROWID, and row-change-timestamp forms; ROWID is the column data type before GENERATED, not a token after it.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "identity-option-order-separators",
+          "kind": "syntax",
+          "clauses": ["identity"],
+          "tags": ["identity", "syntax", "order", "comma", "cardinality", "negative"],
+          "text": "Identity options can appear in accepted permutations and can be separated by optional commas; an identity option must not be specified more than once.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "xml-modifier-rules",
+          "kind": "syntax",
+          "clauses": ["data-type", "xml-type-modifier"],
+          "tags": ["xml", "schema", "syntax", "cardinality"],
+          "text": "An XML type modifier contains one or more comma-separated XMLSCHEMA specifications selected by ID or URI/NO NAMESPACE with optional LOCATION, followed by an optional global ELEMENT.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "generated-expression-column-restrictions",
+          "kind": "restriction",
+          "clauses": ["generated-provenance", "data-type", "fieldproc"],
+          "tags": ["generated", "provenance", "ccsid", "fieldproc", "negative"],
+          "text": "A non-deterministic generated-expression column must not specify CCSID 1200, CCSID 1208, or FIELDPROC and is limited to the enumerated operation, special-register, and package-session-variable sources.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
           "id": "generated-default-conflict",
           "kind": "conflict",
-          "clauses": ["default", "identity", "row-change-timestamp", "rowid", "transaction-start-id", "row-begin", "row-end"],
+          "clauses": ["default", "identity", "row-change-timestamp", "rowid", "transaction-start-id", "row-begin", "row-end", "xml-type-modifier"],
           "tags": ["generated", "default", "negative"],
           "text": "Identity, ROWID, temporal timestamp, row-change, transaction-start, and XML columns reject an ordinary DEFAULT clause as documented.",
           "source_refs": ["ibm-create-table"]
@@ -1536,9 +1815,41 @@
         {
           "id": "explicit-space-physical-conflict",
           "kind": "context",
-          "clauses": ["in-explicit-tablespace", "implicit-space-options"],
+          "clauses": ["in-explicit-tablespace", "logged", "compress", "dssize", "bufferpool", "member-cluster", "trackmod", "pagenum"],
           "tags": ["placement", "implicit", "negative", "high-value"],
           "text": "LOGGED/NOT LOGGED, COMPRESS, DSSIZE, BUFFERPOOL, MEMBER CLUSTER, TRACKMOD, and PAGENUM on CREATE TABLE are legal only for an implicitly created base table space, not an explicit target.",
+          "source_refs": ["ibm-create-table", "ibm-implicit-tablespace"]
+        },
+        {
+          "id": "placement-exclusive",
+          "kind": "conflict",
+          "clauses": ["in-explicit-tablespace", "in-database", "in-accelerator"],
+          "tags": ["placement", "syntax", "negative"],
+          "text": "IN table-space, IN DATABASE, and IN ACCELERATOR are mutually exclusive placement alternatives.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "partitioning-exclusive",
+          "kind": "conflict",
+          "clauses": ["partition-by-size", "partition-by-range"],
+          "tags": ["partition", "syntax", "negative"],
+          "text": "PARTITION BY SIZE and PARTITION BY RANGE are mutually exclusive partitioning alternatives.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "dssize-every-conflict",
+          "kind": "conflict",
+          "clauses": ["dssize", "partition-by-size"],
+          "tags": ["implicit", "dssize", "pbg", "negative"],
+          "text": "DSSIZE on CREATE TABLE must not be combined with the EVERY size in PARTITION BY SIZE.",
+          "source_refs": ["ibm-create-table", "ibm-implicit-tablespace"]
+        },
+        {
+          "id": "pagenum-relative-requires-partitioning",
+          "kind": "requiredness",
+          "clauses": ["pagenum", "partition-by-range"],
+          "tags": ["implicit", "pagenum", "pbr", "negative"],
+          "text": "PAGENUM RELATIVE is allowed only when a partitioning clause is specified; for current implicit CREATE TABLE usage this is the PBR path.",
           "source_refs": ["ibm-create-table", "ibm-implicit-tablespace"]
         },
         {
@@ -1576,7 +1887,7 @@
         {
           "id": "xml-support-objects",
           "kind": "dependency",
-          "clauses": ["data-type"],
+          "clauses": ["data-type", "xml-type-modifier"],
           "tags": ["xml", "implicit", "index"],
           "text": "The first XML column causes an implicit document-ID column and implicit XML storage objects; validate those dependencies, not just the base table row.",
           "source_refs": ["ibm-create-table"]
@@ -1584,17 +1895,41 @@
         {
           "id": "capture-logging-conflict",
           "kind": "conflict",
-          "clauses": ["data-capture", "implicit-space-options"],
+          "clauses": ["data-capture", "logged"],
           "tags": ["replication", "logging", "negative"],
           "text": "DATA CAPTURE CHANGES conflicts with NOT LOGGED.",
           "source_refs": ["ibm-create-table"]
         },
         {
+          "id": "accelerator-restrictions",
+          "kind": "context",
+          "clauses": ["in-accelerator", "explicit-elements", "like", "as-no-data", "mqt", "data-type", "default", "identity", "fieldproc", "security-label", "implicitly-hidden", "inline-length", "primary-key", "unique", "foreign-key", "check", "system-period", "business-period", "partition-by-size", "partition-by-range", "organization-by-hash", "editproc", "validproc", "audit", "data-capture", "restrict-on-drop", "ccsid", "volatile", "logged", "compress", "append", "dssize", "bufferpool", "member-cluster", "trackmod", "pagenum", "key-label"],
+          "tags": ["accelerator", "placement", "environment", "negative", "high-value"],
+          "text": "IN ACCELERATOR requires explicit column definitions and cannot use LIKE, AS-result, or MQT. It rejects the documented generated/default, column-attribute, constraint/period, partition, procedure, and physical/table options; CCSID has additional accelerator encoding restrictions. Unsupported types include DECFLOAT, LOB, ROWID, TIMESTAMP WITH TIME ZONE, and XML.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
           "id": "hash-current-unsupported",
           "kind": "compatibility",
-          "clauses": [],
+          "clauses": ["organization-by-hash", "partition-hash-space"],
           "tags": ["hash", "deprecated", "applcompat"],
           "text": "Creating new hash-organized tables is unsupported at APPLCOMPAT V12R1M504 or later; keep grammar only for explicitly lower-compatibility regression cases.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "hash-cross-clause-restrictions",
+          "kind": "conflict",
+          "clauses": ["organization-by-hash", "partition-hash-space", "append", "in-accelerator", "member-cluster", "in-explicit-tablespace", "partition-by-range", "pagenum"],
+          "tags": ["hash", "deprecated", "partition", "negative"],
+          "text": "Partition HASH SPACE requires ORGANIZE BY HASH UNIQUE and otherwise inherits the organization-level value. Hash organization conflicts with APPEND YES, IN ACCELERATOR, MEMBER CLUSTER, and basic row format; an explicitly placed PBR hash table cannot use PAGENUM RELATIVE.",
+          "source_refs": ["ibm-create-table"]
+        },
+        {
+          "id": "compatibility-synonyms",
+          "kind": "compatibility",
+          "clauses": ["identity", "partition-by-range", "as-no-data", "mqt", "data-type"],
+          "tags": ["compatibility", "synonym", "round-trip"],
+          "text": "Accepted compatibility spellings include NOCACHE, NOCYCLE, NOMINVALUE, NOMAXVALUE, NOORDER, PART plus VALUES, VALUES for ENDING AT, DEFINITION ONLY, CREATE SUMMARY TABLE, and TIMEZONE; preserve them in parse tests but emit current syntax in new templates.",
           "source_refs": ["ibm-create-table"]
         },
         {
@@ -2053,6 +2388,438 @@
           "tags": ["catalog", "round-trip"],
           "text": "Compare SYSINDEXES, every SYSINDEXPART row, SYSKEYS for ordinary keys, and SYSKEYTARGETS for expression/XML targets.",
           "source_refs": ["ibm-catalog-sysindexes", "ibm-catalog-sysindexpart", "ibm-catalog-syskeys", "ibm-catalog-syskeytargets"]
+        }
+      ]
+    },
+    "procedure": {
+      "display_name": "PROCEDURE",
+      "statements": [
+        "CREATE PROCEDURE (SQL - native)",
+        "CREATE PROCEDURE (external)",
+        "CREATE PROCEDURE (SQL - external, deprecated)"
+      ],
+      "chapter": "kb/objects/procedure.md",
+      "depends_on": [
+        "user-defined parameter types and TABLE LIKE source objects when used",
+        "objects and routines referenced by a native SQL procedure body",
+        "an implicitly bound package for each native SQL procedure version",
+        "a prepared host-language program, package, WLM environment, and external-security configuration for an external procedure"
+      ],
+      "catalog_tables": [
+        "SYSIBM.SYSROUTINES",
+        "SYSIBM.SYSPARMS",
+        "SYSIBM.SYSPACKAGE",
+        "SYSIBM.SYSPACKDEP",
+        "SYSIBM.SYSROUTINEAUTH"
+      ],
+      "dimensions": [
+        "procedure_kind:native_sql|external|external_sql_deprecated",
+        "parameter_count:zero|one|many",
+        "parameter_mode:in|out|inout|mixed",
+        "parameter_type:built_in|distinct|array|lob_locator|table_locator",
+        "parameter_ccsid:default|ascii|ebcdic|unicode|mismatch",
+        "body_shape:single_statement|compound|wrapped",
+        "body_family:dml|cursor|handler|dynamic_sql|diagnostics|nested_routine",
+        "data_access:modifies|reads|contains|no_sql_external",
+        "result_sets:zero|one|multiple|exceeded",
+        "transaction:commit_no|commit_yes|autonomous",
+        "versioning:create_v1|add_version|replace_version|replace_object",
+        "native_package:version|applcompat|owner|qualifier|path|dependency",
+        "external_language:assemble|c|cobol|java|pli|rexx",
+        "external_linkage:sql|general|general_with_nulls|java",
+        "external_runtime:program|package|wlm|security|first_call",
+        "round_trip:text|catalog|parameters|package|dependency|authorization"
+      ],
+      "clauses": [
+        {
+          "id": "name",
+          "syntax": "CREATE [OR REPLACE] PROCEDURE [<schema>.]<procedure-name>",
+          "required": "always",
+          "default": "unqualified name uses the applicable SQL schema rules",
+          "values": "qualified or unqualified SQL procedure name",
+          "tags": ["identity", "schema", "routine"],
+          "summary": "Names the callable procedure; use the specific name to disambiguate overloads and catalog grants.",
+          "source_refs": ["ibm-create-procedure-overview", "ibm-create-procedure-native", "ibm-create-procedure-external"]
+        },
+        {
+          "id": "kind-discriminator",
+          "syntax": "LANGUAGE SQL [without FENCED or EXTERNAL] | LANGUAGE <host-language> [EXTERNAL NAME ...] | LANGUAGE SQL {FENCED | EXTERNAL ...}",
+          "required": "always by syntax combination",
+          "default": "LANGUAGE SQL without FENCED/EXTERNAL is native SQL",
+          "values": "native SQL, current external, or deprecated external SQL",
+          "tags": ["native", "external", "deprecated", "discriminator"],
+          "summary": "The language and FENCED/EXTERNAL combination selects the procedure family.",
+          "source_refs": ["ibm-create-procedure-overview", "ibm-create-procedure-native", "ibm-create-procedure-external", "ibm-create-procedure-sql-external-deprecated"]
+        },
+        {
+          "id": "parameters",
+          "syntax": "([IN | OUT | INOUT] <parameter-name> <parameter-type> [, ...])",
+          "required": "optional; zero parameters are allowed and parentheses can be omitted",
+          "default": "IN when the mode is omitted",
+          "values": "built-in, distinct, array, LOB, XML, or other documented parameter types subject to procedure-kind restrictions",
+          "tags": ["parameter", "signature", "mode", "data-type"],
+          "summary": "Defines the ordered callable signature; catalog rows preserve mode, type, attributes, CCSID, and ordinal.",
+          "source_refs": ["ibm-create-procedure-overview", "ibm-create-procedure-native", "ibm-create-procedure-external", "ibm-catalog-sysparms"]
+        },
+        {
+          "id": "table-parameter",
+          "syntax": "TABLE LIKE <table-or-view-name> AS LOCATOR",
+          "required": "optional specialized parameter form",
+          "default": "no table parameter",
+          "values": "existing current-server table or view with the documented column restrictions",
+          "tags": ["parameter", "table-locator", "trigger", "dependency"],
+          "summary": "Defines a transition-table locator whose row shape is captured when CREATE PROCEDURE is processed.",
+          "source_refs": ["ibm-create-procedure-native", "ibm-create-procedure-external", "ibm-catalog-sysparms"]
+        },
+        {
+          "id": "specific",
+          "syntax": "SPECIFIC [<schema>.]<specific-name>",
+          "required": "optional; required for selected replacement/table-parameter cases",
+          "default": "specific name is the procedure name",
+          "values": "eligible specific routine identifier in the procedure schema",
+          "tags": ["identity", "overload", "replacement", "authorization"],
+          "summary": "Provides the unambiguous routine identity used by catalog parameter and privilege rows.",
+          "source_refs": ["ibm-create-procedure-native", "ibm-create-procedure-external", "ibm-catalog-sysroutines", "ibm-catalog-sysroutineauth"]
+        },
+        {
+          "id": "or-replace",
+          "syntax": "OR REPLACE",
+          "required": "optional for native SQL and current external definitions",
+          "default": "CREATE rejects a conflicting procedure definition",
+          "values": "present or omitted",
+          "tags": ["replacement", "default", "round-trip"],
+          "summary": "Replaces an eligible whole definition, or adds/replaces a native version when VERSION is specified.",
+          "source_refs": ["ibm-create-procedure-native", "ibm-create-procedure-external"]
+        },
+        {
+          "id": "version",
+          "syntax": "VERSION <routine-version-id>",
+          "required": "native SQL only, optional",
+          "default": "V1 for the initial native SQL definition",
+          "values": "eligible native SQL routine version identifier",
+          "tags": ["native", "versioning", "package"],
+          "summary": "Identifies the native routine and package version to create, add, or replace.",
+          "source_refs": ["ibm-create-procedure-native", "ibm-procedure-multiple-versions", "ibm-catalog-sysroutines"]
+        },
+        {
+          "id": "language",
+          "syntax": "LANGUAGE {SQL | ASSEMBLE | C | COBOL | JAVA | PLI | REXX}",
+          "required": "always",
+          "default": "none",
+          "values": "SQL for SQL procedures; a documented host-language interface for current external procedures",
+          "tags": ["native", "external", "language"],
+          "summary": "Selects SQL PL or the interface convention of the separately prepared external program.",
+          "source_refs": ["ibm-create-procedure-native", "ibm-create-procedure-external"]
+        },
+        {
+          "id": "external-name",
+          "syntax": "EXTERNAL [NAME <external-program-name>]",
+          "required": "external definitions; explicit NAME is required for Java and recommended for durable DDL",
+          "default": "procedure name only when that external default is valid",
+          "values": "load-module name or documented Java JAR/class/method signature",
+          "tags": ["external", "program", "java", "dependency"],
+          "summary": "Maps the SQL procedure definition to its separately deployed executable entry point.",
+          "source_refs": ["ibm-create-procedure-external", "ibm-procedure-create-external-task"]
+        },
+        {
+          "id": "parameter-style",
+          "syntax": "PARAMETER STYLE {SQL | GENERAL | GENERAL WITH NULLS | JAVA}",
+          "required": "external procedures, optional but language-dependent",
+          "default": "SQL except where the selected language prohibits that default",
+          "values": "SQL, GENERAL, GENERAL WITH NULLS, or JAVA under the documented language matrix",
+          "tags": ["external", "linkage", "null", "java", "rexx"],
+          "summary": "Defines the calling convention and whether additional indicators/status arguments are passed.",
+          "source_refs": ["ibm-create-procedure-external"]
+        },
+        {
+          "id": "sql-data-access",
+          "syntax": "MODIFIES SQL DATA | READS SQL DATA | CONTAINS SQL | NO SQL",
+          "required": "optional; NO SQL applies to external procedures",
+          "default": "MODIFIES SQL DATA for native SQL",
+          "values": "procedure-kind-appropriate access classification",
+          "tags": ["body", "sql", "data-access", "nested-routine"],
+          "summary": "Constrains the SQL statements and locally invoked routines that the procedure can execute.",
+          "source_refs": ["ibm-create-procedure-native", "ibm-create-procedure-external"]
+        },
+        {
+          "id": "determinism-null-call",
+          "syntax": "{DETERMINISTIC | NOT DETERMINISTIC} [CALLED ON NULL INPUT]",
+          "required": "optional",
+          "default": "NOT DETERMINISTIC and CALLED ON NULL INPUT",
+          "values": "documented determinism and null-call attributes",
+          "tags": ["determinism", "null", "default"],
+          "summary": "Records optimizer-facing determinism intent and confirms that null arguments do not suppress a procedure call.",
+          "source_refs": ["ibm-create-procedure-native", "ibm-create-procedure-external"]
+        },
+        {
+          "id": "dynamic-result-sets",
+          "syntax": "DYNAMIC RESULT SETS <integer>",
+          "required": "optional",
+          "default": "0",
+          "values": "0 through 32767",
+          "tags": ["result-set", "cursor", "boundary"],
+          "summary": "Declares the maximum number of ad hoc result sets that the procedure can return.",
+          "source_refs": ["ibm-create-procedure-native", "ibm-create-procedure-external", "ibm-catalog-sysroutines"]
+        },
+        {
+          "id": "commit-mode",
+          "syntax": "COMMIT ON RETURN {NO | YES} | AUTONOMOUS",
+          "required": "optional; AUTONOMOUS is native SQL only",
+          "default": "COMMIT ON RETURN NO",
+          "values": "NO, YES, or native AUTONOMOUS",
+          "tags": ["transaction", "commit", "autonomous", "nested-routine"],
+          "summary": "Controls whether return commits caller work or whether native execution uses an independent unit of work.",
+          "source_refs": ["ibm-create-procedure-overview", "ibm-create-procedure-native", "ibm-create-procedure-external"]
+        },
+        {
+          "id": "special-registers",
+          "syntax": "INHERIT SPECIAL REGISTERS | DEFAULT SPECIAL REGISTERS",
+          "required": "optional",
+          "default": "INHERIT SPECIAL REGISTERS",
+          "values": "inherit caller values or initialize documented defaults",
+          "tags": ["special-register", "execution", "default"],
+          "summary": "Controls the initial special-register context while restoring the caller context on return.",
+          "source_refs": ["ibm-create-procedure-overview", "ibm-create-procedure-native", "ibm-create-procedure-external"]
+        },
+        {
+          "id": "native-body",
+          "syntax": "<SQL-routine-body>",
+          "required": "native SQL and deprecated external SQL procedures",
+          "default": "none",
+          "values": "one supported SQL statement or one SQL control statement containing nested SQL procedure statements",
+          "tags": ["native", "body", "sql-pl", "multiple-statements"],
+          "summary": "Defines executable SQL PL; multiple statements require one outer control statement such as a compound block.",
+          "source_refs": ["ibm-create-procedure-native", "ibm-procedure-body", "ibm-sqlpl", "ibm-sql-procedure-statement"]
+        },
+        {
+          "id": "qualifier-path-owner",
+          "syntax": "QUALIFIER <schema> | SQL PATH <schema> [, ...] | PACKAGE OWNER <authorization-name> [AS ROLE | AS USER]",
+          "required": "native SQL only, optional",
+          "default": "context-derived qualifier/path/package owner",
+          "values": "documented schema path and authorization identity values",
+          "tags": ["native", "resolution", "package", "owner"],
+          "summary": "Controls static name resolution and ownership of the implicitly bound native package.",
+          "source_refs": ["ibm-create-procedure-native", "ibm-catalog-syspackage"]
+        },
+        {
+          "id": "native-bind-options",
+          "syntax": "<native procedure bind and execution options>",
+          "required": "native SQL only, optional",
+          "default": "the statement-specific defaults documented by IBM",
+          "values": "isolation, current data, dynamic rules, release, reoptimization, query acceleration, formats, encoding, and related options",
+          "tags": ["native", "package", "bind-option", "round-trip"],
+          "summary": "Defines package behavior for the SQL routine body; compare explicit options against SYSPACKAGE.",
+          "source_refs": ["ibm-create-procedure-native", "ibm-catalog-syspackage"]
+        },
+        {
+          "id": "debug-applcompat",
+          "syntax": "{ALLOW | DISALLOW | DISABLE} DEBUG MODE | WLM ENVIRONMENT FOR DEBUG MODE <name> | APPLCOMPAT <level>",
+          "required": "native SQL only, optional",
+          "default": "debug mode follows CURRENT DEBUG MODE; APPLCOMPAT follows the subsystem parameter",
+          "values": "documented debug states, debug WLM environment, and supported application compatibility levels",
+          "tags": ["native", "debug", "wlm", "application-compatibility"],
+          "summary": "Controls debuggability and the SQL behavior level used to bind static statements in the body.",
+          "source_refs": ["ibm-create-procedure-native", "ibm-catalog-sysroutines", "ibm-catalog-syspackage"]
+        },
+        {
+          "id": "external-package",
+          "syntax": "{NO PACKAGE PATH | PACKAGE PATH <path>} | {NO COLLID | COLLID <collection-id>}",
+          "required": "external only, optional",
+          "default": "NO PACKAGE PATH and NO COLLID",
+          "values": "documented package path and collection values",
+          "tags": ["external", "package", "resolution"],
+          "summary": "Selects the package search path or collection for the separately prepared external program.",
+          "source_refs": ["ibm-create-procedure-external", "ibm-procedure-create-external-task"]
+        },
+        {
+          "id": "external-runtime",
+          "syntax": "WLM ENVIRONMENT ... | STAY RESIDENT ... | PROGRAM TYPE ... | SECURITY ... | RUN OPTIONS ... | failure options",
+          "required": "external only, optional and language-dependent",
+          "default": "installation WLM, STAY RESIDENT NO, language/rules-derived program type, SECURITY DB2, and system failure threshold",
+          "values": "documented external WLM, Language Environment, residency, program, security, and failure choices",
+          "tags": ["external", "wlm", "security", "operational"],
+          "summary": "Defines where and how the external executable runs after successful catalog registration.",
+          "source_refs": ["ibm-create-procedure-external", "ibm-procedure-create-external-task"]
+        },
+        {
+          "id": "wrapped",
+          "syntax": "WRAPPED <obfuscated-statement-text>",
+          "required": "optional alternative for native SQL",
+          "default": "readable procedure definition and body",
+          "values": "output of the WRAP scalar function",
+          "tags": ["native", "obfuscation", "round-trip"],
+          "summary": "Stores an obfuscated native definition while leaving only the readable identity and parameters.",
+          "source_refs": ["ibm-create-procedure-native", "ibm-catalog-sysroutines"]
+        }
+      ],
+      "rules": [
+        {
+          "id": "current-form-selection",
+          "kind": "requiredness",
+          "clauses": ["kind-discriminator", "language", "external-name", "native-body"],
+          "tags": ["native", "external", "discriminator"],
+          "text": "LANGUAGE SQL without FENCED or EXTERNAL creates a native SQL procedure; a host-language external definition maps to a separately prepared program; LANGUAGE SQL with FENCED or EXTERNAL selects the deprecated external SQL form.",
+          "source_refs": ["ibm-create-procedure-overview", "ibm-create-procedure-native", "ibm-create-procedure-external", "ibm-create-procedure-sql-external-deprecated"]
+        },
+        {
+          "id": "external-sql-deprecated",
+          "kind": "compatibility",
+          "clauses": ["kind-discriminator", "language", "native-body"],
+          "tags": ["external-sql", "deprecated", "compatibility"],
+          "text": "External SQL procedures are deprecated and less fully supported than native SQL procedures; their CREATE statement must be processed through JCL or DSNTPSMP, so retain them only as compatibility cases.",
+          "source_refs": ["ibm-create-procedure-overview", "ibm-create-procedure-sql-external-deprecated", "ibm-procedure-create-external-sql-task"]
+        },
+        {
+          "id": "parameter-ccsid-consistency",
+          "kind": "interaction",
+          "clauses": ["parameters"],
+          "tags": ["parameter", "ccsid", "negative"],
+          "text": "All character and graphic parameters use one encoding scheme; per-parameter CCSID values and PARAMETER CCSID must agree.",
+          "source_refs": ["ibm-create-procedure-overview", "ibm-create-procedure-native", "ibm-create-procedure-external"]
+        },
+        {
+          "id": "scalar-locator-boundary",
+          "kind": "data-type",
+          "clauses": ["parameters", "kind-discriminator"],
+          "tags": ["parameter", "lob", "locator", "negative"],
+          "text": "Scalar AS LOCATOR applies only to LOB values or distinct types based on LOBs and cannot be specified for an SQL procedure.",
+          "source_refs": ["ibm-create-procedure-overview", "ibm-create-procedure-external"]
+        },
+        {
+          "id": "table-parameter-trigger-only",
+          "kind": "context",
+          "clauses": ["table-parameter", "parameters"],
+          "tags": ["table-locator", "trigger", "dependency", "negative"],
+          "text": "A TABLE LIKE ... AS LOCATOR parameter represents a transition table and the procedure can be invoked only from a trigger action; the captured row shape must match at invocation.",
+          "source_refs": ["ibm-create-procedure-native", "ibm-create-procedure-external"]
+        },
+        {
+          "id": "or-replace-default-reset",
+          "kind": "replacement",
+          "clauses": ["or-replace", "specific", "native-bind-options", "external-runtime"],
+          "tags": ["replacement", "default", "round-trip"],
+          "text": "Whole-definition OR REPLACE preserves granted procedure privileges but discards the comment and reapplies system defaults for omitted options instead of retaining the old explicit values.",
+          "source_refs": ["ibm-create-procedure-native", "ibm-create-procedure-external"]
+        },
+        {
+          "id": "version-signature-stability",
+          "kind": "versioning",
+          "clauses": ["version", "parameters", "table-parameter", "or-replace"],
+          "tags": ["native", "versioning", "signature", "negative"],
+          "text": "Native versions can change parameter names, options, and body, but cannot change parameter count, mode, type, character attributes, or CCSID; a table parameter prevents add/replace-version processing.",
+          "source_refs": ["ibm-create-procedure-native", "ibm-procedure-multiple-versions"]
+        },
+        {
+          "id": "version-autonomous-consistency",
+          "kind": "versioning",
+          "clauses": ["version", "commit-mode"],
+          "tags": ["native", "versioning", "autonomous", "negative"],
+          "text": "AUTONOMOUS must be specified for every version of a native procedure or for none of its versions.",
+          "source_refs": ["ibm-procedure-multiple-versions", "ibm-create-procedure-native"]
+        },
+        {
+          "id": "native-body-layering",
+          "kind": "requiredness",
+          "clauses": ["native-body", "sql-data-access"],
+          "tags": ["native", "body", "sql-pl", "multiple-statements"],
+          "text": "A native SQL routine body is one SQL statement; multiple nested statements require one SQL control statement such as a compound block, and the nested rows come from SQL-procedure-statement.",
+          "source_refs": ["ibm-create-procedure-native", "ibm-procedure-body", "ibm-sqlpl", "ibm-sql-procedure-statement"]
+        },
+        {
+          "id": "data-access-enforced",
+          "kind": "interaction",
+          "clauses": ["sql-data-access", "native-body"],
+          "tags": ["body", "data-access", "nested-routine", "negative"],
+          "text": "Db2 checks local body statements and locally invoked routines against the declared data-access level; READS excludes modification and CONTAINS excludes both reading and modification.",
+          "source_refs": ["ibm-create-procedure-native", "ibm-create-procedure-external"]
+        },
+        {
+          "id": "compound-outer-terminator",
+          "kind": "tooling",
+          "clauses": ["native-body"],
+          "tags": ["native", "compound", "spufi", "dsntep2", "terminator"],
+          "text": "Nested statements use semicolons but the outermost control statement does not; configure SPUFI, DSNTEP2, or similar processors with a distinct outer terminator to avoid truncating CREATE PROCEDURE.",
+          "source_refs": ["ibm-create-procedure-native", "ibm-procedure-body"]
+        },
+        {
+          "id": "native-package-identity",
+          "kind": "verification",
+          "clauses": ["name", "version", "debug-applcompat", "qualifier-path-owner", "native-bind-options"],
+          "tags": ["native", "package", "catalog", "application-compatibility"],
+          "text": "Db2 implicitly binds a package whose collection/name/version are procedure schema/name/version; SYSPACKAGE.TYPE is N, and APPLCOMPAT plus other body bind options are verified on that package.",
+          "source_refs": ["ibm-procedure-create-native-task", "ibm-procedure-package-copies", "ibm-catalog-syspackage"]
+        },
+        {
+          "id": "native-package-copy-trigger",
+          "kind": "operational",
+          "clauses": ["native-body", "qualifier-path-owner"],
+          "tags": ["native", "package", "remote", "dependency"],
+          "text": "CONNECT, eligible remote three-part references, SET CURRENT PACKAGESET, or SET CURRENT PACKAGE PATH can require explicit copies of a native procedure package.",
+          "source_refs": ["ibm-procedure-package-copies", "ibm-procedure-create-native-task"]
+        },
+        {
+          "id": "commit-on-return-nesting",
+          "kind": "prohibition",
+          "clauses": ["commit-mode", "dynamic-result-sets"],
+          "tags": ["transaction", "commit", "nested-routine", "result-set", "negative"],
+          "text": "A routine or trigger cannot invoke a procedure defined with COMMIT ON RETURN YES; returned result-set cursors must be WITH HOLD to remain usable after a successful return commit.",
+          "source_refs": ["ibm-create-procedure-overview", "ibm-create-procedure-native", "ibm-create-procedure-external"]
+        },
+        {
+          "id": "autonomous-restrictions",
+          "kind": "interaction",
+          "clauses": ["commit-mode", "dynamic-result-sets", "parameters", "native-body"],
+          "tags": ["native", "autonomous", "transaction", "negative"],
+          "text": "AUTONOMOUS requires DYNAMIC RESULT SETS 0, excludes the documented LOB/XML-related parameter forms, cannot assign global variables, and cannot invoke another autonomous procedure.",
+          "source_refs": ["ibm-create-procedure-native", "ibm-procedure-create-native-task"]
+        },
+        {
+          "id": "external-language-linkage-matrix",
+          "kind": "interaction",
+          "clauses": ["language", "external-name", "parameter-style", "external-runtime", "parameters"],
+          "tags": ["external", "java", "rexx", "linkage", "negative"],
+          "text": "Java requires EXTERNAL NAME and PARAMETER STYLE JAVA and prohibits DBINFO, PROGRAM TYPE MAIN, and RUN OPTIONS; REXX uses GENERAL or GENERAL WITH NULLS and permits only one OUT/INOUT parameter in the last position; DBINFO requires PARAMETER STYLE SQL.",
+          "source_refs": ["ibm-create-procedure-external"]
+        },
+        {
+          "id": "external-registration-not-runnable-proof",
+          "kind": "operational",
+          "clauses": ["external-name", "external-package", "external-runtime"],
+          "tags": ["external", "program", "package", "wlm", "security"],
+          "text": "Successful catalog registration does not prove that the external executable, package, WLM environment, Language Environment setup, and external-security authorization will succeed on first invocation.",
+          "source_refs": ["ibm-procedure-create-external-task", "ibm-create-procedure-external"]
+        },
+        {
+          "id": "debug-wlm-boundary",
+          "kind": "interaction",
+          "clauses": ["debug-applcompat"],
+          "tags": ["native", "debug", "wlm", "negative"],
+          "text": "For a native procedure, WLM ENVIRONMENT is valid only as WLM ENVIRONMENT FOR DEBUG MODE; DISABLE DEBUG MODE cannot later be relaxed for that version and causes the debug WLM value to be ignored.",
+          "source_refs": ["ibm-create-procedure-native"]
+        },
+        {
+          "id": "global-variable-data-access",
+          "kind": "interaction",
+          "clauses": ["sql-data-access", "native-body", "commit-mode"],
+          "tags": ["global-variable", "data-access", "autonomous", "negative"],
+          "text": "Referencing global variables requires at least CONTAINS SQL, modifying them requires MODIFIES SQL DATA, and an autonomous procedure cannot assign a global variable.",
+          "source_refs": ["ibm-create-procedure-overview", "ibm-create-procedure-native"]
+        },
+        {
+          "id": "wrapped-dynamic-version-boundary",
+          "kind": "prohibition",
+          "clauses": ["wrapped", "version", "or-replace"],
+          "tags": ["native", "wrapped", "versioning", "negative"],
+          "text": "WRAPPED cannot be used on a static CREATE statement or on a CREATE statement that adds or replaces a version of an existing native procedure.",
+          "source_refs": ["ibm-create-procedure-native", "ibm-catalog-sysroutines"]
+        },
+        {
+          "id": "catalog-verification-set",
+          "kind": "verification",
+          "clauses": ["name", "specific", "parameters", "version", "external-name", "debug-applcompat"],
+          "tags": ["catalog", "parameter", "package", "dependency", "authorization", "round-trip"],
+          "text": "Compare SYSROUTINES definition/version/options/text, ordered SYSPARMS rows, native SYSPACKAGE TYPE N and SYSPACKDEP DTYPE N rows, and SYSROUTINEAUTH grants when authorization is in scope; test external first-call readiness separately.",
+          "source_refs": ["ibm-catalog-sysroutines", "ibm-catalog-sysparms", "ibm-catalog-syspackage", "ibm-catalog-syspackdep", "ibm-catalog-sysroutineauth"]
         }
       ]
     },

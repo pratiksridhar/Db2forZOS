@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0.0",
+  "template": "kb/templates/basic-before-validation.template.sql",
+  "object": "trigger",
+  "kind": "basic_before_validation",
+  "outer_terminator": "!",
+  "required_tokens": [
+    "TRIGGER_SCHEMA",
+    "TRIGGER_NAME",
+    "SUBJECT_SCHEMA",
+    "SUBJECT_TABLE"
+  ],
+  "requires_capabilities": [
+    "trigger_subject_before_after"
+  ],
+  "covers": [
+    "trigger_kind:basic",
+    "activation_time:before",
+    "event:update",
+    "granularity:row"
+  ],
+  "must_include": [
+    "MODE DB2SQL",
+    "NO CASCADE BEFORE",
+    "SIGNAL SQLSTATE"
+  ]
+}

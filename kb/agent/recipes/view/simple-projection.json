@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0.0",
+  "id": "view_simple_projection",
+  "object": "view",
+  "category": "positive",
+  "status": "extension_candidate_agent_scaffold",
+  "description": "Simple projection view over one updatable base table fixture.",
+  "template": "kb/templates/simple-view.template.sql",
+  "fixtures": [
+    "kb/agent/fixtures/base-table-simple.json"
+  ],
+  "requires_capabilities": [
+    "selectable_source"
+  ],
+  "provides_capabilities": [
+    "selectable_source",
+    "eligible_view",
+    "trigger_subject_instead_of"
+  ],
+  "covers": [
+    "view_shape:simple_projection",
+    "source_count:one",
+    "column_list:explicit",
+    "updatability:updatable"
+  ],
+  "parameters": [
+    "VIEW_SCHEMA",
+    "VIEW_NAME",
+    "BASE_SCHEMA",
+    "BASE_TABLE"
+  ],
+  "expected": {
+    "outcome": "success",
+    "failure_phase": "none",
+    "catalog_assertions": [
+      "SYSIBM.SYSTABLES identifies the object as a view",
+      "view dependency on base table is recorded"
+    ]
+  }
+}

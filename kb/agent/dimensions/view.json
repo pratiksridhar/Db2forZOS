@@ -1,0 +1,80 @@
+{
+  "schema_version": "1.0.0",
+  "object": "view",
+  "status": "extension_candidate_agent_scaffold",
+  "dimensions": [
+    {
+      "id": "view_shape",
+      "values": [
+        "simple_projection",
+        "renamed_columns",
+        "expression_columns",
+        "join",
+        "union",
+        "aggregate",
+        "nested_view"
+      ]
+    },
+    {
+      "id": "source_count",
+      "values": [
+        "one",
+        "two",
+        "many"
+      ]
+    },
+    {
+      "id": "column_list",
+      "values": [
+        "omitted",
+        "explicit",
+        "renamed",
+        "duplicate_negative"
+      ]
+    },
+    {
+      "id": "predicate",
+      "values": [
+        "none",
+        "simple_where",
+        "correlated",
+        "non_deterministic"
+      ]
+    },
+    {
+      "id": "updatability",
+      "values": [
+        "updatable",
+        "read_only",
+        "non_updatable_negative"
+      ]
+    },
+    {
+      "id": "check_option",
+      "values": [
+        "omitted",
+        "local",
+        "cascaded",
+        "invalid_on_read_only"
+      ]
+    },
+    {
+      "id": "dependency",
+      "values": [
+        "base_table",
+        "base_view",
+        "nested_view",
+        "dropped_dependency_negative"
+      ]
+    },
+    {
+      "id": "round_trip_oracle",
+      "values": [
+        "definition_text",
+        "catalog",
+        "dependency",
+        "behavior"
+      ]
+    }
+  ]
+}

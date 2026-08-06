@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0.0",
+  "id": "view_local_check_option",
+  "object": "view",
+  "category": "positive",
+  "status": "extension_candidate_agent_scaffold",
+  "description": "Updatable simple view with LOCAL CHECK OPTION for behavior-oriented generated cases.",
+  "template": "kb/templates/view-check-option.template.sql",
+  "fixtures": [
+    "kb/agent/fixtures/base-table-simple.json"
+  ],
+  "requires_capabilities": [
+    "updatable_source"
+  ],
+  "provides_capabilities": [
+    "selectable_source",
+    "eligible_view",
+    "trigger_subject_instead_of"
+  ],
+  "covers": [
+    "view_shape:simple_projection",
+    "predicate:simple_where",
+    "check_option:local",
+    "updatability:updatable",
+    "round_trip_oracle:behavior"
+  ],
+  "parameters": [
+    "VIEW_SCHEMA",
+    "VIEW_NAME",
+    "BASE_SCHEMA",
+    "BASE_TABLE"
+  ],
+  "rule_refs": [
+    "view.check_option_requires_updatable_view"
+  ],
+  "expected": {
+    "outcome": "success",
+    "failure_phase": "none",
+    "behavioral_assertions": [
+      "INSERT or UPDATE through the view that satisfies the predicate succeeds",
+      "INSERT or UPDATE through the view that violates the predicate fails"
+    ]
+  },
+  "negative_companions": [
+    {
+      "id": "view_check_option_on_read_only_negative",
+      "mutation": "add CHECK OPTION to non-updatable join/aggregate view",
+      "expected_failure_phase": "prepare_or_execute"
+    }
+  ]
+}

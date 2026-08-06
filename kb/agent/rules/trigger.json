@@ -1,0 +1,272 @@
+{
+  "schema_version": "1.0.0",
+  "object": "trigger",
+  "purpose": "Structured subset of high-impact trigger constraints for agents. Textual authority remains kb/data/db2z13-create-ddl.json plus IBM docs.",
+  "transition_matrix": [
+    {
+      "activation_time": "before",
+      "granularity": "row",
+      "event": "delete",
+      "allowed": [
+        "old_row"
+      ],
+      "assignable": []
+    },
+    {
+      "activation_time": "before",
+      "granularity": "row",
+      "event": "insert",
+      "allowed": [
+        "new_row"
+      ],
+      "assignable": [
+        "new_row"
+      ]
+    },
+    {
+      "activation_time": "before",
+      "granularity": "row",
+      "event": "update",
+      "allowed": [
+        "old_row",
+        "new_row"
+      ],
+      "assignable": [
+        "new_row"
+      ]
+    },
+    {
+      "activation_time": "after",
+      "granularity": "row",
+      "event": "delete",
+      "allowed": [
+        "old_row",
+        "old_table"
+      ],
+      "assignable": []
+    },
+    {
+      "activation_time": "after",
+      "granularity": "row",
+      "event": "insert",
+      "allowed": [
+        "new_row",
+        "new_table"
+      ],
+      "assignable": []
+    },
+    {
+      "activation_time": "after",
+      "granularity": "row",
+      "event": "update",
+      "allowed": [
+        "old_row",
+        "new_row",
+        "old_table",
+        "new_table"
+      ],
+      "assignable": []
+    },
+    {
+      "activation_time": "after",
+      "granularity": "statement",
+      "event": "delete",
+      "allowed": [
+        "old_table"
+      ],
+      "assignable": []
+    },
+    {
+      "activation_time": "after",
+      "granularity": "statement",
+      "event": "insert",
+      "allowed": [
+        "new_table"
+      ],
+      "assignable": []
+    },
+    {
+      "activation_time": "after",
+      "granularity": "statement",
+      "event": "update",
+      "allowed": [
+        "old_table",
+        "new_table"
+      ],
+      "assignable": []
+    },
+    {
+      "activation_time": "instead_of",
+      "granularity": "row",
+      "event": "delete",
+      "allowed": [
+        "old_row",
+        "old_table"
+      ],
+      "assignable": []
+    },
+    {
+      "activation_time": "instead_of",
+      "granularity": "row",
+      "event": "insert",
+      "allowed": [
+        "new_row",
+        "new_table"
+      ],
+      "assignable": []
+    },
+    {
+      "activation_time": "instead_of",
+      "granularity": "row",
+      "event": "update",
+      "allowed": [
+        "old_row",
+        "new_row",
+        "old_table",
+        "new_table"
+      ],
+      "assignable": []
+    }
+  ],
+  "constraints": [
+    {
+      "id": "basic_requires_mode_db2sql",
+      "normalized_rule": "trigger.basic-advanced-discriminator",
+      "if": {
+        "trigger_kind": "basic"
+      },
+      "requires": {
+        "mode_db2sql": true
+      },
+      "prohibits": {
+        "advanced_options": "any"
+      },
+      "negative_case": true,
+      "expected_failure_phase": "prepare_or_execute"
+    },
+    {
+      "id": "advanced_omits_mode_db2sql",
+      "normalized_rule": "trigger.basic-advanced-discriminator",
+      "if": {
+        "trigger_kind": "advanced"
+      },
+      "requires": {
+        "mode_db2sql": false,
+        "applcompat_minimum": "V12R1M500"
+      },
+      "negative_case": true,
+      "expected_failure_phase": "prepare_or_execute"
+    },
+    {
+      "id": "before_after_subject_is_table",
+      "normalized_rule": "trigger.subject-time-pairing",
+      "if": {
+        "activation_time": [
+          "before",
+          "after"
+        ]
+      },
+      "requires_capability": "trigger_subject_before_after",
+      "prohibits_capability": "trigger_subject_instead_of"
+    },
+    {
+      "id": "instead_of_subject_is_view",
+      "normalized_rule": "trigger.subject-time-pairing",
+      "if": {
+        "activation_time": "instead_of"
+      },
+      "requires_capability": "trigger_subject_instead_of",
+      "prohibits": {
+        "when": true,
+        "event": "update_of",
+        "granularity": "statement"
+      }
+    },
+    {
+      "id": "statement_granularity_after_only",
+      "normalized_rule": "trigger.statement-granularity-after-only",
+      "if": {
+        "granularity": "statement"
+      },
+      "requires": {
+        "activation_time": "after"
+      },
+      "negative_case": true,
+      "expected_failure_phase": "prepare_or_execute"
+    },
+    {
+      "id": "referencing_names_unique",
+      "normalized_rule": "trigger.transition-name-uniqueness",
+      "requires": {
+        "all_referencing_identifiers_unique": true
+      },
+      "negative_case": true,
+      "expected_failure_phase": "prepare_or_execute"
+    },
+    {
+      "id": "basic_body_closed_set",
+      "normalized_rule": "trigger.basic-body-closed-set",
+      "if": {
+        "trigger_kind": "basic"
+      },
+      "allowed_statement_source": "kb/data/db2z13-trigger-body-statements.json#/basic/statements"
+    },
+    {
+      "id": "advanced_direct_or_one_control",
+      "normalized_rule": "trigger.advanced-body-layering",
+      "if": {
+        "trigger_kind": "advanced"
+      },
+      "requires_one_of": [
+        "advanced_direct_statement",
+        "sql_control_statement"
+      ],
+      "notes": "Multiple body statements require one outer SQL control statement."
+    },
+    {
+      "id": "advanced_ddl_nested_only",
+      "normalized_rule": "trigger.advanced-ddl-subset",
+      "if": {
+        "body_family": "ddl"
+      },
+      "requires": {
+        "trigger_kind": "advanced",
+        "outer_statement": "sql_control_statement"
+      },
+      "allowed_nested_ddl": [
+        "create-table",
+        "create-index",
+        "create-view"
+      ],
+      "excluded_ddl": [
+        "create-stogroup",
+        "create-database",
+        "create-tablespace",
+        "create-trigger"
+      ]
+    },
+    {
+      "id": "secure_required_for_rcac",
+      "normalized_rule": "trigger.security-rcac",
+      "if": {
+        "subject_has_row_or_column_access_control": true
+      },
+      "requires": {
+        "secured": true
+      },
+      "negative_case": true,
+      "expected_failure_phase": "prepare_or_execute"
+    },
+    {
+      "id": "advanced_options_single_use_order_independent",
+      "normalized_rule": null,
+      "if": {
+        "trigger_kind": "advanced"
+      },
+      "requires": {
+        "each_advanced_option_at_most_once": true
+      },
+      "notes": "The normalized clause groups package-style options; do not treat grouped vertical bars as mutually exclusive across different option families."
+    }
+  ]
+}

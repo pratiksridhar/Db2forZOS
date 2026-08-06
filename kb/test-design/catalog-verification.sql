@@ -184,3 +184,60 @@ SELECT TBOWNER,
    AND TRIGTIME = '{{TRIGTIME_CODE}}'
    AND TRIGEVENT = '{{TRIGEVENT_CODE}}'
  ORDER BY CREATEDTS, SCHEMA, NAME, VERSION;
+
+-- PROCEDURE definition and every version. ROUTINETYPE P identifies a stored
+-- procedure. ORIGIN N is native SQL; ORIGIN E is external or external SQL.
+SELECT *
+  FROM SYSIBM.SYSROUTINES
+ WHERE SCHEMA      = UPPER('{{PROCEDURE_SCHEMA}}')
+   AND NAME        = UPPER('{{PROCEDURE_NAME}}')
+   AND ROUTINETYPE = 'P'
+ ORDER BY VERSION, SPECIFICNAME;
+
+-- Native SQL source text, including its body. TEXT is a zero-length string for
+-- non-native procedure rows, so preserve that distinction in comparisons.
+SELECT SCHEMA,
+       NAME,
+       SPECIFICNAME,
+       ORIGIN,
+       VERSION,
+       ACTIVE,
+       TEXT
+  FROM SYSIBM.SYSROUTINES
+ WHERE SCHEMA      = UPPER('{{PROCEDURE_SCHEMA}}')
+   AND NAME        = UPPER('{{PROCEDURE_NAME}}')
+   AND ROUTINETYPE = 'P'
+ ORDER BY VERSION, SPECIFICNAME;
+
+-- Ordered scalar/table parameter metadata. ROWTYPE P/O/B means IN/OUT/INOUT.
+SELECT *
+  FROM SYSIBM.SYSPARMS
+ WHERE SCHEMA      = UPPER('{{PROCEDURE_SCHEMA}}')
+   AND NAME        = UPPER('{{PROCEDURE_NAME}}')
+   AND ROUTINETYPE = 'P'
+ ORDER BY SPECIFICNAME, ORDINAL;
+
+-- Native SQL procedure package. Collection/name/version are procedure
+-- schema/name/version, and TYPE N identifies a native SQL routine package.
+SELECT *
+  FROM SYSIBM.SYSPACKAGE
+ WHERE COLLID = UPPER('{{PROCEDURE_SCHEMA}}')
+   AND NAME   = UPPER('{{PROCEDURE_NAME}}')
+   AND TYPE   = 'N'
+ ORDER BY VERSION;
+
+-- Dependencies of every native SQL procedure package version.
+SELECT *
+  FROM SYSIBM.SYSPACKDEP
+ WHERE DCOLLID = UPPER('{{PROCEDURE_SCHEMA}}')
+   AND DNAME   = UPPER('{{PROCEDURE_NAME}}')
+   AND DTYPE   = 'N'
+ ORDER BY DCONTOKEN, BTYPE, BQUALIFIER, BNAME;
+
+-- Explicit EXECUTE privileges are recorded by specific routine name.
+SELECT *
+  FROM SYSIBM.SYSROUTINEAUTH
+ WHERE SCHEMA       = UPPER('{{PROCEDURE_SCHEMA}}')
+   AND SPECIFICNAME = UPPER('{{PROCEDURE_SPECIFIC_NAME}}')
+   AND ROUTINETYPE  = 'P'
+ ORDER BY GRANTEETYPE, GRANTEE;

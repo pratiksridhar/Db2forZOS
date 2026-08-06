@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0.0",
+  "id": "trigger_advanced_after_ddl_create_table_index_view",
+  "object": "trigger",
+  "category": "positive",
+  "status": "agent_ready_from_normalized_kb",
+  "description": "Advanced AFTER trigger with one compound SQL-control statement containing supported nested CREATE TABLE, CREATE INDEX, and CREATE VIEW rows.",
+  "template": "kb/templates/advanced-trigger-ddl-body.template.sql",
+  "fixtures": [
+    "kb/agent/fixtures/trigger-subject-table.json"
+  ],
+  "requires_capabilities": [
+    "trigger_subject_before_after"
+  ],
+  "covers": [
+    "trigger_kind:advanced",
+    "activation_time:after",
+    "body_shape:advanced_compound",
+    "body_family:ddl",
+    "nested_statement:create-table",
+    "nested_statement:create-index",
+    "nested_statement:create-view"
+  ],
+  "rule_refs": [
+    "trigger.advanced-level-gate",
+    "trigger.advanced-body-layering",
+    "trigger.advanced-ddl-subset",
+    "trigger.embedded-semicolon-terminator"
+  ],
+  "expected": {
+    "outcome": "success",
+    "failure_phase": "none",
+    "catalog_assertions": [
+      "SYSTRIGGERS SQLPL is Y",
+      "SYSPACKAGE TYPE is 1",
+      "SYSPACKDEP includes subject and body-created object dependencies as applicable"
+    ]
+  },
+  "negative_companions": [
+    {
+      "id": "trigger_advanced_nested_create_tablespace_negative",
+      "mutation": "replace nested CREATE TABLE with CREATE TABLESPACE",
+      "expected_failure_phase": "prepare_or_execute"
+    },
+    {
+      "id": "trigger_advanced_direct_create_table_negative",
+      "mutation": "remove compound control statement wrapper",
+      "expected_failure_phase": "prepare_or_execute"
+    }
+  ]
+}

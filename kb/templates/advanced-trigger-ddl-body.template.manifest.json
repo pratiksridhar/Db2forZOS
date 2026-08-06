@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0.0",
+  "template": "kb/templates/advanced-trigger-ddl-body.template.sql",
+  "object": "trigger",
+  "kind": "advanced_ddl_body",
+  "outer_terminator": "!",
+  "required_tokens": [
+    "TRIGGER_SCHEMA",
+    "DDL_TRIGGER",
+    "SUBJECT_SCHEMA",
+    "SUBJECT_TABLE"
+  ],
+  "requires_capabilities": [
+    "trigger_subject_before_after"
+  ],
+  "covers": [
+    "trigger_kind:advanced",
+    "body_family:ddl"
+  ],
+  "must_include": [
+    "BEGIN ATOMIC",
+    "CREATE TABLE",
+    "CREATE UNIQUE INDEX",
+    "CREATE VIEW"
+  ],
+  "must_exclude": [
+    "MODE DB2SQL"
+  ]
+}

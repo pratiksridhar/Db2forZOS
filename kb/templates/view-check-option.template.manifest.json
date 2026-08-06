@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "template": "kb/templates/view-check-option.template.sql",
+  "object": "view",
+  "kind": "local_check_option",
+  "outer_terminator": "!",
+  "required_tokens": [
+    "VIEW_SCHEMA",
+    "VIEW_NAME",
+    "BASE_SCHEMA",
+    "BASE_TABLE"
+  ],
+  "requires_capabilities": [
+    "updatable_source"
+  ],
+  "covers": [
+    "check_option:local",
+    "updatability:updatable"
+  ],
+  "must_include": [
+    "CREATE VIEW",
+    "WITH LOCAL CHECK OPTION"
+  ]
+}

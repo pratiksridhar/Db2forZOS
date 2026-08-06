@@ -8,8 +8,9 @@ This repository is a test-authoring knowledge base for validating DDL that RC/Qu
 - tables
 - indexes
 - triggers, including basic and advanced definitions plus their complete body-statement matrix
+- procedures, including native SQL, external, and deprecated external SQL compatibility definitions
 
-The baseline is **IBM Db2 13 for z/OS documentation**, reviewed on **2026-07-19**. The knowledge base records function-level and application-compatibility gates at the rule where they matter; it does not assume that every Db2 13 subsystem has activated the latest function level.
+The baseline is **IBM Db2 13 for z/OS documentation**, reviewed on **2026-08-03**. The knowledge base records function-level and application-compatibility gates at the rule where they matter; it does not assume that every Db2 13 subsystem has activated the latest function level.
 
 Only official IBM documentation is used. Every normalized rule has one or more source IDs that resolve in [kb/sources.md](kb/sources.md).
 
@@ -36,6 +37,7 @@ The JSON is deliberately a normalized test model, not a replacement SQL parser. 
 | [kb/objects/table.md](kb/objects/table.md) | `CREATE TABLE` definition forms, columns, constraints, periods, and physical clauses |
 | [kb/objects/index.md](kb/objects/index.md) | Ordinary, unique, expression, XML, temporal, partitioned, DPSI, and NPI indexes |
 | [kb/objects/trigger.md](kb/objects/trigger.md) | Basic/advanced `CREATE TRIGGER`, transition data, options, restrictions, packages, versions, and verification |
+| [kb/objects/procedure.md](kb/objects/procedure.md) | Native SQL, external, and deprecated external SQL `CREATE PROCEDURE` forms, parameters, versions, packages, WLM, and verification |
 | [kb/trigger-body-statements.md](kb/trigger-body-statements.md) | Direct-body, SQL control, 35 supported nested, and 34 excluded nested statement families with compact syntax |
 | [kb/test-design/coverage-model.md](kb/test-design/coverage-model.md) | A systematic model for deriving positive, negative, boundary, default, and round-trip cases |
 | [kb/test-design/catalog-verification.sql](kb/test-design/catalog-verification.sql) | Catalog queries for semantic validation after DDL execution |
@@ -45,11 +47,15 @@ The JSON is deliberately a normalized test model, not a replacement SQL parser. 
 | [kb/templates/basic-trigger.template.sql](kb/templates/basic-trigger.template.sql) | Multi-statement basic-trigger template |
 | [kb/templates/advanced-trigger.template.sql](kb/templates/advanced-trigger.template.sql) | SQL PL variables, handler, condition, diagnostics, and DML template |
 | [kb/templates/advanced-trigger-ddl-body.template.sql](kb/templates/advanced-trigger-ddl-body.template.sql) | Advanced compound body with supported `CREATE TABLE`, `CREATE INDEX`, and `CREATE VIEW` |
+| [kb/templates/native-sql-procedure.template.sql](kb/templates/native-sql-procedure.template.sql) | Versioned native SQL procedure with parameters, handler, diagnostics, and package options |
+| [kb/templates/external-procedure.template.sql](kb/templates/external-procedure.template.sql) | Current COBOL external-procedure registration with linkage, package, and WLM inputs |
 | [kb/data/db2z13-create-ddl.json](kb/data/db2z13-create-ddl.json) | Machine-readable clause, rule, dimension, and source index |
 | [kb/data/db2z13-trigger-body-statements.json](kb/data/db2z13-trigger-body-statements.json) | Machine-readable trigger statement syntax and support matrix |
 | [kb/data/test-case.schema.json](kb/data/test-case.schema.json) | JSON Schema for persistent OFS test-case records |
 | [kb/test-design/sample-case.json](kb/test-design/sample-case.json) | Example test-case record |
-| [tools/kb.py](tools/kb.py) | Dependency-free command-line query tool |
+| [kb/agent/README.md](kb/agent/README.md) | Agent-first planning layer: object registry, specs, rules, dimensions, fixtures, and recipes |
+| [tools/kb.py](tools/kb.py) | Dependency-free command-line query tool for the normalized IBM-derived KB |
+| [tools/agent.py](tools/agent.py) | Dependency-free command-line query and validation tool for the agent generation layer |
 
 ## Quick use
 
@@ -63,6 +69,10 @@ python3 tools/kb.py rules table --tag implicit
 python3 tools/kb.py dimensions index
 python3 tools/kb.py clauses trigger
 python3 tools/kb.py show trigger advanced-ddl-subset
+python3 tools/kb.py clauses procedure
+python3 tools/kb.py show procedure kind-discriminator
+python3 tools/kb.py rules procedure --tag versioning
+python3 tools/kb.py dimensions procedure
 python3 tools/kb.py trigger-statements basic
 python3 tools/kb.py trigger-statements nested --activation BEFORE
 python3 tools/kb.py trigger-statements ddl
@@ -71,6 +81,19 @@ python3 tools/kb.py trigger-statements syntax --statement create-table --json
 python3 tools/kb.py search "WITHOUT OVERLAPS"
 python3 tools/kb.py sources
 ```
+
+For AI/agent-driven generation, start with the agent layer instead of the prose chapters:
+
+```text
+python3 tools/agent.py registry
+python3 tools/agent.py spec trigger
+python3 tools/agent.py recipes --object trigger
+python3 tools/agent.py show-recipe trigger_basic_before_validation
+python3 tools/agent.py fixtures
+python3 tools/agent.py validate
+```
+
+The agent layer under [kb/agent](kb/agent/README.md) provides object routing, dependency/capability graphs, structured constraints, coverage dimensions, fixtures, recipes, and template manifests. Objects marked `normalized` are backed by the IBM-derived KB. Objects marked `extension_candidate`, such as the initial `view` scaffold, are planning aids until their IBM syntax chapter and normalized JSON rules are added.
 
 To create a durable test:
 
@@ -100,6 +123,7 @@ DDL legality and generated text can depend on more than the product release. At 
 
 - Db2 release and activated function level
 - package/application `APPLCOMPAT`; for advanced triggers, record definition-processing and body/package values separately
+- procedure kind; for native SQL record routine/package version and body `APPLCOMPAT`, and for external procedures record program, package, WLM, and external-security context
 - `CURRENT RULES`
 - data sharing versus non-data-sharing
 - relevant subsystem parameters, especially `DPSEGSZ`, `IMPDSSIZE`, `IMPTKMOD`, `IMPTSCMP`, `PADIX`, `PAGESET_PAGENUM`, `PCTFREE_UPD`, `DEFAULT_INSERT_ALGORITHM`, and compression defaults
@@ -110,6 +134,6 @@ Without this context, an omitted clause is not a stable expected value and a neg
 
 ## Scope boundary
 
-The core chapters cover the requested object set and the syntax that directly changes their definitions. The following related statements are identified where they affect the six objects but are not independently modeled as top-level object chapters in this edition: `ALTER`, `DROP`, `CREATE AUXILIARY TABLE`, `CREATE GLOBAL TEMPORARY TABLE`, and accelerator administration. The trigger-body inventory still classifies every `ALTER`, `CREATE`, `DROP`, transaction, and utility row that IBM includes in the SQL-procedure-statement matrix. XML table spaces are implicit; explicit LOB table spaces use `CREATE LOB TABLESPACE` and are included in the table-space chapter.
+The core chapters cover the requested object set and the syntax that directly changes their definitions. The following related statements are identified where they affect the seven objects but are not independently modeled as top-level object chapters in this edition: `ALTER`, `DROP`, `CREATE AUXILIARY TABLE`, `CREATE GLOBAL TEMPORARY TABLE`, and accelerator administration. The trigger-body inventory still classifies every `ALTER`, `CREATE`, `DROP`, transaction, and utility row that IBM includes in the SQL-procedure-statement matrix. XML table spaces are implicit; explicit LOB table spaces use `CREATE LOB TABLESPACE` and are included in the table-space chapter. Deprecated external SQL procedures are documented as compatibility surfaces but intentionally have no default template.
 
 Deprecated non-UTS and index-controlled forms are retained only as compatibility test surfaces. They are clearly marked and should not be used as the default source for new-object cases.

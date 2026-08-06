@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0.0",
+  "id": "trigger_subject_table_with_audit",
+  "object": "table",
+  "purpose": "Subject plus audit table fixture for generated trigger cases.",
+  "provides_capabilities": [
+    "trigger_subject_before_after",
+    "selectable_source",
+    "updatable_source",
+    "audit_table",
+    "local_base_table"
+  ],
+  "requires_capabilities": [
+    "database_container"
+  ],
+  "parameters": [
+    "SUBJECT_SCHEMA",
+    "SUBJECT_TABLE",
+    "AUDIT_SCHEMA",
+    "AUDIT_TABLE",
+    "DATABASE"
+  ],
+  "setup_sql": [
+    "CREATE TABLE {{SUBJECT_SCHEMA}}.{{SUBJECT_TABLE}} (ID INTEGER NOT NULL, STATUS CHAR(1) NOT NULL, AMOUNT DECIMAL(9,2), PRIMARY KEY (ID)) IN DATABASE {{DATABASE}}",
+    "CREATE TABLE {{AUDIT_SCHEMA}}.{{AUDIT_TABLE}} (EVENT_ID INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY, SUBJECT_ID INTEGER, OLD_STATUS CHAR(1), NEW_STATUS CHAR(1), EVENT_TS TIMESTAMP NOT NULL WITH DEFAULT CURRENT TIMESTAMP) IN DATABASE {{DATABASE}}",
+    "COMMIT"
+  ],
+  "cleanup_sql": [
+    "DROP TABLE {{AUDIT_SCHEMA}}.{{AUDIT_TABLE}}",
+    "DROP TABLE {{SUBJECT_SCHEMA}}.{{SUBJECT_TABLE}}",
+    "COMMIT"
+  ]
+}

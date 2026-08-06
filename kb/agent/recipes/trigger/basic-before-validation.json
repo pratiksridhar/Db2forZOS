@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0.0",
+  "id": "trigger_basic_before_validation",
+  "object": "trigger",
+  "category": "positive",
+  "status": "agent_ready_from_normalized_kb",
+  "description": "BEFORE UPDATE basic trigger that validates NEW transition data and optionally assigns a NEW transition variable.",
+  "template": "kb/templates/basic-before-validation.template.sql",
+  "fixtures": [
+    "kb/agent/fixtures/trigger-subject-table.json"
+  ],
+  "requires_capabilities": [
+    "trigger_subject_before_after"
+  ],
+  "covers": [
+    "trigger_kind:basic",
+    "activation_time:before",
+    "event:update",
+    "granularity:row",
+    "transition_data:old_row+new_row",
+    "body_family:validation"
+  ],
+  "parameters": [
+    "TRIGGER_SCHEMA",
+    "TRIGGER_NAME",
+    "SUBJECT_SCHEMA",
+    "SUBJECT_TABLE"
+  ],
+  "rule_refs": [
+    "trigger.basic-advanced-discriminator",
+    "trigger.transition-event-matrix",
+    "trigger.transition-mutability",
+    "trigger.basic-body-closed-set"
+  ],
+  "expected": {
+    "outcome": "success",
+    "failure_phase": "none",
+    "catalog_assertions": [
+      "SYSTRIGGERS row has SQLPL blank",
+      "SYSPACKAGE TYPE is T"
+    ]
+  },
+  "cleanup_order": [
+    "DROP TRIGGER {{TRIGGER_SCHEMA}}.{{TRIGGER_NAME}}"
+  ]
+}

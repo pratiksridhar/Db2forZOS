@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0.0",
+  "object": "view",
+  "status": "extension_candidate_agent_scaffold",
+  "normalized_kb_object": null,
+  "human_chapter": null,
+  "agent_summary": "CREATE VIEW is not yet normalized in db2z13-create-ddl.json. This scaffold exists so an agent can generate planned view cases using conservative recipes and can identify the IBM-normalization work needed before production use.",
+  "statements": [
+    "CREATE VIEW"
+  ],
+  "source_status": "placeholder_pending_view_chapter_and_ibm_source_manifest",
+  "dependencies": {
+    "requires": [
+      "selectable_source"
+    ],
+    "optional": [
+      "updatable_source",
+      "nested_view",
+      "privilege_context"
+    ],
+    "create_after": [
+      "table",
+      "view"
+    ],
+    "drop_before": [
+      "table"
+    ]
+  },
+  "capabilities_provided": [
+    "selectable_source",
+    "eligible_view",
+    "trigger_subject_instead_of"
+  ],
+  "generation_flow": [
+    "Select a recipe from kb/agent/recipes/view.",
+    "Resolve a fixture that provides selectable_source or updatable_source.",
+    "Apply structured rules in kb/agent/rules/view.json; treat them as conservative until CREATE VIEW is normalized from IBM docs.",
+    "Emit setup/action/behavior/cleanup SQL and mark status design unless view syntax has been verified against IBM docs."
+  ],
+  "generation_families": [
+    {
+      "id": "simple_projection",
+      "recipe": "kb/agent/recipes/view/simple-projection.json"
+    },
+    {
+      "id": "local_check_option",
+      "recipe": "kb/agent/recipes/view/local-check-option.json"
+    },
+    {
+      "id": "nested_view",
+      "planned": true
+    },
+    {
+      "id": "join_read_only",
+      "planned": true
+    },
+    {
+      "id": "aggregate_read_only",
+      "planned": true
+    }
+  ],
+  "normalization_backlog": [
+    "Add CREATE VIEW source IDs to kb/sources.md and kb/data/db2z13-create-ddl.json.",
+    "Add kb/objects/view.md with Db2 13 syntax, restrictions, and catalog assertions.",
+    "Promote this spec from extension_candidate_agent_scaffold to agent_ready_from_normalized_kb after tests validate source references."
+  ]
+}

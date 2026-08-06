@@ -2,7 +2,7 @@
 
 All research in this knowledge base is derived from IBM documentation. `source_id` values in the normalized JSON resolve here.
 
-Reviewed: **2026-07-19**. Product path: **Db2 13 for z/OS** unless noted.
+Reviewed: **2026-08-03**. Product path: **Db2 13 for z/OS** unless noted.
 
 ## Release and compatibility
 
@@ -70,6 +70,23 @@ Reviewed: **2026-07-19**. Product path: **Db2 13 for z/OS** unless noted.
 - `ibm-trigger-cascading` — [Trigger cascading](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=trigger-cascading)
 - `ibm-trigger-activation-order` — [Activation order of multiple triggers](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=trigger-activation-order-multiple-triggers)
 - `ibm-trigger-packages` — [Trigger packages](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=trigger-packages)
+
+## Procedures
+
+- `ibm-create-procedure-overview` — [CREATE PROCEDURE statement (overview)](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-create-procedure-overview)
+- `ibm-create-procedure-native` — [CREATE PROCEDURE statement (SQL - native procedure)](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-create-procedure-sql-native)
+- `ibm-create-procedure-external` — [CREATE PROCEDURE statement (external procedure)](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-create-procedure-external)
+- `ibm-create-procedure-sql-external-deprecated` — [CREATE PROCEDURE statement (SQL - external procedure) (deprecated)](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-create-procedure-sql-external-deprecated)
+- `ibm-procedure-concept` — [Routines in Db2 for z/OS: functions and procedures](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=concepts-routines-functions-procedures)
+- `ibm-procedure-create-native-task` — [Creating native SQL procedures](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=procedures-creating-native-sql)
+- `ibm-procedure-create-external-task` — [Creating external stored procedures](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=procedures-creating-external-stored)
+- `ibm-procedure-create-external-sql-task` — [Creating external SQL procedures (deprecated)](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=procedures-creating-external-sql-deprecated)
+- `ibm-procedure-multiple-versions` — [Multiple versions of native SQL procedures](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=procedures-multiple-versions-native-sql)
+- `ibm-procedure-package-copies` — [Making copies of a package for a native SQL procedure](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=procedures-making-copies-package-native-sql-procedure)
+- `ibm-procedure-body` — [SQL procedure body](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=procedures-sql-procedure-body)
+- `ibm-catalog-sysroutines` — [SYSIBM.SYSROUTINES catalog table](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=tables-sysroutines)
+- `ibm-catalog-sysparms` — [SYSIBM.SYSPARMS catalog table](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=tables-sysparms)
+- `ibm-catalog-sysroutineauth` — [SYSIBM.SYSROUTINEAUTH catalog table](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=spaces-sysroutineauth)
 
 ## SQL PL and trigger-body statements
 
