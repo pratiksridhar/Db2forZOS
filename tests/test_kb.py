@@ -13,6 +13,7 @@ DATA_PATH = ROOT / "kb" / "data" / "db2z13-create-ddl.json"
 TRIGGER_BODY_PATH = ROOT / "kb" / "data" / "db2z13-trigger-body-statements.json"
 SCHEMA_PATH = ROOT / "kb" / "data" / "test-case.schema.json"
 SAMPLE_PATH = ROOT / "kb" / "test-design" / "sample-case.json"
+QA_1000_SQL_PATH = ROOT / "kb" / "test-design" / "create-1000-table-qa-workload.sql"
 
 
 class KnowledgeBaseTests(unittest.TestCase):
@@ -75,6 +76,7 @@ class KnowledgeBaseTests(unittest.TestCase):
         for obj in self.data["objects"].values():
             self.assertTrue((ROOT / obj["chapter"]).is_file())
         self.assertTrue((ROOT / "kb" / "test-design" / "catalog-verification.sql").is_file())
+        self.assertTrue(QA_1000_SQL_PATH.is_file())
         for name in (
             "object-stack",
             "pbg-table",
@@ -102,6 +104,7 @@ class KnowledgeBaseTests(unittest.TestCase):
         )
         mode_clause = re.compile(r"^\s+MODE DB2SQL\s*$", re.MULTILINE)
         self.assertRegex(basic, mode_clause)
+        self.assertNotRegex(basic, r"\b(?:OLD|NEW)\s+ROW\b")
         self.assertNotRegex(advanced, mode_clause)
         self.assertNotRegex(ddl, mode_clause)
         self.assertIn("BEGIN ATOMIC", basic)
@@ -109,6 +112,12 @@ class KnowledgeBaseTests(unittest.TestCase):
         for statement in ("CREATE TABLE", "CREATE UNIQUE INDEX", "CREATE VIEW"):
             self.assertIn(statement, ddl)
         self.assertGreaterEqual(sum(text.count("END!") for text in (basic, advanced, ddl)), 3)
+
+        basic_before = (ROOT / "kb" / "templates" / "basic-before-validation.template.sql").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("NO CASCADE BEFORE", basic_before)
+        self.assertNotRegex(basic_before, r"\b(?:OLD|NEW)\s+ROW\b")
 
     def test_procedure_templates_select_current_definition_kinds(self) -> None:
         native = (ROOT / "kb" / "templates" / "native-sql-procedure.template.sql").read_text(
@@ -438,6 +447,107 @@ class KnowledgeBaseTests(unittest.TestCase):
         self.assertNotIn("[ WITH DEFAULT | DEFAULT <default-value> ]", chapter)
         self.assertIn("<column-name> ROWID NOT NULL GENERATED [ ALWAYS | BY DEFAULT ]", chapter)
         self.assertIn("must not be specified with `LIKE`", chapter)
+
+    def test_current_ibm_review_corrections_are_preserved(self) -> None:
+        self.assertEqual(self.data["baseline"]["documentation_reviewed"], "2026-09-03")
+        self.assertEqual(self.data["baseline"]["latest_reviewed_function_level"], "V13R1M509")
+        self.assertEqual(
+            self.trigger_body["baseline"]["documentation_reviewed"],
+            "2026-09-03",
+        )
+
+        tablespace = self.data["objects"]["tablespace"]
+        tablespace_clauses = {row["id"]: row for row in tablespace["clauses"]}
+        self.assertIn("LOB: LOCKSIZE { ANY | LOB }", tablespace_clauses["locksize"]["syntax"])
+        self.assertNotIn("TABLESPACE | LOB", tablespace_clauses["locksize"]["syntax"])
+        tablespace_chapter = (ROOT / tablespace["chapter"]).read_text(encoding="utf-8")
+        self.assertIn("[ LOCKSIZE { ANY | LOB } ]", tablespace_chapter)
+        self.assertNotIn("[ LOCKSIZE { ANY | TABLESPACE | LOB } ]", tablespace_chapter)
+
+        index_rules = {row["id"]: row for row in self.data["objects"]["index"]["rules"]}
+        temporal_partition_rule = index_rules[
+            "temporal-without-overlaps-partition-attributes-conflict"
+        ]
+        self.assertEqual(
+            temporal_partition_rule["clauses"],
+            ["business-time", "partition-attributes"],
+        )
+        index_chapter = (ROOT / self.data["objects"]["index"]["chapter"]).read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(
+            "cannot be specified with `BUSINESS_TIME WITHOUT OVERLAPS`",
+            index_chapter,
+        )
+
+        procedure = self.data["objects"]["procedure"]
+        procedure_clauses = {row["id"]: row for row in procedure["clauses"]}
+        procedure_rules = {row["id"]: row for row in procedure["rules"]}
+        self.assertEqual(
+            procedure_clauses["parameter-varchar"]["syntax"],
+            "PARAMETER VARCHAR { NULTERM | STRUCTURE }",
+        )
+        self.assertIn("external:", procedure_clauses["sql-data-access"]["syntax"])
+        self.assertIn("parameter-varchar-family-scope", procedure_rules)
+        self.assertIn("no-sql-external-only", procedure_rules)
+        procedure_chapter = (ROOT / procedure["chapter"]).read_text(encoding="utf-8")
+        self.assertIn("[PARAMETER VARCHAR {NULTERM | STRUCTURE}]", procedure_chapter)
+
+        trigger = self.data["objects"]["trigger"]
+        trigger_clauses = {row["id"]: row for row in trigger["clauses"]}
+        trigger_rules = {row["id"]: row for row in trigger["rules"]}
+        self.assertIn("basic: { NO CASCADE BEFORE", trigger_clauses["activation-time"]["syntax"])
+        self.assertIn("advanced: REFERENCING [OLD [ROW]", trigger_clauses["referencing-row"]["syntax"])
+        self.assertIn("basic-before-no-cascade-required", trigger_rules)
+        self.assertIn("transition-row-keyword-advanced-only", trigger_rules)
+        trigger_chapter = (ROOT / trigger["chapter"]).read_text(encoding="utf-8")
+        self.assertIn("<basic-activation-time>    ::= NO CASCADE BEFORE", trigger_chapter)
+        self.assertNotIn("<activation-time> ::= [NO CASCADE] BEFORE", trigger_chapter)
+
+        self.assertIn("ibm-create-view", self.data["sources"])
+        self.assertIn(
+            "ibm-create-view",
+            self.trigger_body["statement_syntax"]["create-view"]["source_refs"],
+        )
+        create_view_syntax = self.trigger_body["statement_syntax"]["create-view"]["syntax"]
+        self.assertIn("[WITH <common-table-expression> [, ...]]", create_view_syntax)
+        self.assertIn("[WITH [CASCADED | LOCAL] CHECK OPTION]", create_view_syntax)
+
+    def test_generated_1000_table_workload_invariants(self) -> None:
+        sql = QA_1000_SQL_PATH.read_text(encoding="utf-8")
+        self.assertEqual(len(re.findall(r"^CREATE STOGROUP ", sql, re.MULTILINE)), 1)
+        self.assertEqual(len(re.findall(r"^CREATE DATABASE ", sql, re.MULTILINE)), 1)
+        self.assertEqual(
+            len(re.findall(r"^CREATE TABLESPACE S\d{7}$", sql, re.MULTILINE)),
+            1000,
+        )
+        self.assertEqual(
+            len(re.findall(r"^CREATE TABLE QA1K\.T\d{7}$", sql, re.MULTILINE)),
+            1000,
+        )
+
+        table_spaces = re.findall(r"^CREATE TABLESPACE (S\d{7})$", sql, re.MULTILINE)
+        tables = re.findall(r"^CREATE TABLE QA1K\.(T\d{7})$", sql, re.MULTILINE)
+        self.assertEqual(len(set(table_spaces)), 1000)
+        self.assertEqual(len(set(tables)), 1000)
+        for number in range(1, 1001):
+            self.assertEqual(sql.count(f"IN Q1KDB001.S{number:07d}"), 1)
+
+        for family in (
+            "identity-always",
+            "system-time-period",
+            "business-time-exclusive",
+            "bitemporal-foundation",
+            "composite-foreign-key",
+            "like-with-identity",
+            "as-fullselect-with-no-data",
+            "materialized-query-table",
+            "wide-32k-row",
+        ):
+            self.assertEqual(sql.count(f": {family};"), 50)
+
+        self.assertIn("Replace {{VCAT}}", sql)
+        self.assertNotIn("CREATE LOB TABLESPACE", sql)
 
 
     def test_agent_layer_json_and_references_are_valid(self) -> None:

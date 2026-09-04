@@ -215,7 +215,7 @@ CREATE LOB TABLESPACE <table-space-name>
   [ DSSIZE <integer> G ]
   [ GBPCACHE { CHANGED | ALL | SYSTEM | NONE } ]
   [ LOCKMAX { SYSTEM | <integer> } ]
-  [ LOCKSIZE { ANY | TABLESPACE | LOB } ]
+  [ LOCKSIZE { ANY | LOB } ]
   [ LOGGED | NOT LOGGED ]
   [ <using-block> ]
 ```
@@ -228,6 +228,7 @@ LOB-specific rules:
 - `DSSIZE` defaults to 4 G; documented sizes are 1, 2, 4, 8, 16, 32, 64, 128, or 256 G. Values above 4 G need extended format/addressability.
 - `GBPCACHE SYSTEM` caches changed LOB system/space-map pages, not user LOB data. IBM recommends `CHANGED` for typical LOB use.
 - `LOCKSIZE ANY` normally resolves to LOB locking with system lock maximum.
+- `LOCKSIZE TABLESPACE`, `PAGE`, and `ROW` are base-table-space forms; the LOB statement accepts only `ANY` or `LOB`.
 - For a partitioned base table, each LOB column needs a separate LOB space, auxiliary table, and auxiliary index for every base partition.
 - Do not issue this statement when Db2 is implicitly creating the LOB infrastructure.
 

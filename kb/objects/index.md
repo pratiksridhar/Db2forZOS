@@ -134,6 +134,7 @@ Db2 appends business-time end then begin columns in ascending order.
 - `WITHOUT OVERLAPS` enforces uniqueness of the ordinary key over time and is used for application-period primary/unique constraints.
 - `WITH OVERLAPS` is intended for the child/foreign-key side of a temporal referential constraint and cannot be `UNIQUE`.
 - Business-period columns must not already be listed or be part of the partitioning key in forbidden combinations.
+- `PARTITION BY RANGE` index-attribute blocks cannot be specified with `BUSINESS_TIME WITHOUT OVERLAPS`.
 - An index satisfying a temporal foreign key can become a dependency and cannot then be dropped independently.
 
 ## XML index form

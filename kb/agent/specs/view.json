@@ -8,7 +8,10 @@
   "statements": [
     "CREATE VIEW"
   ],
-  "source_status": "placeholder_pending_view_chapter_and_ibm_source_manifest",
+  "source_refs": [
+    "ibm-create-view"
+  ],
+  "source_status": "official_create_view_statement_manifested; normalized chapter and rules pending",
   "dependencies": {
     "requires": [
       "selectable_source"
@@ -60,7 +63,6 @@
     }
   ],
   "normalization_backlog": [
-    "Add CREATE VIEW source IDs to kb/sources.md and kb/data/db2z13-create-ddl.json.",
     "Add kb/objects/view.md with Db2 13 syntax, restrictions, and catalog assertions.",
     "Promote this spec from extension_candidate_agent_scaffold to agent_ready_from_normalized_kb after tests validate source references."
   ]

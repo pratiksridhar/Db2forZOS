@@ -28,6 +28,8 @@
   ],
   "rule_refs": [
     "trigger.basic-advanced-discriminator",
+    "trigger.basic-before-no-cascade-required",
+    "trigger.transition-row-keyword-advanced-only",
     "trigger.transition-event-matrix",
     "trigger.transition-mutability",
     "trigger.basic-body-closed-set"

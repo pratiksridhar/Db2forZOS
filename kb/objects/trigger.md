@@ -13,7 +13,7 @@ The common trigger header is:
 
 ```text
 CREATE TRIGGER <trigger-name>
-  <activation-time> <event>
+  <family-activation-time> <event>
   ON <subject>
   [REFERENCING <transition declarations>]
   FOR EACH {ROW | STATEMENT}
@@ -63,9 +63,10 @@ Conversion is not just deletion of `MODE DB2SQL`: preserve activation attributes
 ## Activation time, event, and subject
 
 ```text
-<activation-time> ::= [NO CASCADE] BEFORE | AFTER | INSTEAD OF
-<event>           ::= INSERT | DELETE | UPDATE [OF <column> [, ...]]
-<subject>         ::= ON <table-name> | ON <view-name>
+<basic-activation-time>    ::= NO CASCADE BEFORE | AFTER | INSTEAD OF
+<advanced-activation-time> ::= [NO CASCADE] BEFORE | AFTER | INSTEAD OF
+<event>                    ::= INSERT | DELETE | UPDATE [OF <column> [, ...]]
+<subject>                  ::= ON <table-name> | ON <view-name>
 ```
 
 The legal combinations are structural:
@@ -75,7 +76,7 @@ The legal combinations are structural:
 - `UPDATE OF` is not allowed for an `INSTEAD OF` trigger.
 - `FOR EACH STATEMENT` is an `AFTER`-only form. `BEFORE` and `INSTEAD OF` require `FOR EACH ROW`.
 - `WHEN` cannot be specified for an `INSTEAD OF` trigger.
-- `NO CASCADE BEFORE` prevents the trigger's own changes from activating additional triggers; deeper trigger cascades originate with `AFTER` actions.
+- A basic `BEFORE` trigger requires the full `NO CASCADE BEFORE` spelling. In the advanced grammar, `NO CASCADE` is optional compatibility syntax before `BEFORE`.
 
 The subject and every directly referenced object or local routine must exist when the trigger is created. A subject table with pending definition changes cannot receive a new trigger.
 
@@ -83,15 +84,25 @@ An eligible table is an existing local base table. IBM excludes materialized que
 
 ## Transition rows and tables
 
-Transition declarations have these compact forms:
+Transition row declarations differ by trigger family; transition table declarations are shared:
 
 ```text
+-- Basic
+REFERENCING
+  [OLD [AS] <old-row-name>]
+  [NEW [AS] <new-row-name>]
+  [OLD_TABLE [AS] <old-table-name>]
+  [NEW_TABLE [AS] <new-table-name>]
+
+-- Advanced
 REFERENCING
   [OLD [ROW] [AS] <old-row-name>]
   [NEW [ROW] [AS] <new-row-name>]
   [OLD_TABLE [AS] <old-table-name>]
   [NEW_TABLE [AS] <new-table-name>]
 ```
+
+The `ROW` keyword is valid only in the advanced grammar.
 
 Availability is determined by event, activation time, and granularity:
 

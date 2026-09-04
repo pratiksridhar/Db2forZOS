@@ -4,7 +4,7 @@
   "baseline": {
     "product": "IBM Db2 for z/OS",
     "release": "13",
-    "documentation_reviewed": "2026-07-19",
+    "documentation_reviewed": "2026-09-03",
     "authority": "Official IBM documentation only",
     "notes": "Syntax strings are compact test-authoring summaries. Follow the linked IBM statement syntax diagram for every nested subgrammar and statement-specific restriction."
   },
@@ -13,6 +13,7 @@
     "ibm-create-trigger-advanced",
     "ibm-sqlpl",
     "ibm-sql-procedure-statement",
+    "ibm-create-view",
     "ibm-sql-reference-pdf"
   ],
   "statement_syntax": {
@@ -72,9 +73,9 @@
     },
     "create-view": {
       "name": "CREATE VIEW",
-      "syntax": "CREATE VIEW <view-name> [(<column-name> [, ...])] AS <fullselect> [WITH {CASCADED | LOCAL} CHECK OPTION]",
-      "summary": "Creates a view using the statement-specific fullselect and check-option rules.",
-      "source_refs": ["ibm-sql-reference-pdf", "ibm-sql-procedure-statement"]
+      "syntax": "CREATE VIEW <view-name> [(<column-name> [, ...])] AS [WITH <common-table-expression> [, ...]] <fullselect> [WITH [CASCADED | LOCAL] CHECK OPTION]",
+      "summary": "Creates a view using the statement-specific fullselect and check-option rules; an omitted check-option qualifier defaults to CASCADED.",
+      "source_refs": ["ibm-create-view", "ibm-sql-procedure-statement"]
     },
     "declare-cursor": {
       "name": "DECLARE CURSOR",

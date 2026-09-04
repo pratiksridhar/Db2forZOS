@@ -2,7 +2,7 @@
 
 All research in this knowledge base is derived from IBM documentation. `source_id` values in the normalized JSON resolve here.
 
-Reviewed: **2026-08-03**. Product path: **Db2 13 for z/OS** unless noted.
+Reviewed: **2026-09-03**. Product path: **Db2 13 for z/OS** unless noted.
 
 ## Release and compatibility
 
@@ -47,6 +47,10 @@ Reviewed: **2026-08-03**. Product path: **Db2 13 for z/OS** unless noted.
 - `ibm-catalog-sysrels` — [SYSIBM.SYSRELS catalog table](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=tables-sysrels)
 - `ibm-catalog-sysforeignkeys` — [SYSIBM.SYSFOREIGNKEYS catalog table](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=tables-sysforeignkeys)
 - `ibm-catalog-syschecks` — [SYSIBM.SYSCHECKS catalog table](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=tables-syschecks)
+
+## Views
+
+- `ibm-create-view` — [CREATE VIEW statement](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-create-view)
 
 ## Indexes
 

@@ -113,7 +113,7 @@ The IBM SQL-procedure-statement table contains 69 rows. Its SQL-trigger-body col
 | `COMMENT` | `COMMENT ON <object-designator> IS {<string> | NULL}` | `AFTER`, `INSTEAD OF` | DDL side effect. |
 | `CREATE INDEX` | `CREATE [UNIQUE [WHERE NOT NULL]] INDEX <name> ON <table> <keys> [<options>]` | `AFTER`, `INSTEAD OF` | Nested only; full syntax is `ibm-create-index`. |
 | `CREATE TABLE` | `CREATE TABLE <name> <table-definition> [<placement/options>]` | all | No LOB or XML columns; nested only; full syntax is `ibm-create-table`. |
-| `CREATE VIEW` | `CREATE VIEW <name> [(<columns>)] AS <fullselect> [WITH ... CHECK OPTION]` | `AFTER`, `INSTEAD OF` | Nested only. |
+| `CREATE VIEW` | `CREATE VIEW <name> [(<columns>)] AS [WITH <CTE> [, ...]] <fullselect> [WITH [CASCADED \| LOCAL] CHECK OPTION]` | `AFTER`, `INSTEAD OF` | Nested only; an omitted check-option qualifier defaults to `CASCADED`. |
 | `DECLARE CURSOR` | `DECLARE <cursor> [<attributes>] CURSOR ... FOR {<select> | <statement-name>}` | all | Declaration placement follows compound grammar. |
 | searched `DELETE` | `[WITH <cte>] DELETE FROM <target> [WHERE <condition>]` | `AFTER`, `INSTEAD OF` | `BEFORE` prohibition applies indirectly through called routines too. |
 | `DROP` | `DROP {TABLE <name> | VIEW <name> | INDEX <name>} [<options>]` | all | Only these three DROP forms are supported. |

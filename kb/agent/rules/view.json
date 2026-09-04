@@ -2,7 +2,10 @@
   "schema_version": "1.0.0",
   "object": "view",
   "status": "extension_candidate_agent_scaffold",
-  "purpose": "Conservative agent constraints for planned CREATE VIEW case generation. Promote to normalized rules only after IBM CREATE VIEW docs are captured.",
+  "purpose": "Conservative agent constraints for planned CREATE VIEW case generation. The templates were checked against IBM CREATE VIEW, but promote these constraints only after a full view chapter and normalized rules are added.",
+  "source_refs": [
+    "ibm-create-view"
+  ],
   "constraints": [
     {
       "id": "view_requires_selectable_source",

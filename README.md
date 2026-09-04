@@ -10,7 +10,7 @@ This repository is a test-authoring knowledge base for validating DDL that RC/Qu
 - triggers, including basic and advanced definitions plus their complete body-statement matrix
 - procedures, including native SQL, external, and deprecated external SQL compatibility definitions
 
-The baseline is **IBM Db2 13 for z/OS documentation**, reviewed on **2026-08-03**. The knowledge base records function-level and application-compatibility gates at the rule where they matter; it does not assume that every Db2 13 subsystem has activated the latest function level.
+The baseline is **IBM Db2 13 for z/OS documentation**, reviewed on **2026-09-03** through function level **V13R1M509**. The knowledge base records function-level and application-compatibility gates at the rule where they matter; it does not assume that every Db2 13 subsystem has activated the latest function level.
 
 Only official IBM documentation is used. Every normalized rule has one or more source IDs that resolve in [kb/sources.md](kb/sources.md).
 
@@ -41,6 +41,7 @@ The JSON is deliberately a normalized test model, not a replacement SQL parser. 
 | [kb/trigger-body-statements.md](kb/trigger-body-statements.md) | Direct-body, SQL control, 35 supported nested, and 34 excluded nested statement families with compact syntax |
 | [kb/test-design/coverage-model.md](kb/test-design/coverage-model.md) | A systematic model for deriving positive, negative, boundary, default, and round-trip cases |
 | [kb/test-design/catalog-verification.sql](kb/test-design/catalog-verification.sql) | Catalog queries for semantic validation after DDL execution |
+| [kb/test-design/create-1000-table-qa-workload.sql](kb/test-design/create-1000-table-qa-workload.sql) | Generated positive workload: one storage group/database, 1,000 dedicated table spaces, 1,000 varied tables, indexes, and seed data |
 | [kb/templates/object-stack.template.sql](kb/templates/object-stack.template.sql) | Parameterized explicit storage-group-to-index object stack |
 | [kb/templates/pbg-table.template.sql](kb/templates/pbg-table.template.sql) | PBG-focused table and index template |
 | [kb/templates/pbr-table.template.sql](kb/templates/pbr-table.template.sql) | PBR/RPN-focused table and index template |
@@ -56,6 +57,7 @@ The JSON is deliberately a normalized test model, not a replacement SQL parser. 
 | [kb/agent/README.md](kb/agent/README.md) | Agent-first planning layer: object registry, specs, rules, dimensions, fixtures, and recipes |
 | [tools/kb.py](tools/kb.py) | Dependency-free command-line query tool for the normalized IBM-derived KB |
 | [tools/agent.py](tools/agent.py) | Dependency-free command-line query and validation tool for the agent generation layer |
+| [tools/generate_1000_table_qa_sql.py](tools/generate_1000_table_qa_sql.py) | Deterministically regenerates and validates the 1,000-table SQL workload |
 
 ## Quick use
 

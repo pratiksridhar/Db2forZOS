@@ -4,7 +4,7 @@
   "baseline": {
     "product": "IBM Db2 for z/OS",
     "release": "13",
-    "documentation_reviewed": "2026-08-03",
+    "documentation_reviewed": "2026-09-03",
     "latest_reviewed_function_level": "V13R1M509",
     "current_uts_baseline": "APPLCOMPAT V12R1M504 or later",
     "authority": "Official IBM documentation only",
@@ -126,6 +126,10 @@
     "ibm-catalog-syschecks": {
       "title": "SYSIBM.SYSCHECKS catalog table",
       "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=tables-syschecks"
+    },
+    "ibm-create-view": {
+      "title": "CREATE VIEW statement",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-create-view"
     },
     "ibm-create-index": {
       "title": "CREATE INDEX statement",
@@ -847,12 +851,12 @@
         },
         {
           "id": "locksize",
-          "syntax": "LOCKSIZE { ANY | TABLESPACE | PAGE | ROW }",
+          "syntax": "base: LOCKSIZE { ANY | TABLESPACE | PAGE | ROW }; LOB: LOCKSIZE { ANY | LOB }",
           "required": "no",
-          "default": "ANY for ordinary base table spaces; LOB form also supports LOB",
-          "values": "ANY, TABLESPACE, PAGE, ROW; LOB for LOB space",
+          "default": "ANY",
+          "values": "ordinary base: ANY, TABLESPACE, PAGE, or ROW; LOB: ANY or LOB",
           "tags": ["locking", "lob", "interaction"],
-          "summary": "Chooses the lock granularity family.",
+          "summary": "Chooses a form-specific lock granularity; base lock sizes other than ANY are invalid in CREATE LOB TABLESPACE.",
           "source_refs": ["ibm-create-tablespace", "ibm-create-lob-tablespace"]
         },
         {
@@ -1076,7 +1080,7 @@
           "kind": "context",
           "clauses": ["name", "dssize", "compress", "gbpcache", "locksize"],
           "tags": ["lob", "syntax", "dependency"],
-          "text": "LOB spaces use CREATE LOB TABLESPACE, have LOB-specific compression/cache/locking rules, and support auxiliary-table data rather than base rows.",
+          "text": "LOB spaces use CREATE LOB TABLESPACE, support auxiliary-table data rather than base rows, and accept only LOCKSIZE ANY or LOB; TABLESPACE, PAGE, and ROW are invalid in this form.",
           "source_refs": ["ibm-create-lob-tablespace"]
         },
         {
@@ -2294,6 +2298,14 @@
           "source_refs": ["ibm-create-index", "ibm-create-table"]
         },
         {
+          "id": "temporal-without-overlaps-partition-attributes-conflict",
+          "kind": "conflict",
+          "clauses": ["business-time", "partition-attributes"],
+          "tags": ["temporal", "pbr", "partition", "negative"],
+          "text": "PARTITION BY RANGE index-attribute blocks cannot be specified for an index defined with BUSINESS_TIME WITHOUT OVERLAPS.",
+          "source_refs": ["ibm-create-index"]
+        },
+        {
           "id": "partitioning-index-detected-by-key",
           "kind": "type-resolution",
           "clauses": ["key-list", "key-order", "partitioned"],
@@ -2532,8 +2544,18 @@
           "source_refs": ["ibm-create-procedure-external"]
         },
         {
+          "id": "parameter-varchar",
+          "syntax": "PARAMETER VARCHAR { NULTERM | STRUCTURE }",
+          "required": "optional for a current external LANGUAGE C procedure or a deprecated external SQL procedure",
+          "default": "NULTERM",
+          "values": "NUL-terminated string or VARCHAR structure representation",
+          "tags": ["external", "c", "parameter", "varchar", "representation"],
+          "summary": "Chooses the representation of eligible varying-length character parameters; fixed strings, VARCHAR FOR BIT DATA, LOBs, and implicit parameters are excluded.",
+          "source_refs": ["ibm-create-procedure-external", "ibm-create-procedure-sql-external-deprecated"]
+        },
+        {
           "id": "sql-data-access",
-          "syntax": "MODIFIES SQL DATA | READS SQL DATA | CONTAINS SQL | NO SQL",
+          "syntax": "native SQL: { MODIFIES SQL DATA | READS SQL DATA | CONTAINS SQL }; external: { MODIFIES SQL DATA | READS SQL DATA | CONTAINS SQL | NO SQL }",
           "required": "optional; NO SQL applies to external procedures",
           "default": "MODIFIES SQL DATA for native SQL",
           "values": "procedure-kind-appropriate access classification",
@@ -2676,6 +2698,22 @@
           "tags": ["parameter", "ccsid", "negative"],
           "text": "All character and graphic parameters use one encoding scheme; per-parameter CCSID values and PARAMETER CCSID must agree.",
           "source_refs": ["ibm-create-procedure-overview", "ibm-create-procedure-native", "ibm-create-procedure-external"]
+        },
+        {
+          "id": "parameter-varchar-family-scope",
+          "kind": "context",
+          "clauses": ["parameter-varchar", "language", "kind-discriminator"],
+          "tags": ["external", "external-sql", "c", "parameter", "negative"],
+          "text": "PARAMETER VARCHAR is valid for a current external procedure only with LANGUAGE C and is also present in the deprecated external SQL procedure grammar. It excludes fixed strings, VARCHAR FOR BIT DATA, CLOB, DBCLOB, and implicitly generated parameters.",
+          "source_refs": ["ibm-create-procedure-external", "ibm-create-procedure-sql-external-deprecated"]
+        },
+        {
+          "id": "no-sql-external-only",
+          "kind": "context",
+          "clauses": ["sql-data-access", "kind-discriminator"],
+          "tags": ["native", "external", "data-access", "negative"],
+          "text": "NO SQL is an external-procedure data-access option and is not part of the native SQL procedure grammar.",
+          "source_refs": ["ibm-create-procedure-native", "ibm-create-procedure-external"]
         },
         {
           "id": "scalar-locator-boundary",
@@ -2890,12 +2928,12 @@
         },
         {
           "id": "activation-time",
-          "syntax": "{[NO CASCADE] BEFORE | AFTER | INSTEAD OF}",
+          "syntax": "basic: { NO CASCADE BEFORE | AFTER | INSTEAD OF }; advanced: { [NO CASCADE] BEFORE | AFTER | INSTEAD OF }",
           "required": "always",
           "default": "none",
-          "values": "BEFORE or AFTER for a table; INSTEAD OF for a view",
+          "values": "family-correct BEFORE spelling or AFTER for a table; INSTEAD OF for a view",
           "tags": ["activation", "table", "view"],
-          "summary": "Controls whether the action runs before or after a table change, or replaces an attempted change to a view.",
+          "summary": "Controls when the action runs; basic BEFORE requires NO CASCADE, while advanced BEFORE makes NO CASCADE optional for compatibility.",
           "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
         },
         {
@@ -2920,12 +2958,12 @@
         },
         {
           "id": "referencing-row",
-          "syntax": "REFERENCING [OLD [ROW] [AS] <correlation-name>] [NEW [ROW] [AS] <correlation-name>]",
+          "syntax": "basic: REFERENCING [OLD [AS] <correlation-name>] [NEW [AS] <correlation-name>]; advanced: REFERENCING [OLD [ROW] [AS] <correlation-name>] [NEW [ROW] [AS] <correlation-name>]",
           "required": "optional and event-dependent",
           "default": "no row correlation names",
           "values": "at most one OLD and one NEW unique correlation name",
           "tags": ["transition", "row", "variable"],
-          "summary": "Exposes old and new column values as transition variables; ROW is part of the advanced grammar and omitted in the basic grammar.",
+          "summary": "Exposes old and new column values as transition variables; ROW is optional for advanced triggers and invalid for basic triggers.",
           "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
         },
         {
@@ -3129,6 +3167,14 @@
           "source_refs": ["ibm-trigger-concept", "ibm-create-trigger-basic", "ibm-create-trigger-advanced", "ibm-catalog-systriggers"]
         },
         {
+          "id": "basic-before-no-cascade-required",
+          "kind": "requiredness",
+          "clauses": ["activation-time", "mode-db2sql"],
+          "tags": ["basic", "before", "syntax", "negative"],
+          "text": "A basic BEFORE trigger must spell its activation time NO CASCADE BEFORE; bare BEFORE is valid only in the advanced trigger grammar.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
           "id": "advanced-level-gate",
           "kind": "compatibility",
           "clauses": ["advanced-body", "applcompat"],
@@ -3182,6 +3228,14 @@
           "clauses": ["event", "activation-time", "granularity", "referencing-row", "referencing-table"],
           "tags": ["transition", "matrix", "negative"],
           "text": "OLD is available for DELETE/UPDATE; NEW for INSERT/UPDATE. BEFORE row triggers allow variables but no transition tables; AFTER/INSTEAD OF row triggers allow matching variables and tables; AFTER statement triggers allow matching tables but no variables.",
+          "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
+        },
+        {
+          "id": "transition-row-keyword-advanced-only",
+          "kind": "context",
+          "clauses": ["referencing-row", "mode-db2sql"],
+          "tags": ["basic", "advanced", "transition", "syntax", "negative"],
+          "text": "The optional ROW keyword after OLD or NEW belongs only to the advanced trigger grammar; a basic trigger must use OLD [AS] name or NEW [AS] name.",
           "source_refs": ["ibm-create-trigger-basic", "ibm-create-trigger-advanced"]
         },
         {

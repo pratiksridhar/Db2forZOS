@@ -158,6 +158,35 @@
       "expected_failure_phase": "prepare_or_execute"
     },
     {
+      "id": "basic_before_requires_no_cascade",
+      "normalized_rule": "trigger.basic-before-no-cascade-required",
+      "if": {
+        "trigger_kind": "basic",
+        "activation_time": "before"
+      },
+      "requires": {
+        "activation_spelling": "NO CASCADE BEFORE"
+      },
+      "negative_case": true,
+      "expected_failure_phase": "prepare_or_execute"
+    },
+    {
+      "id": "basic_referencing_omits_row_keyword",
+      "normalized_rule": "trigger.transition-row-keyword-advanced-only",
+      "if": {
+        "trigger_kind": "basic",
+        "transition_data": [
+          "old_row",
+          "new_row"
+        ]
+      },
+      "prohibits": {
+        "transition_row_keyword": true
+      },
+      "negative_case": true,
+      "expected_failure_phase": "prepare_or_execute"
+    },
+    {
       "id": "before_after_subject_is_table",
       "normalized_rule": "trigger.subject-time-pairing",
       "if": {

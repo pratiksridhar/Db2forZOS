@@ -60,6 +60,7 @@ CREATE [OR REPLACE] PROCEDURE [schema.]procedure-name
   [EXTERNAL [NAME external-program-name]]
   [MODIFIES SQL DATA | READS SQL DATA | CONTAINS SQL | NO SQL]
   [PARAMETER STYLE {SQL | GENERAL | GENERAL WITH NULLS | JAVA}]
+  [PARAMETER VARCHAR {NULTERM | STRUCTURE}]
   [DYNAMIC RESULT SETS integer]
   [PACKAGE PATH package-path | NO PACKAGE PATH]
   [COLLID collection-id | NO COLLID]
@@ -79,6 +80,8 @@ CREATE [OR REPLACE] PROCEDURE [schema.]procedure-name
 ### External SQL procedure, deprecated
 
 The deprecated form uses `LANGUAGE SQL`, an SQL routine body, and either `FENCED` or `EXTERNAL NAME` to select external SQL procedure processing. IBM states that it must be processed using JCL or DSNTPSMP; issuing it from another context can leave an incomplete definition even when statement processing reports no error. Keep it in compatibility suites, not in new default templates. Sources: `ibm-create-procedure-sql-external-deprecated`, `ibm-procedure-create-external-sql-task`.
+
+Its compatibility grammar also includes `PARAMETER VARCHAR {NULTERM | STRUCTURE}`. Do not reject that clause merely because this family specifies `LANGUAGE SQL`.
 
 ## Procedure identity and parameters
 
@@ -132,7 +135,8 @@ Important language interactions include:
 - REXX uses `GENERAL` or `GENERAL WITH NULLS`; it cannot default to `PARAMETER STYLE SQL`. Only one REXX parameter can be `OUT` or `INOUT`, and it must be last.
 - `DBINFO` requires `PARAMETER STYLE SQL`.
 - `PARAMETER STYLE GENERAL` does not accept null arguments; `GENERAL WITH NULLS` supplies an indicator array.
-- `PARAMETER VARCHAR` is a C-specific representation option with the documented exclusions; it does not redefine implicit SQL-style parameters.
+- For a current external procedure, `PARAMETER VARCHAR {NULTERM | STRUCTURE}` requires `LANGUAGE C`. The deprecated external SQL grammar also includes the clause.
+- The clause does not apply to fixed-length strings, `VARCHAR FOR BIT DATA`, `CLOB`, `DBCLOB`, or implicitly generated parameters.
 
 External procedures execute in a WLM-managed external address space. An omitted `WLM ENVIRONMENT` uses the installation default, but a named environment requires matching external-security authorization. Test the DDL registration and the first invocation separately: catalog success does not prove that the load module, Java method, WLM setup, package, or RACF permissions are runnable.
 
