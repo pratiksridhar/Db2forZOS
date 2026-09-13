@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0.0",
+  "id": "bespoke-schema",
+  "intent": "Author an interconnected schema with composite foreign keys, native procedure bodies and trigger formatting stress cases, keeping every unresolved requirement visible.",
+  "profile": "kb/campaigns/profiles/example.json",
+  "strategy": "three-way",
+  "budget": 12,
+  "objects": [
+    {"id": "parent", "object": "table", "clause_refs": ["table.primary-key"]},
+    {"id": "child", "object": "table", "depends_on": ["parent"], "clause_refs": ["table.foreign-key"]},
+    {"id": "routine", "object": "procedure", "depends_on": ["child"], "clause_refs": ["procedure.native-body"]},
+    {"id": "trigger", "object": "trigger", "depends_on": ["child"], "clause_refs": ["trigger.basic-body"]}
+  ],
+  "requirements": [
+    {"id": "placement", "kind": "dependency", "text": "Place every source object in one dedicated database. Resolve composite key column order and the enforcing unique index before creating the child.", "objects": ["parent", "child", "routine", "trigger"]},
+    {"id": "body-format", "kind": "formatting", "text": "Include multiline bodies, comments, embedded semicolons and mixed-case literals with trailing spaces. Record the outer client terminator and compare body text losslessly.", "objects": ["routine", "trigger"]},
+    {"id": "record-width", "kind": "length", "text": "Keep executable source records within 72 columns in the target client's encoding; document any impossible requested statement instead of truncating or rewriting literal content.", "objects": ["parent", "child", "routine", "trigger"]}
+  ]
+}

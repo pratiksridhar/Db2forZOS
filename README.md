@@ -1,4 +1,73 @@
-# Db2 for z/OS object DDL knowledge base
+# Db2 for z/OS DDL QA workbench
+
+Generate varied test objects from an IBM-derived knowledge base, extract their DDL
+with your administration product, and check that recreation preserves their semantics.
+Future agents should start with [AGENTS.md](AGENTS.md).
+
+## Use it with any LLM agent
+
+Describe the objects, clauses, boundaries, formatting and relationships you need.
+Ask the agent to follow [the authoring workflow](kb/authoring/README.md), turn the
+request into a structured plan, and generate either a supported campaign or a
+source-reviewed custom case. No particular LLM vendor, API key or service is required.
+
+```sh
+python3 tools/ddl.py plan --request kb/authoring/examples/index-include.json
+python3 tools/qa.py models
+python3 tools/qa.py context trigger
+```
+
+The plan exposes exact choices, IBM references, dependencies and unsupported
+requirements. It never treats a matching clause name as proof of complete syntax
+coverage. See [the September audit](kb/campaigns/reviews/compiler.md) for the
+correctness fixes and validation limits.
+
+## Generate your first campaign
+
+```sh
+python3 tools/qa.py build --model table-core \
+  --profile kb/campaigns/profiles/example.json \
+  --run T01 --out generated/table-demo
+```
+
+Open `generated/table-demo/RUN.md`. The bundle includes source and replay setup,
+schema-valid case records, catalog queries/assertions, cleanup, source references,
+and a report of feasible pairwise coverage. **The example environment is unverified;
+no SQL is executed.** Replace its settings before running against a test subsystem.
+
+Six executable families cover table columns, relational parent/child tables,
+PBG table spaces, indexes, basic triggers and native SQL procedures.
+`--negative` adds isolated violations of each model's encoded constraints.
+Reference coverage is wider than compiler support; arbitrary Db2 DDL still needs
+IBM research and subsystem validation.
+
+```sh
+python3 tools/qa.py build --model table-relational \
+  --profile kb/campaigns/profiles/example.json --run R01 \
+  --strategy three-way --negative --out generated/relational-demo
+python3 tools/qa.py build --model trigger-basic \
+  --profile kb/campaigns/profiles/example.json --run G01 \
+  --set body=long-comment --out generated/trigger-demo
+python3 tools/qa.py build --model procedure-native \
+  --profile kb/campaigns/profiles/example.json --run P01 \
+  --negative --out generated/procedure-demo
+```
+
+Trigger/procedure bundles use `@` as the outer terminator. Set the SQL processor
+accordingly and preserve comments/line structure for body-format tests. Generated
+text metrics measure UTF-8 artifacts, not target CCSID byte limits.
+
+- [Campaign guide](kb/campaigns/README.md): commands, scope, catalog export format,
+  product replay, evidence and cleanup.
+- [Reusable agent prompts](kb/campaigns/prompts.md): generation, extension and defect investigation.
+- [Expansion roadmap](kb/campaigns/ROADMAP.md): PBR/constraints, LOB/XML/temporal,
+  procedures, runtime adapters and coverage of syntax paths.
+
+Use `python3 tools/qa.py inventory` to inspect compiler gaps and
+`python3 tools/qa.py context table` to export IBM-linked context for any normalized
+object. A catalog `match` is scoped evidence, never an automatic product test pass.
+
+## Reference coverage
 
 This repository is a test-authoring knowledge base for validating DDL that RC/Query and Object Framework Services (OFS) generate for these Db2 objects:
 
@@ -14,14 +83,17 @@ The baseline is **IBM Db2 13 for z/OS documentation**, reviewed on **2026-09-03*
 
 Only official IBM documentation is used. Every normalized rule has one or more source IDs that resolve in [kb/sources.md](kb/sources.md).
 
-## Why the knowledge base has two layers
+## Reference and executable layers
 
 IBM syntax diagrams are the authority, but diagrams alone are a poor test inventory. Important behavior also appears in clause descriptions and notes: defaults controlled by subsystem parameters, mutually exclusive clauses, implicit object creation, function-level gates, and rules that depend on table-space type.
 
-This KB therefore stores the same subject in two complementary forms:
+This repository connects three complementary layers:
 
 1. **Reference chapters** explain concepts, grammar, defaults, restrictions, and high-yield OFS test ideas for a person.
-2. **Normalized JSON** indexes clauses and cross-clause rules for scripts, searches, coverage tracking, and future case generation.
+2. **Normalized JSON** indexes clauses and cross-clause rules for scripts, searches and coverage tracking.
+3. **Campaign models and compiler** turn bounded dimensions and constraints into
+   deterministic SQL bundles with semantic comparison contracts. The existing
+   agent recipes remain available for broader manual/LLM authoring.
 
 The JSON is deliberately a normalized test model, not a replacement SQL parser. When it and IBM documentation disagree, the IBM statement reference wins and the KB should be corrected.
 
@@ -107,10 +179,17 @@ To create a durable test:
 
 ## Verify the KB itself
 
-The repository checks normalized IDs, official-source references, internal links, requested object coverage, template presence, the sample case shape, and command-line queries:
+The repository checks normalized IDs and sources, existing templates, command-line
+queries, feasible pair coverage, constraint isolation, dependency ordering, all
+generated case schemas, and catalog-comparison failure detection. Test dependencies
+are separate from the standard-library command-line tools:
 
 ```text
-python3 -m unittest discover -s tests -v
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements-dev.txt
+.venv/bin/python -m unittest discover -s tests -v
+python3 tools/qa.py validate
+python3 tools/agent.py validate
 python3 -m json.tool kb/data/db2z13-create-ddl.json > /dev/null
 python3 -m json.tool kb/data/db2z13-trigger-body-statements.json > /dev/null
 python3 -m json.tool kb/data/test-case.schema.json > /dev/null

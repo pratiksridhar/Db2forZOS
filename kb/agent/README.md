@@ -1,5 +1,10 @@
 # Agent-first DDL generation layer
 
+For executable campaigns, start with [the campaign guide](../campaigns/README.md)
+and `python3 tools/qa.py context <object>`. This directory retains the broader
+planning recipes and scaffolds; its `agent_ready_from_normalized_kb` labels describe
+authoring readiness, not successful compilation or execution on Db2.
+
 This directory is the machine-oriented layer above the IBM-derived Db2 for z/OS
 knowledge base. The files here tell an AI agent how to plan, compose, and verify
 DDL test cases without scraping long prose chapters.

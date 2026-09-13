@@ -23,7 +23,7 @@ CREATE [OR REPLACE] PROCEDURE [schema.]procedure-name
   [(parameter-declaration [, ...])]
   [VERSION routine-version-id]
   LANGUAGE SQL
-  [SPECIFIC [schema.]specific-name]
+  [SPECIFIC [schema.]procedure-name]
   [routine-option ...]
   {SQL-routine-body | WRAPPED obfuscated-statement-text}
 
@@ -54,7 +54,7 @@ The option list is order-independent, and an option can be specified only once. 
 ```text
 CREATE [OR REPLACE] PROCEDURE [schema.]procedure-name
   [(parameter-declaration [, ...])]
-  [SPECIFIC [schema.]specific-name]
+  [SPECIFIC [schema.]procedure-name]
   [FENCED]
   LANGUAGE {ASSEMBLE | C | COBOL | JAVA | PLI | REXX}
   [EXTERNAL [NAME external-program-name]]
@@ -89,7 +89,7 @@ A procedure can have no parameters; both an empty parameter list and omission of
 
 All character and graphic parameters must use one encoding scheme: ASCII, EBCDIC, or Unicode. Per-parameter CCSID clauses and `PARAMETER CCSID` must agree. Scalar `AS LOCATOR` applies only to LOB values or distinct types based on LOBs and is not allowed for SQL procedures. `TABLE LIKE table-or-view AS LOCATOR` is a separate table-parameter form: it describes a transition table and can be invoked only from a trigger action. Sources: `ibm-create-procedure-overview`, `ibm-create-procedure-native`, `ibm-create-procedure-external`.
 
-`SPECIFIC` gives the routine its unambiguous specific identity. Use it in OFS cases that test overloaded names, table parameters, replacement, grants, or catalog joins; catalog and privilege queries should join by schema plus specific name rather than by unqualified procedure name alone.
+For native and current external procedures, `SPECIFIC` must repeat the procedure name, and an explicit schema must match the procedure schema. It cannot introduce an independent name. It is required for the documented replacement cases involving table parameters or parameter-list changes other than names. Join catalog and privilege rows by schema plus specific name. Sources: `ibm-create-procedure-native`, `ibm-create-procedure-external`, reviewed 2026-09-12.
 
 ## Native SQL procedure behavior
 
@@ -98,6 +98,8 @@ All character and graphic parameters must use one encoding scheme: ASCII, EBCDIC
 An SQL routine body is one SQL statement. That statement can itself be an SQL control statement, normally a compound statement, that contains declarations, handlers, control flow, cursors, diagnostics, dynamic SQL, and other supported SQL procedure statements. A multiple-statement body therefore needs one outer compound statement. Sources: `ibm-procedure-body`, `ibm-sqlpl`, `ibm-sql-procedure-statement`.
 
 If the body is one non-control SQL procedure statement, it has no trailing semicolon inside the `CREATE PROCEDURE`. For a compound body, semicolons separate nested statements but do not terminate the outermost control statement. SPUFI, DSNTEP2, and similar processors can truncate the definition when semicolon is also their outer SQL terminator; use a distinct outer terminator such as `!`.
+
+`ATOMIC` is prohibited in an SQL procedure compound statement. Use `BEGIN` or `BEGIN NOT ATOMIC`. This differs from a basic trigger's `BEGIN ATOMIC` body. Sources: `ibm-sqlpl-compound`, `ibm-procedure-body`, reviewed 2026-09-12.
 
 The declared data-access level is enforced against local body statements and locally invoked routines:
 

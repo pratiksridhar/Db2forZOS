@@ -94,6 +94,12 @@ Reviewed: **2026-09-03**. Product path: **Db2 13 for z/OS** unless noted.
 
 ## SQL PL and trigger-body statements
 
+The SQL comment and SPUFI processor topics below were reviewed on 2026-09-12.
+
+- `ibm-sql-comments`: [SQL comments](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-sql-comments)
+- `ibm-spufi-defaults`: [CURRENT SPUFI DEFAULTS panel](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=defaults-current-spufi-panel)
+- `ibm-drop`: [DROP statement](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-drop), reviewed for campaign cleanup ownership.
+
 - `ibm-sqlpl` — [SQL procedural language (SQL PL)](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=sql-procedural-language-pl)
 - `ibm-sql-procedure-statement` — [SQL-procedure-statement (SQL PL)](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=pl-sql-procedure-statement-sql)
 - `ibm-sqlpl-compound` — [Compound statement](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=pl-compound-statement)

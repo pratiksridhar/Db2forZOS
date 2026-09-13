@@ -1,0 +1,317 @@
+{
+  "schema_version": "1.0.0",
+  "minimum_function_level": "V13R1M500",
+  "minimum_applcompat": "V13R1M500",
+  "reviewed": "2026-09-12",
+  "evidence": "IBM Db2 13 SQL Reference, last updated 2026-09-09. Diagrams, descriptions, restrictions, and selected catalog columns reviewed in kb/campaigns/reviews/routines.md. Static design only.",
+  "statement_terminator": "@",
+  "id": "trigger-basic",
+  "object": "trigger",
+  "covers": [
+    "trigger.name",
+    "trigger.activation-time",
+    "trigger.subject",
+    "trigger.referencing-row",
+    "trigger.granularity",
+    "trigger.mode-db2sql",
+    "trigger.basic-body",
+    "table.in-explicit-tablespace"
+  ],
+  "rule_refs": [
+    "trigger.basic-advanced-discriminator",
+    "trigger.basic-before-no-cascade-required",
+    "trigger.transition-event-matrix",
+    "trigger.transition-mutability",
+    "trigger.basic-body-closed-set",
+    "trigger.statement-granularity-after-only",
+    "trigger.embedded-semicolon-terminator",
+    "trigger.subject-table-eligibility",
+    "trigger.trigger-package-type"
+  ],
+  "source_refs": [
+    "ibm-create-database",
+    "ibm-create-tablespace",
+    "ibm-create-table",
+    "ibm-create-trigger-basic",
+    "ibm-catalog-systriggers",
+    "ibm-catalog-systriggers-stmt",
+    "ibm-catalog-syspackage",
+    "ibm-sql-reference-pdf"
+  ],
+  "target": "{{SCHEMA}}.{{TRIGGER}}",
+  "object_names": [
+    "{{DATABASE}}.{{TABLESPACE}}",
+    "{{SCHEMA}}.{{TABLE}}",
+    "{{SCHEMA}}.{{TRIGGER}}"
+  ],
+  "constraints": [
+    {
+      "id": "basic-before-needs-no-cascade",
+      "when": {
+        "activation": "bare-before"
+      },
+      "requires": {
+        "activation": "no-cascade-before"
+      },
+      "rule_ref": "trigger.basic-before-no-cascade-required"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "tablespace",
+      "depends_on": [],
+      "role": "setup",
+      "sql": "CREATE TABLESPACE {{TABLESPACE}} IN {{DATABASE}} BUFFERPOOL {{TABLE_BP}} MAXPARTITIONS 4 NUMPARTS 1 DSSIZE 1 G SEGSIZE 32 CCSID EBCDIC LOGGED USING STOGROUP {{STOGROUP}} PRIQTY -1 SECQTY -1",
+      "drop": "DROP TABLESPACE {{DATABASE}}.{{TABLESPACE}}"
+    },
+    {
+      "id": "table",
+      "depends_on": [
+        "tablespace"
+      ],
+      "role": "setup",
+      "sql": "CREATE TABLE {{SCHEMA}}.{{TABLE}} (ID INTEGER NOT NULL, QA_VALUE VARCHAR(64)) IN {{DATABASE}}.{{TABLESPACE}}",
+      "drop": null,
+      "cleanup_via": "tablespace"
+    },
+    {
+      "id": "trigger",
+      "depends_on": [
+        "table"
+      ],
+      "role": "action",
+      "kind": "sql_pl",
+      "sql": "CREATE TRIGGER {{SCHEMA}}.{{TRIGGER}}\n  {{ACTIVATION}} {{EVENT}} ON {{SCHEMA}}.{{TABLE}}\n  REFERENCING NEW AS N\n  FOR EACH ROW MODE DB2SQL\n  NOT SECURED\n  {{WHEN}}\n  {{BODY}}",
+      "drop": "DROP TRIGGER {{SCHEMA}}.{{TRIGGER}}"
+    }
+  ],
+  "dimensions": {
+    "activation": {
+      "no-cascade-before": {
+        "sql": "NO CASCADE BEFORE",
+        "covers": [
+          "trigger.activation-time"
+        ]
+      },
+      "bare-before": {
+        "sql": "BEFORE",
+        "covers": [
+          "trigger.activation-time"
+        ]
+      }
+    },
+    "event": {
+      "insert": {
+        "sql": "INSERT",
+        "covers": [
+          "trigger.event"
+        ],
+        "assertions": [
+          {
+            "catalog": "trigger",
+            "where": {},
+            "equals": {
+              "TRIGEVENT": "I"
+            }
+          }
+        ]
+      },
+      "update-of": {
+        "sql": "UPDATE OF QA_VALUE",
+        "covers": [
+          "trigger.event"
+        ],
+        "assertions": [
+          {
+            "catalog": "trigger",
+            "where": {},
+            "equals": {
+              "TRIGEVENT": "U"
+            }
+          }
+        ]
+      }
+    },
+    "when": {
+      "omitted": {
+        "sql": "",
+        "covers": [
+          "trigger.when"
+        ]
+      },
+      "positive-id": {
+        "sql": "WHEN (N.ID > 0)",
+        "covers": [
+          "trigger.when"
+        ]
+      }
+    },
+    "body": {
+      "compact": {
+        "sql": "BEGIN ATOMIC SET N.QA_VALUE = '  MiXeD; ''quoted''  tail '; END",
+        "covers": [
+          "trigger.basic-body"
+        ]
+      },
+      "multiline": {
+        "sql": "BEGIN ATOMIC\n  SET N.QA_VALUE =\n    '  MiXeD; ''quoted''  tail ';\nEND",
+        "covers": [
+          "trigger.basic-body"
+        ]
+      },
+      "line-comments": {
+        "sql": "BEGIN ATOMIC\n  -- Preserve this line; the next SET must stay executable.\n  SET N.QA_VALUE = '  MiXeD; ''quoted''  tail '; -- keep the trailing space\nEND",
+        "covers": [
+          "trigger.basic-body"
+        ]
+      },
+      "block-comments": {
+        "sql": "BEGIN ATOMIC\n  /* Body comment; with a 'quote' and mixed Case. */\n  SET N.QA_VALUE /* assignment target */ = '  MiXeD; ''quoted''  tail ';\nEND",
+        "covers": [
+          "trigger.basic-body"
+        ]
+      },
+      "long-comment": {
+        "sql": "BEGIN ATOMIC\n/*\n  Body preservation fixture line 000; keep spaces and case.\n  Body preservation fixture line 001; keep spaces and case.\n  Body preservation fixture line 002; keep spaces and case.\n  Body preservation fixture line 003; keep spaces and case.\n  Body preservation fixture line 004; keep spaces and case.\n  Body preservation fixture line 005; keep spaces and case.\n  Body preservation fixture line 006; keep spaces and case.\n  Body preservation fixture line 007; keep spaces and case.\n  Body preservation fixture line 008; keep spaces and case.\n  Body preservation fixture line 009; keep spaces and case.\n  Body preservation fixture line 010; keep spaces and case.\n  Body preservation fixture line 011; keep spaces and case.\n  Body preservation fixture line 012; keep spaces and case.\n  Body preservation fixture line 013; keep spaces and case.\n  Body preservation fixture line 014; keep spaces and case.\n  Body preservation fixture line 015; keep spaces and case.\n  Body preservation fixture line 016; keep spaces and case.\n  Body preservation fixture line 017; keep spaces and case.\n  Body preservation fixture line 018; keep spaces and case.\n  Body preservation fixture line 019; keep spaces and case.\n  Body preservation fixture line 020; keep spaces and case.\n  Body preservation fixture line 021; keep spaces and case.\n  Body preservation fixture line 022; keep spaces and case.\n  Body preservation fixture line 023; keep spaces and case.\n  Body preservation fixture line 024; keep spaces and case.\n  Body preservation fixture line 025; keep spaces and case.\n  Body preservation fixture line 026; keep spaces and case.\n  Body preservation fixture line 027; keep spaces and case.\n  Body preservation fixture line 028; keep spaces and case.\n  Body preservation fixture line 029; keep spaces and case.\n  Body preservation fixture line 030; keep spaces and case.\n  Body preservation fixture line 031; keep spaces and case.\n  Body preservation fixture line 032; keep spaces and case.\n  Body preservation fixture line 033; keep spaces and case.\n  Body preservation fixture line 034; keep spaces and case.\n  Body preservation fixture line 035; keep spaces and case.\n  Body preservation fixture line 036; keep spaces and case.\n  Body preservation fixture line 037; keep spaces and case.\n  Body preservation fixture line 038; keep spaces and case.\n  Body preservation fixture line 039; keep spaces and case.\n  Body preservation fixture line 040; keep spaces and case.\n  Body preservation fixture line 041; keep spaces and case.\n  Body preservation fixture line 042; keep spaces and case.\n  Body preservation fixture line 043; keep spaces and case.\n  Body preservation fixture line 044; keep spaces and case.\n  Body preservation fixture line 045; keep spaces and case.\n  Body preservation fixture line 046; keep spaces and case.\n  Body preservation fixture line 047; keep spaces and case.\n  Body preservation fixture line 048; keep spaces and case.\n  Body preservation fixture line 049; keep spaces and case.\n  Body preservation fixture line 050; keep spaces and case.\n  Body preservation fixture line 051; keep spaces and case.\n  Body preservation fixture line 052; keep spaces and case.\n  Body preservation fixture line 053; keep spaces and case.\n  Body preservation fixture line 054; keep spaces and case.\n  Body preservation fixture line 055; keep spaces and case.\n  Body preservation fixture line 056; keep spaces and case.\n  Body preservation fixture line 057; keep spaces and case.\n  Body preservation fixture line 058; keep spaces and case.\n  Body preservation fixture line 059; keep spaces and case.\n  Body preservation fixture line 060; keep spaces and case.\n  Body preservation fixture line 061; keep spaces and case.\n  Body preservation fixture line 062; keep spaces and case.\n  Body preservation fixture line 063; keep spaces and case.\n  Body preservation fixture line 064; keep spaces and case.\n  Body preservation fixture line 065; keep spaces and case.\n  Body preservation fixture line 066; keep spaces and case.\n  Body preservation fixture line 067; keep spaces and case.\n  Body preservation fixture line 068; keep spaces and case.\n  Body preservation fixture line 069; keep spaces and case.\n  Body preservation fixture line 070; keep spaces and case.\n  Body preservation fixture line 071; keep spaces and case.\n  Body preservation fixture line 072; keep spaces and case.\n  Body preservation fixture line 073; keep spaces and case.\n  Body preservation fixture line 074; keep spaces and case.\n  Body preservation fixture line 075; keep spaces and case.\n  Body preservation fixture line 076; keep spaces and case.\n  Body preservation fixture line 077; keep spaces and case.\n  Body preservation fixture line 078; keep spaces and case.\n  Body preservation fixture line 079; keep spaces and case.\n  Body preservation fixture line 080; keep spaces and case.\n  Body preservation fixture line 081; keep spaces and case.\n  Body preservation fixture line 082; keep spaces and case.\n  Body preservation fixture line 083; keep spaces and case.\n  Body preservation fixture line 084; keep spaces and case.\n  Body preservation fixture line 085; keep spaces and case.\n  Body preservation fixture line 086; keep spaces and case.\n  Body preservation fixture line 087; keep spaces and case.\n  Body preservation fixture line 088; keep spaces and case.\n  Body preservation fixture line 089; keep spaces and case.\n  Body preservation fixture line 090; keep spaces and case.\n  Body preservation fixture line 091; keep spaces and case.\n  Body preservation fixture line 092; keep spaces and case.\n  Body preservation fixture line 093; keep spaces and case.\n  Body preservation fixture line 094; keep spaces and case.\n  Body preservation fixture line 095; keep spaces and case.\n  Body preservation fixture line 096; keep spaces and case.\n  Body preservation fixture line 097; keep spaces and case.\n  Body preservation fixture line 098; keep spaces and case.\n  Body preservation fixture line 099; keep spaces and case.\n  Body preservation fixture line 100; keep spaces and case.\n  Body preservation fixture line 101; keep spaces and case.\n  Body preservation fixture line 102; keep spaces and case.\n  Body preservation fixture line 103; keep spaces and case.\n  Body preservation fixture line 104; keep spaces and case.\n  Body preservation fixture line 105; keep spaces and case.\n  Body preservation fixture line 106; keep spaces and case.\n  Body preservation fixture line 107; keep spaces and case.\n  Body preservation fixture line 108; keep spaces and case.\n  Body preservation fixture line 109; keep spaces and case.\n  Body preservation fixture line 110; keep spaces and case.\n  Body preservation fixture line 111; keep spaces and case.\n  Body preservation fixture line 112; keep spaces and case.\n  Body preservation fixture line 113; keep spaces and case.\n  Body preservation fixture line 114; keep spaces and case.\n  Body preservation fixture line 115; keep spaces and case.\n  Body preservation fixture line 116; keep spaces and case.\n  Body preservation fixture line 117; keep spaces and case.\n  Body preservation fixture line 118; keep spaces and case.\n  Body preservation fixture line 119; keep spaces and case.\n  Body preservation fixture line 120; keep spaces and case.\n  Body preservation fixture line 121; keep spaces and case.\n  Body preservation fixture line 122; keep spaces and case.\n  Body preservation fixture line 123; keep spaces and case.\n  Body preservation fixture line 124; keep spaces and case.\n  Body preservation fixture line 125; keep spaces and case.\n  Body preservation fixture line 126; keep spaces and case.\n  Body preservation fixture line 127; keep spaces and case.\n*/\n  SET N.QA_VALUE = '  MiXeD; ''quoted''  tail ';\nEND",
+        "covers": [
+          "trigger.basic-body"
+        ]
+      }
+    }
+  },
+  "catalog": [
+    {
+      "id": "trigger",
+      "fields": [
+        "TRIGTIME",
+        "TRIGEVENT",
+        "GRANULARITY",
+        "SQLPL",
+        "SECURE",
+        "VERSION"
+      ],
+      "key": [
+        "TRIGEVENT"
+      ],
+      "min_rows": 1,
+      "max_rows": 1,
+      "rtrim_fields": [
+        "TRIGTIME",
+        "TRIGEVENT",
+        "GRANULARITY",
+        "SQLPL",
+        "SECURE"
+      ],
+      "sql": "SELECT TRIGTIME, TRIGEVENT, GRANULARITY, SQLPL, SECURE, VERSION FROM SYSIBM.SYSTRIGGERS WHERE SCHEMA = '{{SCHEMA}}' AND NAME = '{{TRIGGER}}'"
+    },
+    {
+      "id": "package",
+      "fields": [
+        "TYPE",
+        "VERSION"
+      ],
+      "key": [
+        "TYPE",
+        "VERSION"
+      ],
+      "min_rows": 1,
+      "max_rows": 1,
+      "rtrim_fields": [
+        "TYPE"
+      ],
+      "sql": "SELECT TYPE, VERSION FROM SYSIBM.SYSPACKAGE WHERE COLLID = '{{SCHEMA}}' AND NAME = '{{TRIGGER}}'"
+    }
+  ],
+  "assertions": [
+    {
+      "catalog": "trigger",
+      "where": {},
+      "equals": {
+        "TRIGTIME": "B",
+        "GRANULARITY": "R",
+        "SQLPL": "",
+        "SECURE": "N",
+        "VERSION": ""
+      }
+    },
+    {
+      "catalog": "package",
+      "where": {},
+      "equals": {
+        "TYPE": "T"
+      }
+    }
+  ],
+  "preflight": [
+    "SELECT SCHEMA, NAME FROM SYSIBM.SYSTRIGGERS WHERE SCHEMA = '{{SCHEMA}}' AND NAME = '{{TRIGGER}}'",
+    "SELECT COLLID, NAME, VERSION FROM SYSIBM.SYSPACKAGE WHERE COLLID = '{{SCHEMA}}' AND NAME = '{{TRIGGER}}'"
+  ],
+  "prerequisites": [
+    "Configure the SQL processor outer terminator as @ and preserve lines/comments; SPUFI SQLFORMAT SQLPL is required for the comment fixtures.",
+    "The newly created subject table must have no row or column access control and no pending definition changes. Verify CREATEIN, subject-table, and trigger-package authority.",
+    "The long-comment body exceeds 6000 characters deliberately. Preserve the complete SYSTRIGGERS.STATEMENT CLOB, not unused SYSTRIGGERS.TEXT.",
+    "Behavior probes run only for accepted positive cases, in listed order on the fresh owned table, and require INSERT, UPDATE, SELECT, and DELETE authority."
+  ],
+  "probes": [
+    {
+      "id": "capture-trigger-definition",
+      "sql": "SELECT STATEMENT FROM SYSIBM.SYSTRIGGERS WHERE SCHEMA = '{{SCHEMA}}' AND NAME = '{{TRIGGER}}'",
+      "mutates": false,
+      "expected": {
+        "rows": 1,
+        "export": "Lossless full CLOB; preserve line breaks, comments, case, literal whitespace, and doubled quotes.",
+        "comparison": "Capture only. Full CREATE text contains relocated schema names. Compare the body using a statement-aware extraction or direct review; never blanket-replace names."
+      }
+    },
+    {
+      "id": "seed-positive-row",
+      "sql": "INSERT INTO {{SCHEMA}}.{{TABLE}} (ID, QA_VALUE) VALUES (1, 'seed')",
+      "mutates": true,
+      "expected": {
+        "affected_rows": 1
+      },
+      "notes": "Run once on the empty case table."
+    },
+    {
+      "id": "activate-update-event",
+      "sql": "UPDATE {{SCHEMA}}.{{TABLE}} SET QA_VALUE = QA_VALUE WHERE ID = 1",
+      "mutates": true,
+      "expected": {
+        "affected_rows": 1
+      },
+      "requires": [
+        "seed-positive-row"
+      ],
+      "notes": "Preserves the INSERT-trigger result or invokes the UPDATE-trigger result."
+    },
+    {
+      "id": "verify-exact-payload",
+      "sql": "SELECT ID, QA_VALUE, LENGTH(QA_VALUE) AS VALUE_LENGTH FROM {{SCHEMA}}.{{TABLE}} WHERE ID = 1",
+      "mutates": false,
+      "expected": {
+        "rows": [
+          {
+            "ID": 1,
+            "QA_VALUE": "  MiXeD; 'quoted'  tail ",
+            "VALUE_LENGTH": 24
+          }
+        ]
+      },
+      "requires": [
+        "activate-update-event"
+      ],
+      "notes": "Export QA_VALUE losslessly. Do not trim or fold case."
+    },
+    {
+      "id": "remove-probe-row",
+      "sql": "DELETE FROM {{SCHEMA}}.{{TABLE}} WHERE ID = 1",
+      "mutates": true,
+      "expected": {
+        "affected_rows": 1
+      },
+      "requires": [
+        "verify-exact-payload"
+      ]
+    }
+  ]
+}

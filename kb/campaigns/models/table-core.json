@@ -1,0 +1,583 @@
+{
+  "schema_version": "1.0.0",
+  "minimum_function_level": "V13R1M500",
+  "minimum_applcompat": "V13R1M500",
+  "reviewed": "2026-09-04",
+  "evidence": "IBM Db2 13 SQL Reference, edition 2026-09-03. See kb/campaigns/SOURCE-REVIEW.md. Model constraints cover only this bounded family.",
+  "constraints": [],
+  "id": "table-core",
+  "object": "table",
+  "covers": [
+    "table.explicit-elements",
+    "table.in-explicit-tablespace",
+    "tablespace.maxpartitions",
+    "tablespace.segsize"
+  ],
+  "rule_refs": [
+    "table.ordinary-column-type-required",
+    "table.generated-default-conflict",
+    "table.identity-cardinality",
+    "table.explicit-space-physical-conflict",
+    "table.capture-logging-conflict"
+  ],
+  "source_refs": [
+    "ibm-create-database",
+    "ibm-create-tablespace",
+    "ibm-create-table",
+    "ibm-catalog-sysdatabase",
+    "ibm-catalog-systablespace",
+    "ibm-catalog-systables",
+    "ibm-catalog-syscolumns",
+    "ibm-sql-reference-pdf"
+  ],
+  "target": "{{SCHEMA}}.{{TABLE}}",
+  "nodes": [
+    {
+      "id": "tablespace",
+      "depends_on": [],
+      "role": "setup",
+      "sql": "CREATE TABLESPACE {{TABLESPACE}} IN {{DATABASE}} BUFFERPOOL {{TABLE_BP}} MAXPARTITIONS 4 NUMPARTS 1 DSSIZE 1 G SEGSIZE 32 CCSID EBCDIC LOGGED USING STOGROUP {{STOGROUP}} PRIQTY -1 SECQTY -1",
+      "drop": "DROP TABLESPACE {{DATABASE}}.{{TABLESPACE}}"
+    },
+    {
+      "id": "table",
+      "depends_on": [
+        "tablespace"
+      ],
+      "role": "action",
+      "sql": "CREATE TABLE {{SCHEMA}}.{{TABLE}} (ID INTEGER NOT NULL, QA_VALUE {{COLUMN}}) IN {{DATABASE}}.{{TABLESPACE}} {{AUDIT}} {{CAPTURE}} {{APPEND}}",
+      "drop": null,
+      "cleanup_via": "tablespace"
+    }
+  ],
+  "catalog": [
+    {
+      "id": "table",
+      "fields": [
+        "TYPE",
+        "AUDITING",
+        "DATACAPTURE",
+        "APPEND"
+      ],
+      "key": [
+        "TYPE"
+      ],
+      "min_rows": 1,
+      "max_rows": 1,
+      "rtrim_fields": [
+        "TYPE",
+        "AUDITING",
+        "DATACAPTURE",
+        "APPEND"
+      ],
+      "sql": "SELECT \"TYPE\", \"AUDITING\", \"DATACAPTURE\", \"APPEND\" FROM SYSIBM.SYSTABLES WHERE CREATOR = '{{SCHEMA}}' AND NAME = '{{TABLE}}'"
+    },
+    {
+      "id": "columns",
+      "fields": [
+        "COLNO",
+        "NAME",
+        "COLTYPE",
+        "LENGTH",
+        "SCALE",
+        "NULLS",
+        "DEFAULT",
+        "DEFAULTVALUE",
+        "HIDDEN"
+      ],
+      "key": [
+        "COLNO"
+      ],
+      "min_rows": 2,
+      "max_rows": 2,
+      "rtrim_fields": [
+        "NAME",
+        "COLTYPE",
+        "NULLS",
+        "DEFAULT",
+        "HIDDEN"
+      ],
+      "sql": "SELECT \"COLNO\", \"NAME\", \"COLTYPE\", \"LENGTH\", \"SCALE\", \"NULLS\", \"DEFAULT\", \"DEFAULTVALUE\", \"HIDDEN\" FROM SYSIBM.SYSCOLUMNS WHERE TBCREATOR = '{{SCHEMA}}' AND TBNAME = '{{TABLE}}'"
+    },
+    {
+      "id": "tablespace",
+      "fields": [
+        "TYPE",
+        "SEGSIZE",
+        "MAXPARTITIONS",
+        "DSSIZE",
+        "LOCKRULE",
+        "BPOOL"
+      ],
+      "key": [
+        "TYPE"
+      ],
+      "min_rows": 1,
+      "max_rows": 1,
+      "rtrim_fields": [
+        "TYPE",
+        "LOCKRULE",
+        "BPOOL"
+      ],
+      "sql": "SELECT \"TYPE\", \"SEGSIZE\", \"MAXPARTITIONS\", \"DSSIZE\", \"LOCKRULE\", \"BPOOL\" FROM SYSIBM.SYSTABLESPACE WHERE DBNAME = '{{DATABASE}}' AND NAME = '{{TABLESPACE}}'"
+    }
+  ],
+  "dimensions": {
+    "column": {
+      "integer-nullable": {
+        "sql": "INTEGER",
+        "covers": [
+          "table.data-type"
+        ],
+        "assertions": [
+          {
+            "catalog": "columns",
+            "where": {
+              "COLNO": 2
+            },
+            "equals": {
+              "COLTYPE": "INTEGER",
+              "NULLS": "Y"
+            }
+          }
+        ]
+      },
+      "integer-not-null": {
+        "sql": "INTEGER NOT NULL",
+        "covers": [
+          "table.data-type",
+          "table.not-null"
+        ],
+        "assertions": [
+          {
+            "catalog": "columns",
+            "where": {
+              "COLNO": 2
+            },
+            "equals": {
+              "COLTYPE": "INTEGER",
+              "NULLS": "N",
+              "DEFAULT": "N"
+            }
+          }
+        ]
+      },
+      "integer-default": {
+        "sql": "INTEGER NOT NULL DEFAULT 0",
+        "covers": [
+          "table.data-type",
+          "table.not-null",
+          "table.default"
+        ],
+        "assertions": [
+          {
+            "catalog": "columns",
+            "where": {
+              "COLNO": 2
+            },
+            "equals": {
+              "COLTYPE": "INTEGER",
+              "NULLS": "N",
+              "DEFAULT": "4",
+              "DEFAULTVALUE": "0"
+            }
+          }
+        ]
+      },
+      "decimal-min": {
+        "sql": "DECIMAL(1,0)",
+        "covers": [
+          "table.data-type"
+        ],
+        "assertions": [
+          {
+            "catalog": "columns",
+            "where": {
+              "COLNO": 2
+            },
+            "equals": {
+              "COLTYPE": "DECIMAL",
+              "LENGTH": 1,
+              "SCALE": 0
+            }
+          }
+        ]
+      },
+      "decimal-max": {
+        "sql": "DECIMAL(31,31)",
+        "covers": [
+          "table.data-type"
+        ],
+        "assertions": [
+          {
+            "catalog": "columns",
+            "where": {
+              "COLNO": 2
+            },
+            "equals": {
+              "COLTYPE": "DECIMAL",
+              "LENGTH": 31,
+              "SCALE": 31
+            }
+          }
+        ]
+      },
+      "varchar-min": {
+        "sql": "VARCHAR(1)",
+        "covers": [
+          "table.data-type"
+        ],
+        "assertions": [
+          {
+            "catalog": "columns",
+            "where": {
+              "COLNO": 2
+            },
+            "equals": {
+              "COLTYPE": "VARCHAR",
+              "LENGTH": 1
+            }
+          }
+        ]
+      },
+      "varchar-default": {
+        "sql": "VARCHAR(256) NOT NULL DEFAULT 'MiXeD '",
+        "covers": [
+          "table.data-type",
+          "table.not-null",
+          "table.default"
+        ],
+        "assertions": [
+          {
+            "catalog": "columns",
+            "where": {
+              "COLNO": 2
+            },
+            "equals": {
+              "COLTYPE": "VARCHAR",
+              "LENGTH": 256,
+              "DEFAULT": "1",
+              "DEFAULTVALUE": "MiXeD "
+            }
+          }
+        ]
+      },
+      "date": {
+        "sql": "DATE",
+        "covers": [
+          "table.data-type"
+        ],
+        "assertions": [
+          {
+            "catalog": "columns",
+            "where": {
+              "COLNO": 2
+            },
+            "equals": {
+              "COLTYPE": "DATE"
+            }
+          }
+        ]
+      },
+      "timestamp-min": {
+        "sql": "TIMESTAMP(0)",
+        "covers": [
+          "table.data-type"
+        ],
+        "assertions": [
+          {
+            "catalog": "columns",
+            "where": {
+              "COLNO": 2
+            },
+            "equals": {
+              "COLTYPE": "TIMESTMP",
+              "LENGTH": 7,
+              "SCALE": 0
+            }
+          }
+        ]
+      },
+      "timestamp-max": {
+        "sql": "TIMESTAMP(12)",
+        "covers": [
+          "table.data-type"
+        ],
+        "assertions": [
+          {
+            "catalog": "columns",
+            "where": {
+              "COLNO": 2
+            },
+            "equals": {
+              "COLTYPE": "TIMESTMP",
+              "SCALE": 12,
+              "LENGTH": 13
+            }
+          }
+        ]
+      },
+      "identity-always": {
+        "sql": "INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY",
+        "covers": [
+          "table.data-type",
+          "table.not-null",
+          "table.identity"
+        ],
+        "assertions": [
+          {
+            "catalog": "columns",
+            "where": {
+              "COLNO": 2
+            },
+            "equals": {
+              "COLTYPE": "INTEGER",
+              "NULLS": "N",
+              "DEFAULT": "I"
+            }
+          }
+        ]
+      },
+      "identity-default": {
+        "sql": "INTEGER NOT NULL GENERATED BY DEFAULT AS IDENTITY",
+        "covers": [
+          "table.data-type",
+          "table.not-null",
+          "table.identity"
+        ],
+        "assertions": [
+          {
+            "catalog": "columns",
+            "where": {
+              "COLNO": 2
+            },
+            "equals": {
+              "COLTYPE": "INTEGER",
+              "NULLS": "N",
+              "DEFAULT": "J"
+            }
+          }
+        ]
+      },
+      "hidden": {
+        "sql": "INTEGER IMPLICITLY HIDDEN",
+        "covers": [
+          "table.data-type",
+          "table.implicitly-hidden"
+        ],
+        "assertions": [
+          {
+            "catalog": "columns",
+            "where": {
+              "COLNO": 2
+            },
+            "equals": {
+              "COLTYPE": "INTEGER",
+              "HIDDEN": "P"
+            }
+          }
+        ]
+      },
+      "row-change": {
+        "sql": "TIMESTAMP(6) NOT NULL GENERATED ALWAYS FOR EACH ROW ON UPDATE AS ROW CHANGE TIMESTAMP",
+        "covers": [
+          "table.data-type",
+          "table.not-null",
+          "table.row-change-timestamp"
+        ],
+        "assertions": [
+          {
+            "catalog": "columns",
+            "where": {
+              "COLNO": 2
+            },
+            "equals": {
+              "COLTYPE": "TIMESTMP",
+              "NULLS": "N",
+              "DEFAULT": "E"
+            }
+          }
+        ]
+      }
+    },
+    "audit": {
+      "omitted": {
+        "sql": "",
+        "covers": [
+          "table.audit"
+        ],
+        "assertions": [
+          {
+            "catalog": "table",
+            "where": {
+              "TYPE": "T"
+            },
+            "equals": {
+              "AUDITING": ""
+            }
+          }
+        ]
+      },
+      "none": {
+        "sql": "AUDIT NONE",
+        "covers": [
+          "table.audit"
+        ],
+        "assertions": [
+          {
+            "catalog": "table",
+            "where": {
+              "TYPE": "T"
+            },
+            "equals": {
+              "AUDITING": ""
+            }
+          }
+        ]
+      },
+      "changes": {
+        "sql": "AUDIT CHANGES",
+        "covers": [
+          "table.audit"
+        ],
+        "assertions": [
+          {
+            "catalog": "table",
+            "where": {
+              "TYPE": "T"
+            },
+            "equals": {
+              "AUDITING": "C"
+            }
+          }
+        ]
+      },
+      "all": {
+        "sql": "AUDIT ALL",
+        "covers": [
+          "table.audit"
+        ],
+        "assertions": [
+          {
+            "catalog": "table",
+            "where": {
+              "TYPE": "T"
+            },
+            "equals": {
+              "AUDITING": "A"
+            }
+          }
+        ]
+      }
+    },
+    "capture": {
+      "none": {
+        "sql": "DATA CAPTURE NONE",
+        "covers": [
+          "table.data-capture"
+        ],
+        "assertions": [
+          {
+            "catalog": "table",
+            "where": {
+              "TYPE": "T"
+            },
+            "equals": {
+              "DATACAPTURE": ""
+            }
+          }
+        ]
+      },
+      "changes": {
+        "sql": "DATA CAPTURE CHANGES",
+        "covers": [
+          "table.data-capture"
+        ],
+        "assertions": [
+          {
+            "catalog": "table",
+            "where": {
+              "TYPE": "T"
+            },
+            "equals": {
+              "DATACAPTURE": "Y"
+            }
+          }
+        ]
+      }
+    },
+    "append": {
+      "omitted": {
+        "sql": "",
+        "covers": [
+          "table.append"
+        ],
+        "assertions": [
+          {
+            "catalog": "table",
+            "where": {
+              "TYPE": "T"
+            },
+            "equals": {
+              "APPEND": "N"
+            }
+          }
+        ]
+      },
+      "no": {
+        "sql": "APPEND NO",
+        "covers": [
+          "table.append"
+        ],
+        "assertions": [
+          {
+            "catalog": "table",
+            "where": {
+              "TYPE": "T"
+            },
+            "equals": {
+              "APPEND": "N"
+            }
+          }
+        ]
+      },
+      "yes": {
+        "sql": "APPEND YES",
+        "covers": [
+          "table.append"
+        ],
+        "assertions": [
+          {
+            "catalog": "table",
+            "where": {
+              "TYPE": "T"
+            },
+            "equals": {
+              "APPEND": "Y"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "assertions": [
+    {
+      "catalog": "tablespace",
+      "where": {},
+      "equals": {
+        "TYPE": "G"
+      }
+    },
+    {
+      "catalog": "columns",
+      "where": {
+        "COLNO": 1
+      },
+      "equals": {
+        "NAME": "ID",
+        "COLTYPE": "INTEGER",
+        "NULLS": "N"
+      }
+    }
+  ]
+}

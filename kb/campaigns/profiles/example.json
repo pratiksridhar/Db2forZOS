@@ -1,0 +1,22 @@
+{
+  "id": "example-unverified",
+  "verified": false,
+  "verification_evidence": null,
+  "product_context": {
+    "release": "Db2 13 for z/OS",
+    "function_level": "V13R1M500",
+    "applcompat": "V13R1M500",
+    "current_rules": "DB2",
+    "data_sharing": false,
+    "subsystem_parameters": {},
+    "active_buffer_pools": [
+      "BP0"
+    ]
+  },
+  "storage_group": "QASTG",
+  "table_bufferpool": "BP0",
+  "index_bufferpool": "BP0",
+  "source_schema": "QASRC",
+  "replay_schema": "QADST",
+  "notes": "Illustrative assumptions, not a discovered subsystem. Replace QASTG and all environment values before executing."
+}

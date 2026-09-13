@@ -1,0 +1,235 @@
+{
+  "schema_version": "1.0.0",
+  "minimum_function_level": "V13R1M500",
+  "minimum_applcompat": "V13R1M500",
+  "reviewed": "2026-09-04",
+  "evidence": "IBM Db2 13 SQL Reference, edition 2026-09-03. See kb/campaigns/SOURCE-REVIEW.md. Model constraints cover only this bounded family.",
+  "constraints": [],
+  "id": "tablespace-pbg",
+  "object": "tablespace",
+  "covers": [
+    "tablespace.maxpartitions",
+    "tablespace.numparts",
+    "tablespace.dssize",
+    "tablespace.segsize",
+    "tablespace.locksize"
+  ],
+  "rule_refs": [
+    "tablespace.current-type-resolution",
+    "tablespace.pbg-numparts-ceiling",
+    "tablespace.tablespace-lockmax"
+  ],
+  "source_refs": [
+    "ibm-create-database",
+    "ibm-create-tablespace",
+    "ibm-create-table",
+    "ibm-catalog-sysdatabase",
+    "ibm-catalog-systablespace",
+    "ibm-catalog-systables",
+    "ibm-catalog-syscolumns",
+    "ibm-sql-reference-pdf"
+  ],
+  "target": "{{DATABASE}}.{{TABLESPACE}}",
+  "nodes": [
+    {
+      "id": "tablespace",
+      "depends_on": [],
+      "role": "action",
+      "sql": "CREATE TABLESPACE {{TABLESPACE}} IN {{DATABASE}} BUFFERPOOL {{TABLE_BP}} MAXPARTITIONS {{MAXPARTITIONS}} NUMPARTS 1 DSSIZE {{DSSIZE}} G SEGSIZE {{SEGSIZE}} CCSID EBCDIC LOCKSIZE {{LOCKSIZE}} LOCKMAX SYSTEM LOGGED USING STOGROUP {{STOGROUP}} PRIQTY -1 SECQTY -1",
+      "drop": "DROP TABLESPACE {{DATABASE}}.{{TABLESPACE}}"
+    }
+  ],
+  "catalog": [
+    {
+      "id": "tablespace",
+      "fields": [
+        "TYPE",
+        "SEGSIZE",
+        "MAXPARTITIONS",
+        "DSSIZE",
+        "LOCKRULE",
+        "BPOOL"
+      ],
+      "key": [
+        "TYPE"
+      ],
+      "min_rows": 1,
+      "max_rows": 1,
+      "rtrim_fields": [
+        "TYPE",
+        "LOCKRULE",
+        "BPOOL"
+      ],
+      "sql": "SELECT \"TYPE\", \"SEGSIZE\", \"MAXPARTITIONS\", \"DSSIZE\", \"LOCKRULE\", \"BPOOL\" FROM SYSIBM.SYSTABLESPACE WHERE DBNAME = '{{DATABASE}}' AND NAME = '{{TABLESPACE}}'"
+    }
+  ],
+  "dimensions": {
+    "maxpartitions": {
+      "1": {
+        "sql": "1",
+        "covers": [
+          "tablespace.maxpartitions"
+        ],
+        "assertions": [
+          {
+            "catalog": "tablespace",
+            "where": {},
+            "equals": {
+              "MAXPARTITIONS": 1
+            }
+          }
+        ]
+      },
+      "4": {
+        "sql": "4",
+        "covers": [
+          "tablespace.maxpartitions"
+        ],
+        "assertions": [
+          {
+            "catalog": "tablespace",
+            "where": {},
+            "equals": {
+              "MAXPARTITIONS": 4
+            }
+          }
+        ]
+      }
+    },
+    "segsize": {
+      "4": {
+        "sql": "4",
+        "covers": [
+          "tablespace.segsize"
+        ],
+        "assertions": [
+          {
+            "catalog": "tablespace",
+            "where": {},
+            "equals": {
+              "SEGSIZE": 4
+            }
+          }
+        ]
+      },
+      "32": {
+        "sql": "32",
+        "covers": [
+          "tablespace.segsize"
+        ],
+        "assertions": [
+          {
+            "catalog": "tablespace",
+            "where": {},
+            "equals": {
+              "SEGSIZE": 32
+            }
+          }
+        ]
+      },
+      "64": {
+        "sql": "64",
+        "covers": [
+          "tablespace.segsize"
+        ],
+        "assertions": [
+          {
+            "catalog": "tablespace",
+            "where": {},
+            "equals": {
+              "SEGSIZE": 64
+            }
+          }
+        ]
+      }
+    },
+    "dssize": {
+      "1": {
+        "sql": "1",
+        "covers": [
+          "tablespace.dssize"
+        ],
+        "assertions": [
+          {
+            "catalog": "tablespace",
+            "where": {},
+            "equals": {
+              "DSSIZE": 1048576
+            }
+          }
+        ]
+      },
+      "4": {
+        "sql": "4",
+        "covers": [
+          "tablespace.dssize"
+        ],
+        "assertions": [
+          {
+            "catalog": "tablespace",
+            "where": {},
+            "equals": {
+              "DSSIZE": 4194304
+            }
+          }
+        ]
+      }
+    },
+    "locksize": {
+      "any": {
+        "sql": "ANY",
+        "covers": [
+          "tablespace.locksize"
+        ],
+        "assertions": [
+          {
+            "catalog": "tablespace",
+            "where": {},
+            "equals": {
+              "LOCKRULE": "A"
+            }
+          }
+        ]
+      },
+      "page": {
+        "sql": "PAGE",
+        "covers": [
+          "tablespace.locksize"
+        ],
+        "assertions": [
+          {
+            "catalog": "tablespace",
+            "where": {},
+            "equals": {
+              "LOCKRULE": "P"
+            }
+          }
+        ]
+      },
+      "row": {
+        "sql": "ROW",
+        "covers": [
+          "tablespace.locksize"
+        ],
+        "assertions": [
+          {
+            "catalog": "tablespace",
+            "where": {},
+            "equals": {
+              "LOCKRULE": "R"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "assertions": [
+    {
+      "catalog": "tablespace",
+      "where": {},
+      "equals": {
+        "TYPE": "G"
+      }
+    }
+  ]
+}

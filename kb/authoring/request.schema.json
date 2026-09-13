@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Agent-authored Db2 13 DDL request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "intent", "objects"],
+  "properties": {
+    "schema_version": {"type": "string", "const": "1.0.0"},
+    "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}$"},
+    "intent": {"type": "string", "minLength": 1},
+    "profile": {"type": "string", "minLength": 1},
+    "output_root": {"type": "string", "minLength": 1},
+    "run_prefix": {"type": "string", "pattern": "^[A-Z][A-Z0-9]?$"},
+    "strategy": {"type": "string", "enum": ["pairwise", "three-way", "each-choice", "exhaustive"]},
+    "budget": {"type": "integer", "minimum": 1, "maximum": 999},
+    "negative": {"type": "boolean"},
+    "objects": {
+      "type": "array", "minItems": 1, "maxItems": 99,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "object"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}$"},
+          "object": {"type": "string", "minLength": 1},
+          "model": {"type": "string", "minLength": 1},
+          "depends_on": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "clause_refs": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "rule_refs": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "select": {"type": "object", "additionalProperties": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}}
+        }
+      }
+    },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "kind", "text", "objects"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "kind": {"type": "string", "enum": ["syntax", "formatting", "length", "dependency", "behavior", "environment", "coverage"]},
+          "text": {"type": "string", "minLength": 1},
+          "objects": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+        }
+      }
+    }
+  }
+}

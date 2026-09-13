@@ -1,0 +1,395 @@
+{
+  "schema_version": "1.0.0",
+  "minimum_function_level": "V13R1M500",
+  "minimum_applcompat": "V13R1M500",
+  "reviewed": "2026-09-04",
+  "evidence": "IBM Db2 13 SQL Reference, edition 2026-09-03. See kb/campaigns/SOURCE-REVIEW.md. Model constraints cover only this bounded family.",
+  "constraints": [
+    {
+      "id": "include-requires-unique",
+      "when": {
+        "include": "yes"
+      },
+      "requires": {
+        "unique": "yes"
+      },
+      "rule_ref": "index.include-requires-unique"
+    },
+    {
+      "id": "pbg-no-partitioned-index",
+      "when": {
+        "partitioned": "yes"
+      },
+      "requires": {
+        "partitioned": "no"
+      },
+      "rule_ref": "index.partitioned-pbg-invalid"
+    }
+  ],
+  "id": "index-core",
+  "object": "index",
+  "covers": [
+    "index.key-list",
+    "index.using-stogroup",
+    "table.in-explicit-tablespace"
+  ],
+  "rule_refs": [
+    "index.include-requires-unique",
+    "index.partitioned-pbg-invalid",
+    "index.padding-type-restrictions",
+    "index.key-count"
+  ],
+  "source_refs": [
+    "ibm-create-database",
+    "ibm-create-tablespace",
+    "ibm-create-table",
+    "ibm-catalog-sysdatabase",
+    "ibm-catalog-systablespace",
+    "ibm-catalog-systables",
+    "ibm-catalog-syscolumns",
+    "ibm-sql-reference-pdf",
+    "ibm-create-index",
+    "ibm-catalog-sysindexes",
+    "ibm-catalog-syskeys"
+  ],
+  "target": "{{SCHEMA}}.{{INDEX}}",
+  "nodes": [
+    {
+      "id": "tablespace",
+      "depends_on": [],
+      "role": "setup",
+      "sql": "CREATE TABLESPACE {{TABLESPACE}} IN {{DATABASE}} BUFFERPOOL {{TABLE_BP}} MAXPARTITIONS 4 NUMPARTS 1 DSSIZE 1 G SEGSIZE 32 CCSID EBCDIC LOGGED USING STOGROUP {{STOGROUP}} PRIQTY -1 SECQTY -1",
+      "drop": "DROP TABLESPACE {{DATABASE}}.{{TABLESPACE}}"
+    },
+    {
+      "id": "table",
+      "depends_on": [
+        "tablespace"
+      ],
+      "role": "setup",
+      "sql": "CREATE TABLE {{SCHEMA}}.{{TABLE}} (ID INTEGER NOT NULL, QA_VALUE VARCHAR(64) NOT NULL, EXTRA INTEGER) IN {{DATABASE}}.{{TABLESPACE}}",
+      "drop": null,
+      "cleanup_via": "tablespace"
+    },
+    {
+      "id": "index",
+      "depends_on": [
+        "table"
+      ],
+      "role": "action",
+      "sql": "CREATE {{UNIQUE}} INDEX {{SCHEMA}}.{{INDEX}} ON {{SCHEMA}}.{{TABLE}} (QA_VALUE {{DIRECTION}}, ID ASC) {{INCLUDE}} {{PARTITIONED}} {{PADDING}} USING STOGROUP {{STOGROUP}} FREEPAGE {{FREEPAGE}} PCTFREE {{PCTFREE}} BUFFERPOOL {{INDEX_BP}}",
+      "drop": "DROP INDEX {{SCHEMA}}.{{INDEX}}"
+    }
+  ],
+  "catalog": [
+    {
+      "id": "index",
+      "fields": [
+        "UNIQUERULE",
+        "COLCOUNT",
+        "PADDED"
+      ],
+      "key": [
+        "UNIQUERULE"
+      ],
+      "min_rows": 1,
+      "max_rows": 1,
+      "rtrim_fields": [
+        "UNIQUERULE",
+        "PADDED"
+      ],
+      "sql": "SELECT \"UNIQUERULE\", \"COLCOUNT\", \"PADDED\" FROM SYSIBM.SYSINDEXES WHERE CREATOR = '{{SCHEMA}}' AND NAME = '{{INDEX}}'"
+    },
+    {
+      "id": "keys",
+      "fields": [
+        "COLSEQ",
+        "COLNAME",
+        "ORDERING"
+      ],
+      "key": [
+        "COLSEQ"
+      ],
+      "min_rows": 2,
+      "max_rows": 3,
+      "rtrim_fields": [
+        "COLNAME",
+        "ORDERING"
+      ],
+      "sql": "SELECT \"COLSEQ\", \"COLNAME\", \"ORDERING\" FROM SYSIBM.SYSKEYS WHERE IXCREATOR = '{{SCHEMA}}' AND IXNAME = '{{INDEX}}'"
+    },
+    {
+      "id": "index_storage",
+      "fields": [
+        "FREEPAGE",
+        "PCTFREE"
+      ],
+      "key": [
+        "FREEPAGE"
+      ],
+      "min_rows": 1,
+      "max_rows": 1,
+      "rtrim_fields": [],
+      "sql": "SELECT \"FREEPAGE\", \"PCTFREE\" FROM SYSIBM.SYSINDEXES WHERE CREATOR = '{{SCHEMA}}' AND NAME = '{{INDEX}}'"
+    }
+  ],
+  "dimensions": {
+    "unique": {
+      "no": {
+        "sql": "",
+        "covers": [
+          "index.unique"
+        ],
+        "assertions": [
+          {
+            "catalog": "index",
+            "where": {},
+            "equals": {
+              "UNIQUERULE": "D"
+            }
+          }
+        ]
+      },
+      "yes": {
+        "sql": "UNIQUE",
+        "covers": [
+          "index.unique"
+        ],
+        "assertions": [
+          {
+            "catalog": "index",
+            "where": {},
+            "equals": {
+              "UNIQUERULE": "U"
+            }
+          }
+        ]
+      }
+    },
+    "include": {
+      "no": {
+        "sql": "",
+        "covers": [
+          "index.include"
+        ],
+        "assertions": [],
+        "catalog_row_counts": {
+          "keys": 2
+        }
+      },
+      "yes": {
+        "sql": "INCLUDE (EXTRA)",
+        "covers": [
+          "index.include"
+        ],
+        "assertions": [
+          {
+            "catalog": "keys",
+            "where": {
+              "COLSEQ": 3
+            },
+            "equals": {
+              "COLNAME": "EXTRA",
+              "ORDERING": ""
+            }
+          }
+        ],
+        "catalog_row_counts": {
+          "keys": 3
+        }
+      }
+    },
+    "direction": {
+      "asc": {
+        "sql": "ASC",
+        "covers": [
+          "index.key-order"
+        ],
+        "assertions": [
+          {
+            "catalog": "keys",
+            "where": {
+              "COLSEQ": 1
+            },
+            "equals": {
+              "COLNAME": "QA_VALUE",
+              "ORDERING": "A"
+            }
+          }
+        ]
+      },
+      "desc": {
+        "sql": "DESC",
+        "covers": [
+          "index.key-order"
+        ],
+        "assertions": [
+          {
+            "catalog": "keys",
+            "where": {
+              "COLSEQ": 1
+            },
+            "equals": {
+              "COLNAME": "QA_VALUE",
+              "ORDERING": "D"
+            }
+          }
+        ]
+      }
+    },
+    "partitioned": {
+      "no": {
+        "sql": "",
+        "covers": [
+          "index.partitioned"
+        ],
+        "assertions": []
+      },
+      "yes": {
+        "sql": "PARTITIONED",
+        "covers": [
+          "index.partitioned"
+        ],
+        "assertions": []
+      }
+    },
+    "padding": {
+      "padded": {
+        "sql": "PADDED",
+        "covers": [
+          "index.padding"
+        ],
+        "assertions": [
+          {
+            "catalog": "index",
+            "where": {},
+            "equals": {
+              "PADDED": "Y"
+            }
+          }
+        ]
+      },
+      "not-padded": {
+        "sql": "NOT PADDED",
+        "covers": [
+          "index.padding"
+        ],
+        "assertions": [
+          {
+            "catalog": "index",
+            "where": {},
+            "equals": {
+              "PADDED": "N"
+            }
+          }
+        ]
+      }
+    },
+    "freepage": {
+      "0": {
+        "sql": "0",
+        "covers": [
+          "index.freepage"
+        ],
+        "assertions": [
+          {
+            "catalog": "index_storage",
+            "where": {},
+            "equals": {
+              "FREEPAGE": 0
+            }
+          }
+        ]
+      },
+      "1": {
+        "sql": "1",
+        "covers": [
+          "index.freepage"
+        ],
+        "assertions": [
+          {
+            "catalog": "index_storage",
+            "where": {},
+            "equals": {
+              "FREEPAGE": 1
+            }
+          }
+        ]
+      },
+      "255": {
+        "sql": "255",
+        "covers": [
+          "index.freepage"
+        ],
+        "assertions": [
+          {
+            "catalog": "index_storage",
+            "where": {},
+            "equals": {
+              "FREEPAGE": 255
+            }
+          }
+        ]
+      }
+    },
+    "pctfree": {
+      "0": {
+        "sql": "0",
+        "covers": [
+          "index.pctfree"
+        ],
+        "assertions": [
+          {
+            "catalog": "index_storage",
+            "where": {},
+            "equals": {
+              "PCTFREE": 0
+            }
+          }
+        ]
+      },
+      "10": {
+        "sql": "10",
+        "covers": [
+          "index.pctfree"
+        ],
+        "assertions": [
+          {
+            "catalog": "index_storage",
+            "where": {},
+            "equals": {
+              "PCTFREE": 10
+            }
+          }
+        ]
+      },
+      "99": {
+        "sql": "99",
+        "covers": [
+          "index.pctfree"
+        ],
+        "assertions": [
+          {
+            "catalog": "index_storage",
+            "where": {},
+            "equals": {
+              "PCTFREE": 99
+            }
+          }
+        ]
+      }
+    }
+  },
+  "assertions": [
+    {
+      "catalog": "keys",
+      "where": {
+        "COLSEQ": 2
+      },
+      "equals": {
+        "COLNAME": "ID",
+        "ORDERING": "A"
+      }
+    }
+  ]
+}

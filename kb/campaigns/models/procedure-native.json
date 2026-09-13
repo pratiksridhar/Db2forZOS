@@ -1,0 +1,443 @@
+{
+  "schema_version": "1.0.0",
+  "minimum_function_level": "V13R1M500",
+  "minimum_applcompat": "V13R1M500",
+  "reviewed": "2026-09-12",
+  "evidence": "IBM Db2 13 SQL Reference, last updated 2026-09-09. Diagrams, descriptions, restrictions, and selected catalog columns reviewed in kb/campaigns/reviews/routines.md. Static design only.",
+  "statement_terminator": "@",
+  "id": "procedure-native",
+  "uses_database": false,
+  "object": "procedure",
+  "covers": [
+    "procedure.name",
+    "procedure.kind-discriminator",
+    "procedure.parameters",
+    "procedure.specific",
+    "procedure.version",
+    "procedure.language",
+    "procedure.native-body",
+    "procedure.debug-applcompat",
+    "procedure.dynamic-result-sets",
+    "procedure.commit-mode"
+  ],
+  "rule_refs": [
+    "procedure.current-form-selection",
+    "procedure.no-sql-external-only",
+    "procedure.native-body-layering",
+    "procedure.data-access-enforced",
+    "procedure.compound-outer-terminator",
+    "procedure.native-package-identity",
+    "procedure.debug-wlm-boundary",
+    "procedure.parameter-ccsid-consistency",
+    "procedure.specific-name-matches-procedure",
+    "procedure.native-compound-not-atomic"
+  ],
+  "source_refs": [
+    "ibm-create-procedure-native",
+    "ibm-procedure-body",
+    "ibm-sqlpl-compound",
+    "ibm-sqlpl-if",
+    "ibm-catalog-sysroutines",
+    "ibm-catalog-sysparms",
+    "ibm-catalog-syspackage",
+    "ibm-sql-reference-pdf"
+  ],
+  "target": "{{SCHEMA}}.{{PROCEDURE}}",
+  "object_names": [
+    "{{SCHEMA}}.{{PROCEDURE}}"
+  ],
+  "constraints": [
+    {
+      "id": "native-no-sql-prohibited",
+      "when": {
+        "access": "no-sql"
+      },
+      "requires": {
+        "access": [
+          "contains",
+          "reads",
+          "modifies"
+        ]
+      },
+      "rule_ref": "procedure.no-sql-external-only"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "procedure",
+      "depends_on": [],
+      "role": "action",
+      "kind": "sql_pl",
+      "sql": "CREATE PROCEDURE {{SCHEMA}}.{{PROCEDURE}}\n  (IN P_FLAG INTEGER, OUT P_TEXT VARCHAR(64))\n  VERSION V1\n  LANGUAGE SQL\n  SPECIFIC {{SCHEMA}}.{{PROCEDURE}}\n  {{DETERMINISM}}\n  {{ACCESS}}\n  CALLED ON NULL INPUT\n  PARAMETER CCSID UNICODE\n  DYNAMIC RESULT SETS 0\n  COMMIT ON RETURN NO\n  DISABLE DEBUG MODE\n  APPLCOMPAT {{APPLCOMPAT}}\n  {{BODY}}",
+      "drop": "DROP PROCEDURE {{SCHEMA}}.{{PROCEDURE}}"
+    }
+  ],
+  "dimensions": {
+    "access": {
+      "contains": {
+        "sql": "CONTAINS SQL",
+        "covers": [
+          "procedure.sql-data-access"
+        ],
+        "assertions": [
+          {
+            "catalog": "routine",
+            "where": {},
+            "equals": {
+              "SQL_DATA_ACCESS": "C"
+            }
+          }
+        ]
+      },
+      "reads": {
+        "sql": "READS SQL DATA",
+        "covers": [
+          "procedure.sql-data-access"
+        ],
+        "assertions": [
+          {
+            "catalog": "routine",
+            "where": {},
+            "equals": {
+              "SQL_DATA_ACCESS": "R"
+            }
+          }
+        ]
+      },
+      "modifies": {
+        "sql": "MODIFIES SQL DATA",
+        "covers": [
+          "procedure.sql-data-access"
+        ],
+        "assertions": [
+          {
+            "catalog": "routine",
+            "where": {},
+            "equals": {
+              "SQL_DATA_ACCESS": "M"
+            }
+          }
+        ]
+      },
+      "no-sql": {
+        "sql": "NO SQL",
+        "covers": [
+          "procedure.sql-data-access"
+        ],
+        "assertions": [
+          {
+            "catalog": "routine",
+            "where": {},
+            "equals": {
+              "SQL_DATA_ACCESS": "N"
+            }
+          }
+        ]
+      }
+    },
+    "determinism": {
+      "omitted": {
+        "sql": "",
+        "covers": [
+          "procedure.determinism-null-call"
+        ],
+        "assertions": [
+          {
+            "catalog": "routine",
+            "where": {},
+            "equals": {
+              "DETERMINISTIC": "N"
+            }
+          }
+        ]
+      },
+      "not-deterministic": {
+        "sql": "NOT DETERMINISTIC",
+        "covers": [
+          "procedure.determinism-null-call"
+        ],
+        "assertions": [
+          {
+            "catalog": "routine",
+            "where": {},
+            "equals": {
+              "DETERMINISTIC": "N"
+            }
+          }
+        ]
+      },
+      "deterministic": {
+        "sql": "DETERMINISTIC",
+        "covers": [
+          "procedure.determinism-null-call"
+        ],
+        "assertions": [
+          {
+            "catalog": "routine",
+            "where": {},
+            "equals": {
+              "DETERMINISTIC": "Y"
+            }
+          }
+        ]
+      }
+    },
+    "body": {
+      "compact": {
+        "sql": "BEGIN DECLARE V_TEXT VARCHAR(64) DEFAULT '  MiXeD; ''quoted''  tail '; IF P_FLAG = 1 THEN SET P_TEXT = V_TEXT; ELSE SET P_TEXT = 'other'; END IF; END",
+        "covers": [
+          "procedure.native-body"
+        ]
+      },
+      "multiline": {
+        "sql": "BEGIN\n  DECLARE V_TEXT VARCHAR(64) DEFAULT '  MiXeD; ''quoted''  tail ';\n  IF P_FLAG = 1 THEN\n    SET P_TEXT = V_TEXT;\n  ELSE\n    SET P_TEXT = 'other';\n  END IF;\nEND",
+        "covers": [
+          "procedure.native-body"
+        ]
+      },
+      "line-comments": {
+        "sql": "BEGIN\n  -- Declaration text; keep this newline.\n  DECLARE V_TEXT VARCHAR(64) DEFAULT '  MiXeD; ''quoted''  tail ';\n  IF P_FLAG = 1 THEN\n    SET P_TEXT = V_TEXT; -- payload keeps its trailing space\n  ELSE\n    SET P_TEXT = 'other';\n  END IF;\nEND",
+        "covers": [
+          "procedure.native-body"
+        ]
+      },
+      "block-comments": {
+        "sql": "BEGIN\n  /* Declaration; with a 'quote' and mixed Case. */\n  DECLARE V_TEXT VARCHAR(64) DEFAULT '  MiXeD; ''quoted''  tail ';\n  IF P_FLAG = 1 THEN\n    SET P_TEXT /* output */ = V_TEXT;\n  ELSE\n    SET P_TEXT = 'other';\n  END IF;\nEND",
+        "covers": [
+          "procedure.native-body"
+        ]
+      },
+      "long-comment": {
+        "sql": "BEGIN\n/*\n  Body preservation fixture line 000; keep spaces and case.\n  Body preservation fixture line 001; keep spaces and case.\n  Body preservation fixture line 002; keep spaces and case.\n  Body preservation fixture line 003; keep spaces and case.\n  Body preservation fixture line 004; keep spaces and case.\n  Body preservation fixture line 005; keep spaces and case.\n  Body preservation fixture line 006; keep spaces and case.\n  Body preservation fixture line 007; keep spaces and case.\n  Body preservation fixture line 008; keep spaces and case.\n  Body preservation fixture line 009; keep spaces and case.\n  Body preservation fixture line 010; keep spaces and case.\n  Body preservation fixture line 011; keep spaces and case.\n  Body preservation fixture line 012; keep spaces and case.\n  Body preservation fixture line 013; keep spaces and case.\n  Body preservation fixture line 014; keep spaces and case.\n  Body preservation fixture line 015; keep spaces and case.\n  Body preservation fixture line 016; keep spaces and case.\n  Body preservation fixture line 017; keep spaces and case.\n  Body preservation fixture line 018; keep spaces and case.\n  Body preservation fixture line 019; keep spaces and case.\n  Body preservation fixture line 020; keep spaces and case.\n  Body preservation fixture line 021; keep spaces and case.\n  Body preservation fixture line 022; keep spaces and case.\n  Body preservation fixture line 023; keep spaces and case.\n  Body preservation fixture line 024; keep spaces and case.\n  Body preservation fixture line 025; keep spaces and case.\n  Body preservation fixture line 026; keep spaces and case.\n  Body preservation fixture line 027; keep spaces and case.\n  Body preservation fixture line 028; keep spaces and case.\n  Body preservation fixture line 029; keep spaces and case.\n  Body preservation fixture line 030; keep spaces and case.\n  Body preservation fixture line 031; keep spaces and case.\n  Body preservation fixture line 032; keep spaces and case.\n  Body preservation fixture line 033; keep spaces and case.\n  Body preservation fixture line 034; keep spaces and case.\n  Body preservation fixture line 035; keep spaces and case.\n  Body preservation fixture line 036; keep spaces and case.\n  Body preservation fixture line 037; keep spaces and case.\n  Body preservation fixture line 038; keep spaces and case.\n  Body preservation fixture line 039; keep spaces and case.\n  Body preservation fixture line 040; keep spaces and case.\n  Body preservation fixture line 041; keep spaces and case.\n  Body preservation fixture line 042; keep spaces and case.\n  Body preservation fixture line 043; keep spaces and case.\n  Body preservation fixture line 044; keep spaces and case.\n  Body preservation fixture line 045; keep spaces and case.\n  Body preservation fixture line 046; keep spaces and case.\n  Body preservation fixture line 047; keep spaces and case.\n  Body preservation fixture line 048; keep spaces and case.\n  Body preservation fixture line 049; keep spaces and case.\n  Body preservation fixture line 050; keep spaces and case.\n  Body preservation fixture line 051; keep spaces and case.\n  Body preservation fixture line 052; keep spaces and case.\n  Body preservation fixture line 053; keep spaces and case.\n  Body preservation fixture line 054; keep spaces and case.\n  Body preservation fixture line 055; keep spaces and case.\n  Body preservation fixture line 056; keep spaces and case.\n  Body preservation fixture line 057; keep spaces and case.\n  Body preservation fixture line 058; keep spaces and case.\n  Body preservation fixture line 059; keep spaces and case.\n  Body preservation fixture line 060; keep spaces and case.\n  Body preservation fixture line 061; keep spaces and case.\n  Body preservation fixture line 062; keep spaces and case.\n  Body preservation fixture line 063; keep spaces and case.\n  Body preservation fixture line 064; keep spaces and case.\n  Body preservation fixture line 065; keep spaces and case.\n  Body preservation fixture line 066; keep spaces and case.\n  Body preservation fixture line 067; keep spaces and case.\n  Body preservation fixture line 068; keep spaces and case.\n  Body preservation fixture line 069; keep spaces and case.\n  Body preservation fixture line 070; keep spaces and case.\n  Body preservation fixture line 071; keep spaces and case.\n  Body preservation fixture line 072; keep spaces and case.\n  Body preservation fixture line 073; keep spaces and case.\n  Body preservation fixture line 074; keep spaces and case.\n  Body preservation fixture line 075; keep spaces and case.\n  Body preservation fixture line 076; keep spaces and case.\n  Body preservation fixture line 077; keep spaces and case.\n  Body preservation fixture line 078; keep spaces and case.\n  Body preservation fixture line 079; keep spaces and case.\n  Body preservation fixture line 080; keep spaces and case.\n  Body preservation fixture line 081; keep spaces and case.\n  Body preservation fixture line 082; keep spaces and case.\n  Body preservation fixture line 083; keep spaces and case.\n  Body preservation fixture line 084; keep spaces and case.\n  Body preservation fixture line 085; keep spaces and case.\n  Body preservation fixture line 086; keep spaces and case.\n  Body preservation fixture line 087; keep spaces and case.\n  Body preservation fixture line 088; keep spaces and case.\n  Body preservation fixture line 089; keep spaces and case.\n  Body preservation fixture line 090; keep spaces and case.\n  Body preservation fixture line 091; keep spaces and case.\n  Body preservation fixture line 092; keep spaces and case.\n  Body preservation fixture line 093; keep spaces and case.\n  Body preservation fixture line 094; keep spaces and case.\n  Body preservation fixture line 095; keep spaces and case.\n  Body preservation fixture line 096; keep spaces and case.\n  Body preservation fixture line 097; keep spaces and case.\n  Body preservation fixture line 098; keep spaces and case.\n  Body preservation fixture line 099; keep spaces and case.\n  Body preservation fixture line 100; keep spaces and case.\n  Body preservation fixture line 101; keep spaces and case.\n  Body preservation fixture line 102; keep spaces and case.\n  Body preservation fixture line 103; keep spaces and case.\n  Body preservation fixture line 104; keep spaces and case.\n  Body preservation fixture line 105; keep spaces and case.\n  Body preservation fixture line 106; keep spaces and case.\n  Body preservation fixture line 107; keep spaces and case.\n  Body preservation fixture line 108; keep spaces and case.\n  Body preservation fixture line 109; keep spaces and case.\n  Body preservation fixture line 110; keep spaces and case.\n  Body preservation fixture line 111; keep spaces and case.\n  Body preservation fixture line 112; keep spaces and case.\n  Body preservation fixture line 113; keep spaces and case.\n  Body preservation fixture line 114; keep spaces and case.\n  Body preservation fixture line 115; keep spaces and case.\n  Body preservation fixture line 116; keep spaces and case.\n  Body preservation fixture line 117; keep spaces and case.\n  Body preservation fixture line 118; keep spaces and case.\n  Body preservation fixture line 119; keep spaces and case.\n  Body preservation fixture line 120; keep spaces and case.\n  Body preservation fixture line 121; keep spaces and case.\n  Body preservation fixture line 122; keep spaces and case.\n  Body preservation fixture line 123; keep spaces and case.\n  Body preservation fixture line 124; keep spaces and case.\n  Body preservation fixture line 125; keep spaces and case.\n  Body preservation fixture line 126; keep spaces and case.\n  Body preservation fixture line 127; keep spaces and case.\n*/\n  DECLARE V_TEXT VARCHAR(64) DEFAULT '  MiXeD; ''quoted''  tail ';\n  IF P_FLAG = 1 THEN\n    SET P_TEXT = V_TEXT;\n  ELSE\n    SET P_TEXT = 'other';\n  END IF;\nEND",
+        "covers": [
+          "procedure.native-body"
+        ]
+      }
+    }
+  },
+  "catalog": [
+    {
+      "id": "routine",
+      "fields": [
+        "ROUTINETYPE",
+        "ORIGIN",
+        "LANGUAGE",
+        "PARM_COUNT",
+        "DETERMINISTIC",
+        "SQL_DATA_ACCESS",
+        "NULL_CALL",
+        "RESULT_SETS",
+        "COMMIT_ON_RETURN",
+        "VERSION",
+        "ACTIVE",
+        "DEBUG_MODE",
+        "PARAMETER_CCSID"
+      ],
+      "key": [
+        "VERSION"
+      ],
+      "min_rows": 1,
+      "max_rows": 1,
+      "rtrim_fields": [
+        "ROUTINETYPE",
+        "ORIGIN",
+        "DETERMINISTIC",
+        "SQL_DATA_ACCESS",
+        "NULL_CALL",
+        "COMMIT_ON_RETURN",
+        "ACTIVE",
+        "DEBUG_MODE"
+      ],
+      "sql": "SELECT ROUTINETYPE, ORIGIN, LANGUAGE, PARM_COUNT, DETERMINISTIC, SQL_DATA_ACCESS, NULL_CALL, RESULT_SETS, COMMIT_ON_RETURN, VERSION, ACTIVE, DEBUG_MODE, PARAMETER_CCSID FROM SYSIBM.SYSROUTINES WHERE SCHEMA = '{{SCHEMA}}' AND NAME = '{{PROCEDURE}}' AND ROUTINETYPE = 'P'"
+    },
+    {
+      "id": "parameters",
+      "fields": [
+        "ORDINAL",
+        "PARMNAME",
+        "ROWTYPE",
+        "TYPENAME",
+        "LENGTH",
+        "SCALE",
+        "CCSID"
+      ],
+      "key": [
+        "ORDINAL"
+      ],
+      "min_rows": 2,
+      "max_rows": 2,
+      "rtrim_fields": [
+        "ROWTYPE"
+      ],
+      "sql": "SELECT ORDINAL, PARMNAME, ROWTYPE, TYPENAME, LENGTH, SCALE, CCSID FROM SYSIBM.SYSPARMS WHERE SCHEMA = '{{SCHEMA}}' AND NAME = '{{PROCEDURE}}' AND ROUTINETYPE = 'P' AND VERSION = 'V1'"
+    },
+    {
+      "id": "package",
+      "fields": [
+        "TYPE",
+        "VERSION",
+        "APPLCOMPAT"
+      ],
+      "key": [
+        "TYPE",
+        "VERSION"
+      ],
+      "min_rows": 1,
+      "max_rows": 1,
+      "rtrim_fields": [
+        "TYPE"
+      ],
+      "sql": "SELECT TYPE, VERSION, APPLCOMPAT FROM SYSIBM.SYSPACKAGE WHERE COLLID = '{{SCHEMA}}' AND NAME = '{{PROCEDURE}}'"
+    }
+  ],
+  "assertions": [
+    {
+      "catalog": "routine",
+      "where": {},
+      "equals": {
+        "ROUTINETYPE": "P",
+        "ORIGIN": "N",
+        "LANGUAGE": "SQL",
+        "PARM_COUNT": 2,
+        "NULL_CALL": "Y",
+        "RESULT_SETS": 0,
+        "COMMIT_ON_RETURN": "N",
+        "VERSION": "V1",
+        "ACTIVE": "Y",
+        "DEBUG_MODE": "N",
+        "PARAMETER_CCSID": 1208
+      }
+    },
+    {
+      "catalog": "parameters",
+      "where": {
+        "ORDINAL": 1
+      },
+      "equals": {
+        "PARMNAME": "P_FLAG",
+        "ROWTYPE": "P",
+        "TYPENAME": "INTEGER",
+        "LENGTH": 4
+      }
+    },
+    {
+      "catalog": "parameters",
+      "where": {
+        "ORDINAL": 2
+      },
+      "equals": {
+        "PARMNAME": "P_TEXT",
+        "ROWTYPE": "O",
+        "TYPENAME": "VARCHAR",
+        "LENGTH": 64,
+        "CCSID": 1208
+      }
+    },
+    {
+      "catalog": "package",
+      "where": {},
+      "equals": {
+        "TYPE": "N",
+        "VERSION": "V1"
+      }
+    }
+  ],
+  "preflight": [
+    "SELECT SCHEMA, NAME, SPECIFICNAME FROM SYSIBM.SYSROUTINES WHERE SCHEMA = '{{SCHEMA}}' AND (NAME = '{{PROCEDURE}}' OR SPECIFICNAME = '{{PROCEDURE}}')",
+    "SELECT COLLID, NAME, VERSION FROM SYSIBM.SYSPACKAGE WHERE COLLID = '{{SCHEMA}}' AND NAME = '{{PROCEDURE}}'"
+  ],
+  "prerequisites": [
+    "Configure the SQL processor outer terminator as @ and preserve lines/comments; SPUFI SQLFORMAT SQLPL is required for the comment fixtures.",
+    "Verify CREATEIN and native package creation authority, and the declared APPLCOMPAT against the actual subsystem. DISABLE DEBUG MODE avoids the debug WLM requirement for this body.",
+    "SPECIFIC must equal the procedure name and schema. This model creates one V1 version; overloads and version replacement are outside its scope.",
+    "Call probes require a driver/harness that binds marker 1 as IN INTEGER and marker 2 as OUT VARCHAR(64), preserves trailing spaces, and has EXECUTE authority. They are not directly executable SPUFI scripts.",
+    "Capture SYSROUTINES.TEXT losslessly. Full CREATE text includes relocated names and is outside the plain catalog equality contract."
+  ],
+  "probes": [
+    {
+      "id": "capture-procedure-definition",
+      "sql": "SELECT TEXT FROM SYSIBM.SYSROUTINES WHERE SCHEMA = '{{SCHEMA}}' AND NAME = '{{PROCEDURE}}' AND ROUTINETYPE = 'P' AND VERSION = 'V1'",
+      "mutates": false,
+      "expected": {
+        "rows": 1,
+        "export": "Lossless full CLOB; preserve line breaks, comments, case, literal whitespace, and doubled quotes.",
+        "comparison": "Capture only. Compare the body using a statement-aware extraction or direct review; never blanket-replace names."
+      }
+    },
+    {
+      "id": "call-true",
+      "sql": "CALL {{SCHEMA}}.{{PROCEDURE}}(?, ?)",
+      "mutates": false,
+      "bindings": [
+        {
+          "position": 1,
+          "mode": "IN",
+          "type": "INTEGER",
+          "value": 1
+        },
+        {
+          "position": 2,
+          "mode": "OUT",
+          "type": "VARCHAR",
+          "length": 64
+        }
+      ],
+      "expected": {
+        "output_parameters": {
+          "2": "  MiXeD; 'quoted'  tail "
+        }
+      },
+      "notes": "Preserve the exact output string including leading, repeated and trailing spaces."
+    },
+    {
+      "id": "call-false",
+      "sql": "CALL {{SCHEMA}}.{{PROCEDURE}}(?, ?)",
+      "mutates": false,
+      "bindings": [
+        {
+          "position": 1,
+          "mode": "IN",
+          "type": "INTEGER",
+          "value": 0
+        },
+        {
+          "position": 2,
+          "mode": "OUT",
+          "type": "VARCHAR",
+          "length": 64
+        }
+      ],
+      "expected": {
+        "output_parameters": {
+          "2": "other"
+        }
+      },
+      "notes": "Preserve the exact output string including leading, repeated and trailing spaces."
+    },
+    {
+      "id": "call-null",
+      "sql": "CALL {{SCHEMA}}.{{PROCEDURE}}(?, ?)",
+      "mutates": false,
+      "bindings": [
+        {
+          "position": 1,
+          "mode": "IN",
+          "type": "INTEGER",
+          "value": null
+        },
+        {
+          "position": 2,
+          "mode": "OUT",
+          "type": "VARCHAR",
+          "length": 64
+        }
+      ],
+      "expected": {
+        "output_parameters": {
+          "2": "other"
+        }
+      },
+      "notes": "Preserve the exact output string including leading, repeated and trailing spaces."
+    }
+  ]
+}

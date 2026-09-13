@@ -19,6 +19,18 @@
       "title": "SQL statements in Db2 for z/OS",
       "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=sql-statements"
     },
+    "ibm-drop": {
+      "title": "DROP statement",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-drop"
+    },
+    "ibm-sql-comments": {
+      "title": "SQL comments",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-sql-comments"
+    },
+    "ibm-spufi-defaults": {
+      "title": "CURRENT SPUFI DEFAULTS panel",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=defaults-current-spufi-panel"
+    },
     "ibm-create-stogroup": {
       "title": "CREATE STOGROUP statement",
       "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-create-stogroup"
@@ -1189,7 +1201,7 @@
           "syntax": "<column-name> [<data-type>] [NOT NULL] [generated] [constraint] [default] [attributes]",
           "required": "conditional",
           "default": "ordinary columns are nullable when NOT NULL is omitted",
-          "values": "up to 750 normal-table columns subject to row-size limits",
+          "values": "up to 749 named columns for a dependent table; 750 for a table that is not a dependent; subject to row-size and implicit/hidden-column limits",
           "tags": ["column", "row-size", "boundary"],
           "summary": "Defines one logical column and its attributes.",
           "source_refs": ["ibm-create-table"]
@@ -2450,7 +2462,7 @@
           "default": "unqualified name uses the applicable SQL schema rules",
           "values": "qualified or unqualified SQL procedure name",
           "tags": ["identity", "schema", "routine"],
-          "summary": "Names the callable procedure; use the specific name to disambiguate overloads and catalog grants.",
+          "summary": "Names the callable procedure; SPECIFIC, when present, repeats the same procedure name and schema.",
           "source_refs": ["ibm-create-procedure-overview", "ibm-create-procedure-native", "ibm-create-procedure-external"]
         },
         {
@@ -2485,12 +2497,12 @@
         },
         {
           "id": "specific",
-          "syntax": "SPECIFIC [<schema>.]<specific-name>",
+          "syntax": "SPECIFIC [<schema>.]<procedure-name>",
           "required": "optional; required for selected replacement/table-parameter cases",
           "default": "specific name is the procedure name",
-          "values": "eligible specific routine identifier in the procedure schema",
-          "tags": ["identity", "overload", "replacement", "authorization"],
-          "summary": "Provides the unambiguous routine identity used by catalog parameter and privilege rows.",
+          "values": "the same name and schema as the procedure being defined",
+          "tags": ["identity", "replacement", "authorization"],
+          "summary": "Repeats the procedure identity; an independent specific name is not allowed for native or current external procedures.",
           "source_refs": ["ibm-create-procedure-native", "ibm-create-procedure-external", "ibm-catalog-sysroutines", "ibm-catalog-sysroutineauth"]
         },
         {
@@ -2682,6 +2694,22 @@
           "tags": ["native", "external", "discriminator"],
           "text": "LANGUAGE SQL without FENCED or EXTERNAL creates a native SQL procedure; a host-language external definition maps to a separately prepared program; LANGUAGE SQL with FENCED or EXTERNAL selects the deprecated external SQL form.",
           "source_refs": ["ibm-create-procedure-overview", "ibm-create-procedure-native", "ibm-create-procedure-external", "ibm-create-procedure-sql-external-deprecated"]
+        },
+        {
+          "id": "specific-name-matches-procedure",
+          "kind": "restriction",
+          "clauses": ["name", "specific"],
+          "tags": ["identity", "native", "external", "negative"],
+          "text": "For native and current external procedures, SPECIFIC must repeat the procedure name. An explicit schema must match the procedure schema; an omitted schema inherits it.",
+          "source_refs": ["ibm-create-procedure-native", "ibm-create-procedure-external"]
+        },
+        {
+          "id": "native-compound-not-atomic",
+          "kind": "restriction",
+          "clauses": ["native-body", "kind-discriminator"],
+          "tags": ["native", "sql-pl", "negative"],
+          "text": "ATOMIC cannot be specified on a compound statement in an SQL procedure. Use BEGIN or BEGIN NOT ATOMIC; internal statements retain their semicolons and the outermost statement has no embedded terminator.",
+          "source_refs": ["ibm-sqlpl-compound", "ibm-procedure-body"]
         },
         {
           "id": "external-sql-deprecated",

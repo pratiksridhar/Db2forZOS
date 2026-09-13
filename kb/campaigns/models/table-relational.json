@@ -1,0 +1,878 @@
+{
+  "schema_version": "1.0.0",
+  "id": "table-relational",
+  "object": "table",
+  "minimum_function_level": "V13R1M500",
+  "minimum_applcompat": "V13R1M500",
+  "reviewed": "2026-09-12",
+  "evidence": "IBM Db2 13 SQL Reference SC28-2773-00, Last updated 2026-09-09; CREATE TABLE pp. 1708-1709 and 1730-1735, catalog sections listed in kb/campaigns/reviews/table-relational.md. Bounded source-reviewed family, no live execution.",
+  "covers": [
+    "table.explicit-elements",
+    "table.primary-key",
+    "table.unique",
+    "table.foreign-key",
+    "table.in-explicit-tablespace",
+    "index.unique",
+    "index.key-list",
+    "index.using-stogroup",
+    "tablespace.maxpartitions",
+    "tablespace.segsize"
+  ],
+  "rule_refs": [
+    "table.primary-not-null",
+    "table.constraint-index-enforcement",
+    "table.foreign-key-current-rules",
+    "table.set-null-requires-nullable",
+    "table.check-language-restricted",
+    "table.catalog-multirow-verification",
+    "table.explicit-space-physical-conflict"
+  ],
+  "source_refs": [
+    "ibm-create-database",
+    "ibm-create-tablespace",
+    "ibm-create-table",
+    "ibm-create-index",
+    "ibm-implicit-index",
+    "ibm-catalog-sysdatabase",
+    "ibm-catalog-systablespace",
+    "ibm-catalog-systables",
+    "ibm-catalog-syscolumns",
+    "ibm-catalog-sysindexes",
+    "ibm-catalog-syskeys",
+    "ibm-catalog-sysrels",
+    "ibm-catalog-sysforeignkeys",
+    "ibm-catalog-syschecks",
+    "ibm-sql-reference-pdf",
+    "ibm-drop"
+  ],
+  "constraints": [
+    {
+      "id": "set-null-requires-nullable",
+      "when": {
+        "delete_rule": "set-null"
+      },
+      "requires": {
+        "fk_nullability": [
+          "one-nullable",
+          "all-nullable"
+        ]
+      },
+      "rule_ref": "table.set-null-requires-nullable"
+    }
+  ],
+  "prerequisites": [
+    "Use ordinary dynamic CREATE TABLE processing, not CREATE SCHEMA schema-processor execution, so the two explicit parent enforcing indexes are created by this run.",
+    "Source and replay require ALTER or REFERENCES on the parent table (or REFERENCES on both nominated parent-key columns), in addition to creation and storage privileges.",
+    "After parent CREATE TABLE, create both enforcing indexes successfully before the child action. The child has no PRIMARY KEY or UNIQUE constraint requiring a post-action index.",
+    "Extract and replay the whole dependency closure: both table spaces, both tables, and both parent enforcing indexes. Raw CHECK text is compared without rewriting; behavioral CHECK and referential probes remain a harness responsibility.",
+    "Per-case cleanup drops the two dedicated table spaces, child first; they own their tables and indexes. Never issue DROP INDEX against an enforcing index, and never add unrelated objects to campaign spaces."
+  ],
+  "object_names": [
+    "{{DATABASE}}",
+    "{{DATABASE}}.{{TABLESPACE}}",
+    "{{DATABASE}}.{{PARENT_TABLESPACE}}",
+    "{{SCHEMA}}.{{TABLE}}",
+    "{{SCHEMA}}.{{TABLE}}P",
+    "{{SCHEMA}}.{{INDEX}}P",
+    "{{SCHEMA}}.{{INDEX}}U"
+  ],
+  "preflight": [
+    "SELECT CREATOR, NAME FROM SYSIBM.SYSTABLES WHERE CREATOR = '{{SCHEMA}}' AND NAME IN ('{{TABLE}}', '{{TABLE}}P')",
+    "SELECT CREATOR, NAME FROM SYSIBM.SYSINDEXES WHERE CREATOR = '{{SCHEMA}}' AND NAME IN ('{{INDEX}}P', '{{INDEX}}U')",
+    "SELECT DBNAME, NAME FROM SYSIBM.SYSTABLESPACE WHERE DBNAME = '{{DATABASE}}' AND NAME IN ('{{TABLESPACE}}', '{{PARENT_TABLESPACE}}')"
+  ],
+  "target": "{{SCHEMA}}.{{TABLE}}",
+  "nodes": [
+    {
+      "id": "parent_space",
+      "depends_on": [],
+      "role": "setup",
+      "sql": "CREATE TABLESPACE {{PARENT_TABLESPACE}} IN {{DATABASE}} BUFFERPOOL {{TABLE_BP}} MAXPARTITIONS 4 NUMPARTS 1 DSSIZE 1 G SEGSIZE 32 CCSID EBCDIC LOGGED USING STOGROUP {{STOGROUP}} PRIQTY -1 SECQTY -1",
+      "drop": "DROP TABLESPACE {{DATABASE}}.{{PARENT_TABLESPACE}}"
+    },
+    {
+      "id": "parent",
+      "depends_on": [
+        "parent_space"
+      ],
+      "role": "setup",
+      "sql": "CREATE TABLE {{SCHEMA}}.{{TABLE}}P (TENANT_ID INTEGER NOT NULL, PARENT_ID INTEGER NOT NULL, EXTERNAL_CODE CHAR(12) NOT NULL, CONSTRAINT PK_PARENT PRIMARY KEY (TENANT_ID, PARENT_ID), CONSTRAINT UQ_PARENT UNIQUE (EXTERNAL_CODE)) IN {{DATABASE}}.{{PARENT_TABLESPACE}}",
+      "drop": null,
+      "cleanup_via": "parent_space"
+    },
+    {
+      "id": "parent_primary_index",
+      "depends_on": [
+        "parent"
+      ],
+      "role": "setup",
+      "sql": "CREATE UNIQUE INDEX {{SCHEMA}}.{{INDEX}}P ON {{SCHEMA}}.{{TABLE}}P (TENANT_ID ASC, PARENT_ID ASC) USING STOGROUP {{STOGROUP}} BUFFERPOOL {{INDEX_BP}}",
+      "drop": null,
+      "cleanup_via": "parent_space"
+    },
+    {
+      "id": "parent_unique_index",
+      "depends_on": [
+        "parent"
+      ],
+      "role": "setup",
+      "sql": "CREATE UNIQUE INDEX {{SCHEMA}}.{{INDEX}}U ON {{SCHEMA}}.{{TABLE}}P (EXTERNAL_CODE ASC) USING STOGROUP {{STOGROUP}} BUFFERPOOL {{INDEX_BP}}",
+      "drop": null,
+      "cleanup_via": "parent_space"
+    },
+    {
+      "id": "child_space",
+      "depends_on": [],
+      "role": "setup",
+      "sql": "CREATE TABLESPACE {{TABLESPACE}} IN {{DATABASE}} BUFFERPOOL {{TABLE_BP}} MAXPARTITIONS 4 NUMPARTS 1 DSSIZE 1 G SEGSIZE 32 CCSID EBCDIC LOGGED USING STOGROUP {{STOGROUP}} PRIQTY -1 SECQTY -1",
+      "drop": "DROP TABLESPACE {{DATABASE}}.{{TABLESPACE}}"
+    },
+    {
+      "id": "child",
+      "depends_on": [
+        "child_space",
+        "parent_primary_index",
+        "parent_unique_index"
+      ],
+      "role": "action",
+      "sql": "CREATE TABLE {{SCHEMA}}.{{TABLE}} (\n  CHILD_ID INTEGER NOT NULL,\n  {{FK_NULLABILITY}},\n  AMOUNT DECIMAL(15,2) NOT NULL DEFAULT 0.00,\n  STATUS CHAR(1) NOT NULL DEFAULT 'N',\n  VALID_FROM DATE NOT NULL,\n  VALID_TO DATE,\n  QA_VALUE {{PAYLOAD}},\n  CONSTRAINT FK_PARENT FOREIGN KEY (P_TENANT, P_ID)\n    REFERENCES {{SCHEMA}}.{{TABLE}}P (TENANT_ID, PARENT_ID)\n    {{DELETE_RULE}} ENFORCED,\n  CONSTRAINT CK_VALUE CHECK ({{CHECK_SHAPE}})\n) IN {{DATABASE}}.{{TABLESPACE}}",
+      "drop": null,
+      "cleanup_via": "child_space"
+    }
+  ],
+  "catalog": [
+    {
+      "id": "parent_columns",
+      "fields": [
+        "COLNO",
+        "NAME",
+        "COLTYPE",
+        "LENGTH",
+        "SCALE",
+        "NULLS",
+        "DEFAULT",
+        "DEFAULTVALUE"
+      ],
+      "key": [
+        "COLNO"
+      ],
+      "min_rows": 3,
+      "max_rows": 3,
+      "rtrim_fields": [
+        "NAME",
+        "COLTYPE",
+        "NULLS",
+        "DEFAULT"
+      ],
+      "sql": "SELECT \"COLNO\", \"NAME\", \"COLTYPE\", \"LENGTH\", \"SCALE\", \"NULLS\", \"DEFAULT\", \"DEFAULTVALUE\" FROM SYSIBM.SYSCOLUMNS WHERE TBCREATOR = '{{SCHEMA}}' AND TBNAME = '{{TABLE}}P'"
+    },
+    {
+      "id": "child_columns",
+      "fields": [
+        "COLNO",
+        "NAME",
+        "COLTYPE",
+        "LENGTH",
+        "SCALE",
+        "NULLS",
+        "DEFAULT",
+        "DEFAULTVALUE"
+      ],
+      "key": [
+        "COLNO"
+      ],
+      "min_rows": 8,
+      "max_rows": 8,
+      "rtrim_fields": [
+        "NAME",
+        "COLTYPE",
+        "NULLS",
+        "DEFAULT"
+      ],
+      "sql": "SELECT \"COLNO\", \"NAME\", \"COLTYPE\", \"LENGTH\", \"SCALE\", \"NULLS\", \"DEFAULT\", \"DEFAULTVALUE\" FROM SYSIBM.SYSCOLUMNS WHERE TBCREATOR = '{{SCHEMA}}' AND TBNAME = '{{TABLE}}'"
+    },
+    {
+      "id": "relationship",
+      "fields": [
+        "RELNAME",
+        "COLCOUNT",
+        "DELETERULE",
+        "ENFORCED",
+        "CHECKEXISTINGDATA",
+        "PARENT_MATCH"
+      ],
+      "key": [
+        "RELNAME"
+      ],
+      "min_rows": 1,
+      "max_rows": 1,
+      "rtrim_fields": [
+        "RELNAME",
+        "DELETERULE",
+        "ENFORCED",
+        "CHECKEXISTINGDATA"
+      ],
+      "sql": "SELECT RELNAME, COLCOUNT, DELETERULE, ENFORCED, CHECKEXISTINGDATA, CASE WHEN REFTBCREATOR = '{{SCHEMA}}' AND REFTBNAME = '{{TABLE}}P' THEN 1 ELSE 0 END AS PARENT_MATCH FROM SYSIBM.SYSRELS WHERE CREATOR = '{{SCHEMA}}' AND TBNAME = '{{TABLE}}'"
+    },
+    {
+      "id": "foreign_keys",
+      "fields": [
+        "RELNAME",
+        "COLSEQ",
+        "COLNO",
+        "COLNAME"
+      ],
+      "key": [
+        "RELNAME",
+        "COLSEQ"
+      ],
+      "min_rows": 2,
+      "max_rows": 2,
+      "rtrim_fields": [
+        "RELNAME",
+        "COLNAME"
+      ],
+      "sql": "SELECT RELNAME, COLSEQ, COLNO, COLNAME FROM SYSIBM.SYSFOREIGNKEYS WHERE CREATOR = '{{SCHEMA}}' AND TBNAME = '{{TABLE}}'"
+    },
+    {
+      "id": "parent_primary_index",
+      "fields": [
+        "UNIQUERULE",
+        "COLCOUNT"
+      ],
+      "key": [
+        "UNIQUERULE"
+      ],
+      "min_rows": 1,
+      "max_rows": 1,
+      "rtrim_fields": [
+        "UNIQUERULE"
+      ],
+      "sql": "SELECT UNIQUERULE, COLCOUNT FROM SYSIBM.SYSINDEXES WHERE CREATOR = '{{SCHEMA}}' AND NAME = '{{INDEX}}P' AND TBCREATOR = '{{SCHEMA}}' AND TBNAME = '{{TABLE}}P'"
+    },
+    {
+      "id": "parent_unique_index",
+      "fields": [
+        "UNIQUERULE",
+        "COLCOUNT"
+      ],
+      "key": [
+        "UNIQUERULE"
+      ],
+      "min_rows": 1,
+      "max_rows": 1,
+      "rtrim_fields": [
+        "UNIQUERULE"
+      ],
+      "sql": "SELECT UNIQUERULE, COLCOUNT FROM SYSIBM.SYSINDEXES WHERE CREATOR = '{{SCHEMA}}' AND NAME = '{{INDEX}}U' AND TBCREATOR = '{{SCHEMA}}' AND TBNAME = '{{TABLE}}P'"
+    },
+    {
+      "id": "parent_primary_keys",
+      "fields": [
+        "COLSEQ",
+        "COLNO",
+        "COLNAME",
+        "ORDERING"
+      ],
+      "key": [
+        "COLSEQ"
+      ],
+      "min_rows": 2,
+      "max_rows": 2,
+      "rtrim_fields": [
+        "COLNAME",
+        "ORDERING"
+      ],
+      "sql": "SELECT COLSEQ, COLNO, COLNAME, ORDERING FROM SYSIBM.SYSKEYS WHERE IXCREATOR = '{{SCHEMA}}' AND IXNAME = '{{INDEX}}P'"
+    },
+    {
+      "id": "parent_unique_keys",
+      "fields": [
+        "COLSEQ",
+        "COLNO",
+        "COLNAME",
+        "ORDERING"
+      ],
+      "key": [
+        "COLSEQ"
+      ],
+      "min_rows": 1,
+      "max_rows": 1,
+      "rtrim_fields": [
+        "COLNAME",
+        "ORDERING"
+      ],
+      "sql": "SELECT COLSEQ, COLNO, COLNAME, ORDERING FROM SYSIBM.SYSKEYS WHERE IXCREATOR = '{{SCHEMA}}' AND IXNAME = '{{INDEX}}U'"
+    },
+    {
+      "id": "checks",
+      "fields": [
+        "CHECKNAME",
+        "CHECKCONDITION",
+        "PERIOD"
+      ],
+      "key": [
+        "CHECKNAME"
+      ],
+      "min_rows": 1,
+      "max_rows": 1,
+      "rtrim_fields": [
+        "CHECKNAME",
+        "PERIOD"
+      ],
+      "sql": "SELECT CHECKNAME, CHECKCONDITION, PERIOD FROM SYSIBM.SYSCHECKS WHERE TBOWNER = '{{SCHEMA}}' AND TBNAME = '{{TABLE}}'"
+    },
+    {
+      "id": "parent_table",
+      "fields": [
+        "TYPE",
+        "STATUS",
+        "SPACE_MATCH"
+      ],
+      "key": [
+        "TYPE"
+      ],
+      "min_rows": 1,
+      "max_rows": 1,
+      "rtrim_fields": [
+        "TYPE",
+        "STATUS"
+      ],
+      "sql": "SELECT TYPE, STATUS, CASE WHEN DBNAME = '{{DATABASE}}' AND TSNAME = '{{PARENT_TABLESPACE}}' THEN 1 ELSE 0 END AS SPACE_MATCH FROM SYSIBM.SYSTABLES WHERE CREATOR = '{{SCHEMA}}' AND NAME = '{{TABLE}}P'"
+    },
+    {
+      "id": "child_table",
+      "fields": [
+        "TYPE",
+        "STATUS",
+        "SPACE_MATCH"
+      ],
+      "key": [
+        "TYPE"
+      ],
+      "min_rows": 1,
+      "max_rows": 1,
+      "rtrim_fields": [
+        "TYPE",
+        "STATUS"
+      ],
+      "sql": "SELECT TYPE, STATUS, CASE WHEN DBNAME = '{{DATABASE}}' AND TSNAME = '{{TABLESPACE}}' THEN 1 ELSE 0 END AS SPACE_MATCH FROM SYSIBM.SYSTABLES WHERE CREATOR = '{{SCHEMA}}' AND NAME = '{{TABLE}}'"
+    }
+  ],
+  "dimensions": {
+    "fk_nullability": {
+      "none-nullable": {
+        "sql": "P_TENANT INTEGER NOT NULL, P_ID INTEGER NOT NULL",
+        "covers": [
+          "table.not-null",
+          "table.foreign-key"
+        ],
+        "assertions": [
+          {
+            "catalog": "child_columns",
+            "where": {
+              "COLNO": 2
+            },
+            "equals": {
+              "NULLS": "N"
+            }
+          },
+          {
+            "catalog": "child_columns",
+            "where": {
+              "COLNO": 3
+            },
+            "equals": {
+              "NULLS": "N"
+            }
+          }
+        ]
+      },
+      "one-nullable": {
+        "sql": "P_TENANT INTEGER NOT NULL, P_ID INTEGER",
+        "covers": [
+          "table.not-null",
+          "table.foreign-key"
+        ],
+        "assertions": [
+          {
+            "catalog": "child_columns",
+            "where": {
+              "COLNO": 2
+            },
+            "equals": {
+              "NULLS": "N"
+            }
+          },
+          {
+            "catalog": "child_columns",
+            "where": {
+              "COLNO": 3
+            },
+            "equals": {
+              "NULLS": "Y"
+            }
+          }
+        ]
+      },
+      "all-nullable": {
+        "sql": "P_TENANT INTEGER, P_ID INTEGER",
+        "covers": [
+          "table.not-null",
+          "table.foreign-key"
+        ],
+        "assertions": [
+          {
+            "catalog": "child_columns",
+            "where": {
+              "COLNO": 2
+            },
+            "equals": {
+              "NULLS": "Y"
+            }
+          },
+          {
+            "catalog": "child_columns",
+            "where": {
+              "COLNO": 3
+            },
+            "equals": {
+              "NULLS": "Y"
+            }
+          }
+        ]
+      }
+    },
+    "delete_rule": {
+      "omitted": {
+        "sql": "",
+        "covers": [
+          "table.foreign-key"
+        ],
+        "assertions": [
+          {
+            "catalog": "relationship",
+            "where": {
+              "RELNAME": "FK_PARENT"
+            },
+            "equals": {
+              "DELETERULE": "R"
+            }
+          }
+        ]
+      },
+      "restrict": {
+        "sql": "ON DELETE RESTRICT",
+        "covers": [
+          "table.foreign-key"
+        ],
+        "assertions": [
+          {
+            "catalog": "relationship",
+            "where": {
+              "RELNAME": "FK_PARENT"
+            },
+            "equals": {
+              "DELETERULE": "R"
+            }
+          }
+        ]
+      },
+      "no-action": {
+        "sql": "ON DELETE NO ACTION",
+        "covers": [
+          "table.foreign-key"
+        ],
+        "assertions": [
+          {
+            "catalog": "relationship",
+            "where": {
+              "RELNAME": "FK_PARENT"
+            },
+            "equals": {
+              "DELETERULE": "A"
+            }
+          }
+        ]
+      },
+      "cascade": {
+        "sql": "ON DELETE CASCADE",
+        "covers": [
+          "table.foreign-key"
+        ],
+        "assertions": [
+          {
+            "catalog": "relationship",
+            "where": {
+              "RELNAME": "FK_PARENT"
+            },
+            "equals": {
+              "DELETERULE": "C"
+            }
+          }
+        ]
+      },
+      "set-null": {
+        "sql": "ON DELETE SET NULL",
+        "covers": [
+          "table.foreign-key"
+        ],
+        "assertions": [
+          {
+            "catalog": "relationship",
+            "where": {
+              "RELNAME": "FK_PARENT"
+            },
+            "equals": {
+              "DELETERULE": "N"
+            }
+          }
+        ]
+      }
+    },
+    "payload": {
+      "varchar-min": {
+        "sql": "VARCHAR(1)",
+        "covers": [
+          "table.data-type"
+        ],
+        "assertions": [
+          {
+            "catalog": "child_columns",
+            "where": {
+              "COLNO": 8
+            },
+            "equals": {
+              "COLTYPE": "VARCHAR",
+              "LENGTH": 1,
+              "NULLS": "Y"
+            }
+          }
+        ]
+      },
+      "varchar-literal": {
+        "sql": "VARCHAR(1024) NOT NULL DEFAULT 'MiXeD  '",
+        "covers": [
+          "table.data-type",
+          "table.default",
+          "table.not-null"
+        ],
+        "assertions": [
+          {
+            "catalog": "child_columns",
+            "where": {
+              "COLNO": 8
+            },
+            "equals": {
+              "COLTYPE": "VARCHAR",
+              "LENGTH": 1024,
+              "NULLS": "N",
+              "DEFAULT": "1",
+              "DEFAULTVALUE": "MiXeD  "
+            }
+          }
+        ]
+      },
+      "decimal-wide": {
+        "sql": "DECIMAL(31,9) NOT NULL DEFAULT 0.000000000",
+        "covers": [
+          "table.data-type",
+          "table.default",
+          "table.not-null"
+        ],
+        "assertions": [
+          {
+            "catalog": "child_columns",
+            "where": {
+              "COLNO": 8
+            },
+            "equals": {
+              "COLTYPE": "DECIMAL",
+              "LENGTH": 31,
+              "SCALE": 9,
+              "NULLS": "N"
+            }
+          }
+        ]
+      },
+      "timestamp-max": {
+        "sql": "TIMESTAMP(12)",
+        "covers": [
+          "table.data-type"
+        ],
+        "assertions": [
+          {
+            "catalog": "child_columns",
+            "where": {
+              "COLNO": 8
+            },
+            "equals": {
+              "COLTYPE": "TIMESTMP",
+              "LENGTH": 13,
+              "SCALE": 12,
+              "NULLS": "Y"
+            }
+          }
+        ]
+      }
+    },
+    "check_shape": {
+      "amount": {
+        "sql": "AMOUNT >= 0.00",
+        "covers": [
+          "table.check"
+        ],
+        "assertions": []
+      },
+      "compound": {
+        "sql": "AMOUNT BETWEEN 0.00 AND 9999999999999.99\n    AND STATUS IN ('N', 'A', 'C')",
+        "covers": [
+          "table.check"
+        ],
+        "assertions": []
+      },
+      "date-or-null": {
+        "sql": "VALID_TO IS NULL OR VALID_TO >= VALID_FROM",
+        "covers": [
+          "table.check"
+        ],
+        "assertions": []
+      }
+    }
+  },
+  "assertions": [
+    {
+      "catalog": "parent_columns",
+      "where": {
+        "COLNO": 1
+      },
+      "equals": {
+        "NAME": "TENANT_ID",
+        "COLTYPE": "INTEGER",
+        "NULLS": "N"
+      }
+    },
+    {
+      "catalog": "parent_columns",
+      "where": {
+        "COLNO": 2
+      },
+      "equals": {
+        "NAME": "PARENT_ID",
+        "COLTYPE": "INTEGER",
+        "NULLS": "N"
+      }
+    },
+    {
+      "catalog": "parent_columns",
+      "where": {
+        "COLNO": 3
+      },
+      "equals": {
+        "NAME": "EXTERNAL_CODE",
+        "COLTYPE": "CHAR",
+        "LENGTH": 12,
+        "NULLS": "N"
+      }
+    },
+    {
+      "catalog": "child_columns",
+      "where": {
+        "COLNO": 1
+      },
+      "equals": {
+        "NAME": "CHILD_ID",
+        "COLTYPE": "INTEGER",
+        "NULLS": "N"
+      }
+    },
+    {
+      "catalog": "child_columns",
+      "where": {
+        "COLNO": 2
+      },
+      "equals": {
+        "NAME": "P_TENANT",
+        "COLTYPE": "INTEGER"
+      }
+    },
+    {
+      "catalog": "child_columns",
+      "where": {
+        "COLNO": 3
+      },
+      "equals": {
+        "NAME": "P_ID",
+        "COLTYPE": "INTEGER"
+      }
+    },
+    {
+      "catalog": "child_columns",
+      "where": {
+        "COLNO": 4
+      },
+      "equals": {
+        "NAME": "AMOUNT",
+        "COLTYPE": "DECIMAL",
+        "LENGTH": 15,
+        "SCALE": 2,
+        "NULLS": "N"
+      }
+    },
+    {
+      "catalog": "child_columns",
+      "where": {
+        "COLNO": 5
+      },
+      "equals": {
+        "NAME": "STATUS",
+        "COLTYPE": "CHAR",
+        "LENGTH": 1,
+        "NULLS": "N",
+        "DEFAULT": "1",
+        "DEFAULTVALUE": "N"
+      }
+    },
+    {
+      "catalog": "child_columns",
+      "where": {
+        "COLNO": 6
+      },
+      "equals": {
+        "NAME": "VALID_FROM",
+        "COLTYPE": "DATE",
+        "NULLS": "N"
+      }
+    },
+    {
+      "catalog": "child_columns",
+      "where": {
+        "COLNO": 7
+      },
+      "equals": {
+        "NAME": "VALID_TO",
+        "COLTYPE": "DATE",
+        "NULLS": "Y"
+      }
+    },
+    {
+      "catalog": "child_columns",
+      "where": {
+        "COLNO": 8
+      },
+      "equals": {
+        "NAME": "QA_VALUE"
+      }
+    },
+    {
+      "catalog": "relationship",
+      "where": {
+        "RELNAME": "FK_PARENT"
+      },
+      "equals": {
+        "COLCOUNT": 2,
+        "ENFORCED": "Y",
+        "CHECKEXISTINGDATA": "I",
+        "PARENT_MATCH": 1
+      }
+    },
+    {
+      "catalog": "foreign_keys",
+      "where": {
+        "RELNAME": "FK_PARENT",
+        "COLSEQ": 1
+      },
+      "equals": {
+        "COLNO": 2,
+        "COLNAME": "P_TENANT"
+      }
+    },
+    {
+      "catalog": "foreign_keys",
+      "where": {
+        "RELNAME": "FK_PARENT",
+        "COLSEQ": 2
+      },
+      "equals": {
+        "COLNO": 3,
+        "COLNAME": "P_ID"
+      }
+    },
+    {
+      "catalog": "parent_primary_index",
+      "where": {},
+      "equals": {
+        "UNIQUERULE": "P",
+        "COLCOUNT": 2
+      }
+    },
+    {
+      "catalog": "parent_unique_index",
+      "where": {},
+      "equals": {
+        "UNIQUERULE": "C",
+        "COLCOUNT": 1
+      }
+    },
+    {
+      "catalog": "parent_primary_keys",
+      "where": {
+        "COLSEQ": 1
+      },
+      "equals": {
+        "COLNO": 1,
+        "COLNAME": "TENANT_ID",
+        "ORDERING": "A"
+      }
+    },
+    {
+      "catalog": "parent_primary_keys",
+      "where": {
+        "COLSEQ": 2
+      },
+      "equals": {
+        "COLNO": 2,
+        "COLNAME": "PARENT_ID",
+        "ORDERING": "A"
+      }
+    },
+    {
+      "catalog": "parent_unique_keys",
+      "where": {
+        "COLSEQ": 1
+      },
+      "equals": {
+        "COLNO": 3,
+        "COLNAME": "EXTERNAL_CODE",
+        "ORDERING": "A"
+      }
+    },
+    {
+      "catalog": "checks",
+      "where": {
+        "CHECKNAME": "CK_VALUE"
+      },
+      "equals": {
+        "PERIOD": ""
+      }
+    },
+    {
+      "catalog": "parent_table",
+      "where": {},
+      "equals": {
+        "TYPE": "T",
+        "STATUS": "X",
+        "SPACE_MATCH": 1
+      }
+    },
+    {
+      "catalog": "child_table",
+      "where": {},
+      "equals": {
+        "TYPE": "T",
+        "STATUS": "",
+        "SPACE_MATCH": 1
+      }
+    }
+  ]
+}

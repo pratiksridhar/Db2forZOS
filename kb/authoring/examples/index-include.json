@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "id": "index-include",
+  "intent": "Create unique indexes with INCLUDE columns, both key orders, PADDED and NOT PADDED, and the modeled free-page and percent-free boundaries.",
+  "profile": "kb/campaigns/profiles/example.json",
+  "run_prefix": "IX",
+  "strategy": "pairwise",
+  "objects": [
+    {
+      "id": "indexes",
+      "object": "index",
+      "model": "index-core",
+      "clause_refs": ["index.include", "index.unique", "index.key-list", "index.padding", "index.freepage", "index.pctfree"],
+      "rule_refs": ["index.include-requires-unique"],
+      "select": {"unique": ["yes"], "include": ["yes"]}
+    }
+  ]
+}
