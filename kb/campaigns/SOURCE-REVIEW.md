@@ -2,7 +2,8 @@
 
 Later scoped reviews: [relational tables](reviews/table-relational.md),
 [basic triggers and native procedures](reviews/routines.md), and
-[compiler, cleanup and procedure corrections](reviews/compiler.md), 2026-09-12.
+[compiler, cleanup and procedure corrections](reviews/compiler.md), 2026-09-12;
+[static DDL checker, function levels, diff and bundle](reviews/ddl-checker.md), 2026-10-10.
 They do not replace the historical scope/edition record below.
 
 The new compiler families were checked against the official

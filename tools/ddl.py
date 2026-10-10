@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
-"""Turn an agent-authored DDL request into an IBM-linked, offline authoring plan."""
+"""Plan, check, measure, compare and bundle Db2 13 for z/OS DDL offline.
+
+plan      structured request -> IBM-linked authoring plan
+lint      static checks of any DDL script against encoded IBM rules
+coverage  syntax-variety report against normalized KB clause IDs (+ baseline gate)
+diff      semantic comparison of source DDL and product-generated DDL
+bundle    QA bundle (catalog queries/assertions, cleanup, name map, case) from a lint-clean script
+levels    Db2 13 function levels and the DDL syntax gated above a given APPLCOMPAT
+
+None of these commands connects to Db2 or executes SQL.
+"""
 
 from __future__ import annotations
 
@@ -11,6 +21,7 @@ from pathlib import Path
 import re
 import sys
 
+import db2check
 import qa
 
 
@@ -265,8 +276,80 @@ def make_plan(request, root=ROOT):
                 "Retain source acceptance, actual product-generated DDL, product options, replay execution and catalog/behavior evidence separately. Static checks do not prove Db2 syntax acceptance or product correctness."]}
 
 
+def _pairs(values, flag):
+    result = {}
+    for value in values or []:
+        source, separator, target = value.partition("=")
+        if not separator or not source or not target:
+            raise ValueError(f"{flag} expects SOURCE=TARGET, not {value!r}")
+        result[source.strip().upper()] = target.strip().upper()
+    return result
+
+
+def _read_sql(path):
+    if str(path) == "-":
+        return sys.stdin.read()
+    # Bytes, not text mode: universal-newline translation would alter CR LF.
+    return Path(path).read_bytes().decode("utf-8")
+
+
+def _options(args, terminator=None):
+    profile = qa.read(args.profile) if getattr(args, "profile", None) else None
+    return db2check.Options.from_profile(
+        profile, terminator=terminator or args.terminator, assume=list(getattr(args, "assume", []) or []),
+        max_line=getattr(args, "max_line", None), allow_placeholders=getattr(args, "allow_placeholders", False)), profile
+
+
+def _baseline(name):
+    if not name:
+        return None
+    return db2check.load_baseline(name)
+
+
+def _print_findings(path, report, allow_unsupported):
+    rules = report.rules
+    for finding in sorted(report.findings, key=lambda f: (f.line, f.rule)):
+        sources = ",".join(rules[finding.rule]["source_refs"])
+        print(f"{path}:{finding.line}: {finding.severity}: {finding.rule}: {finding.message} [{sources}]")
+    summary = report.as_dict(allow_unsupported)
+    counts = ", ".join(f"{k}={v}" for k, v in sorted(summary["counts"].items())) or "no findings"
+    print(f"{summary['status'].upper()}: {summary['statements']} statements; {counts}. Static checks only; Db2 acceptance is not proven.")
+
+
+def _levels(applcompat=None):
+    data = db2check.function_level_data()
+    lines = [f"Db2 13 function levels (reviewed {data['reviewed']}; source kb/data/db2z13-function-levels.json):"]
+    for level in data["levels"]:
+        notes = "; ".join(n["id"] for n in level["ddl_notes"])
+        lines.append(f"  {level['id']} ({level['release']}): {notes}")
+    for level in data["announced_levels"]:
+        lines.append(f"  {level['id']} (announced only): {level['evidence']}")
+    result = {"levels": data["levels"], "announced_levels": data["announced_levels"]}
+    if applcompat:
+        key = db2check.level_key(applcompat)
+        if key is None:
+            raise ValueError(f"{applcompat!r} is not a V10R1/V11R1/V12R1Mnnn/V13R1Mnnn level")
+        above = [g for g in data["applcompat_gates"] if db2check.level_key(g["applcompat"]) > key]
+        defaults = [b for b in data["behavior_changes"] if b.get("applcompat") and db2check.level_key(b["applcompat"]) <= key]
+        result.update(applcompat=applcompat, unavailable=above, behavior_in_effect=defaults)
+        lines.append(f"Gated syntax NOT available at APPLCOMPAT {applcompat}:")
+        lines.extend(f"  {g['applcompat']} {g['id']}: {', '.join(g['statements'])}: {g['syntax']}" for g in above)
+        lines.append(f"Default/behavior changes in effect at {applcompat}:")
+        lines.extend(f"  {b['applcompat']} {b['id']}: {b['summary']}" for b in defaults)
+    result["text"] = lines
+    return result
+
+
+def _add_common(command, profile=True):
+    command.add_argument("--terminator", default=";", help="outer statement terminator (also honors --#SET TERMINATOR x)")
+    command.add_argument("--assume", action="append", default=[], metavar="KIND:NAME",
+                         help="declare a pre-existing object, e.g. table:SCHEMA.T1, database:DB1, type:SCHEMA.MONEY")
+    if profile:
+        command.add_argument("--profile", type=Path, help="environment profile (function level, APPLCOMPAT, subsystem parameters)")
+
+
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     commands = parser.add_subparsers(dest="command", required=True)
     plan = commands.add_parser("plan", help="export a deterministic request plan; does not generate or execute SQL")
     plan.add_argument("--request", type=Path, required=True)
@@ -274,10 +357,89 @@ def main(argv=None):
     plan.add_argument("--require-modeled", action="store_true", help="return 1 when the plan has explicit gaps, while still emitting the plan")
     context = commands.add_parser("context", help="export the existing full IBM-linked object and model context")
     context.add_argument("object")
+    lint = commands.add_parser("lint", help="static Db2 13 for z/OS checks; exit 0 pass, 1 findings, 2 bad input")
+    lint.add_argument("sql", help="SQL script path, or - for stdin")
+    _add_common(lint)
+    lint.add_argument("--max-line", type=int, help="fail lines longer than this many characters (e.g. 72 for fixed records)")
+    lint.add_argument("--allow-placeholders", action="store_true", help="report {{TOKEN}} placeholders as notices (templates only)")
+    lint.add_argument("--allow-unsupported", action="store_true", help="do not fail on constructs the checker does not model")
+    lint.add_argument("--json", action="store_true")
+    cover = commands.add_parser("coverage", help="syntax-variety report; with --baseline exit 1 when requirements are unmet")
+    cover.add_argument("sql")
+    _add_common(cover)
+    cover.add_argument("--baseline", help="baseline id from kb/authoring/variety-baseline.json (core, extended) or a file")
+    cover.add_argument("--json", action="store_true")
+    compare = commands.add_parser("diff", help="semantic DDL diff; exit 0 match, 1 mismatch, 3 unresolved, 2 bad input")
+    compare.add_argument("source")
+    compare.add_argument("target")
+    compare.add_argument("--source-terminator", default=";")
+    compare.add_argument("--target-terminator", default=";")
+    compare.add_argument("--map", type=Path, help="name-map.json from a bundle (schemas/databases/objects)")
+    compare.add_argument("--map-schema", action="append", default=[], metavar="SRC=TGT")
+    compare.add_argument("--map-database", action="append", default=[], metavar="SRC=TGT")
+    compare.add_argument("--profile", type=Path, help="resolves subsystem-parameter defaults such as DPSEGSZ and PADIX")
+    package = commands.add_parser("bundle", help="derive a QA bundle from a lint-clean script; never executes SQL")
+    package.add_argument("sql")
+    _add_common(package)
+    package.add_argument("--run", required=True, help="2-8 uppercase characters identifying this bundle")
+    package.add_argument("--out", type=Path, required=True, help="new output directory (never overwritten)")
+    package.add_argument("--replay-schema", action="append", default=[], metavar="SRC=TGT")
+    package.add_argument("--replay-database", action="append", default=[], metavar="SRC=TGT")
+    levels = commands.add_parser("levels", help="list function levels, or what is gated above --applcompat")
+    levels.add_argument("--applcompat", help="for example V13R1M500 or V12R1M510")
+    levels.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
     try:
+        if args.command == "levels":
+            result = _levels(args.applcompat)
+            if args.json:
+                print(qa.dump(result), end="")
+            else:
+                for line in result["text"]:
+                    print(line)
+            return 0
         if args.command == "context":
             print(qa.dump(qa.context_pack(args.object)), end="")
+            return 0
+        if args.command == "lint":
+            options, _ = _options(args)
+            report = db2check.analyze(_read_sql(args.sql), options)
+            if args.json:
+                print(qa.dump(report.as_dict(args.allow_unsupported)), end="")
+            else:
+                _print_findings(args.sql, report, args.allow_unsupported)
+            return 1 if report.failed(args.allow_unsupported) else 0
+        if args.command == "coverage":
+            options, _ = _options(args)
+            report = db2check.analyze(_read_sql(args.sql), options)
+            result = db2check.coverage(report, _baseline(args.baseline))
+            if args.json:
+                print(qa.dump(result), end="")
+            else:
+                print(db2check.coverage_text(result))
+            return 1 if args.baseline and not result["baseline"]["complete"] else 0
+        if args.command == "diff":
+            profile = qa.read(args.profile) if args.profile else None
+            names = db2check.NameMap.load(qa.read(args.map)) if args.map else db2check.NameMap()
+            names.schemas.update(_pairs(args.map_schema, "--map-schema"))
+            names.databases.update(_pairs(args.map_database, "--map-database"))
+            left = db2check.analyze(_read_sql(args.source), db2check.Options(terminator=args.source_terminator, allow_placeholders=True))
+            right = db2check.analyze(_read_sql(args.target), db2check.Options(terminator=args.target_terminator, allow_placeholders=True))
+            result = db2check.diff(left, right, names, profile)
+            result["parse_findings"] = {"source": [f.as_dict(left.rules) for f in left.findings if f.severity == "unsupported"],
+                                        "target": [f.as_dict(right.rules) for f in right.findings if f.severity == "unsupported"]}
+            print(qa.dump(result), end="")
+            return {"match": 0, "mismatch": 1, "unresolved": 3}[result["status"]]
+        if args.command == "bundle":
+            options, profile = _options(args)
+            text = _read_sql(args.sql)
+            report = db2check.analyze(text, options)
+            names = db2check.NameMap(_pairs(args.replay_schema, "--replay-schema"), _pairs(args.replay_database, "--replay-database"))
+            files = db2check.bundle(report, text, names, args.run, profile)
+            args.out.mkdir(parents=True, exist_ok=False)
+            for name, content in files.items():
+                (args.out / name).write_bytes(content.encode("utf-8"))
+            print(qa.dump({"output": str(args.out), "files": sorted(files), "status": "design", "executed": False}), end="")
             return 0
         result = make_plan(qa.read(args.request))
         if args.out:

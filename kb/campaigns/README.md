@@ -205,6 +205,15 @@ The offline compiler/comparator does not promote a case to `pass`. Only the harn
 that has all required evidence can do so. Negative Db2 syntax cases cannot directly
 test product extraction because their target objects should not exist.
 
+## Arbitrary scripts and product output
+
+Campaign bundles cover modeled families. For any other DDL, including domain schemas
+and raw product output, use `tools/ddl.py lint`, `coverage`, `bundle` and `diff`
+([authoring guide](../authoring/README.md#domain-schemas-the-sql-first-route)).
+`bundle` writes a `catalog-contract.json` in the format this guide describes, so
+`tools/qa.py compare` works the same way. `diff` gives an offline first look at
+product output before replay; it does not replace catalog evidence.
+
 ## Future agents
 
 ```sh

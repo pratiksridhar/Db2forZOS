@@ -15,6 +15,14 @@ lossless SQL PL framing. See [the current audit](reviews/compiler.md).
 Existing reference chapters and the legacy workload remain useful for wider manual
 authoring. They are not automatically promoted to compiler support.
 
+The 2026-10-10 change adds a statically checked SQL-first path for domain schemas:
+IBM-sourced lint rules, function-level and APPLCOMPAT gates, a variety baseline,
+a semantic DDL diff for product output, and bundle derivation from any lint-clean
+script. See [the checker review](reviews/ddl-checker.md). Remaining checker gaps:
+views, sequences, aliases, routines and triggers are recognized but not checked;
+CHECK and generated expressions are not validated; XML modifiers and temporal
+versioning (`ALTER TABLE ADD VERSIONING`) are outside the modeled subset.
+
 ## Next: finish the product feedback loop
 
 Build a thin adapter around the actual work environment: SQL submission, statement

@@ -1,5 +1,23 @@
 # Reusable agent requests
 
+## Generate a varied domain schema
+
+> Read AGENTS.md, kb/dialect-traps.md and kb/authoring/README.md. Design a Db2 13
+> for z/OS schema for [domain] with about [N] tables. Use realistic keys and
+> relationships, but spread syntax variants so the `core` variety baseline is met.
+> Write the SQL under generated/[id]/source.sql. It must pass `tools/ddl.py lint`
+> with my profile at [profile], meet `tools/ddl.py coverage --baseline core`, and
+> have a bundle from `tools/ddl.py bundle`. Report the minimum APPLCOMPAT, every
+> warning and unmet requirement, and confirm that nothing was executed.
+
+## Check product-generated DDL
+
+> Read AGENTS.md. Compare generated/[id]/source.sql with the product output in
+> [file] using `tools/ddl.py diff` and the bundle's name map and my profile.
+> Classify each `different` entry by object and attribute, cite the IBM source for
+> the expected value, and list `environment-dependent` entries with the subsystem
+> parameter that would resolve them. Do not treat a diff match as a product pass.
+
 ## Generate a campaign
 
 > Read AGENTS.md. Generate a pairwise table-core campaign using my profile at

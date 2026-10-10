@@ -80,6 +80,9 @@ The data type can be omitted only for generated timestamp/transaction forms wher
 
 - A normal table can have up to 750 columns; a dependent table can have up to 749.
 - Column names are unqualified and unique within the table. A table name is a schema-qualified or unqualified SQL identifier; the ordinary object identifier can be up to 128 characters.
+- Column names are limited to 30 bytes unless the `TABLE_COL_NAME_EXPANSION` subsystem parameter (spelled `TABLE_COLUMN_NAME_EXPANSION` on the limits page) is ON; then up to 128 bytes, with names over 30 bytes possibly truncated in SQLDA-based interfaces. Record the setting in the profile (`ibm-limits`, `ibm-fl100`).
+- Varying-length columns are also bounded by page size: VARCHAR and VARBINARY 4046/8128/16320/32704 bytes and VARGRAPHIC 2023/4064/8160/16352 characters for 4/8/16/32 KB pages (`ibm-limits`).
+- In ordinary `CREATE TABLE` the parent of a foreign key must already exist, so a self-referencing constraint is added afterwards with `ALTER TABLE ... ADD FOREIGN KEY` (`ibm-create-table`). The schema processor relaxes this inside `CREATE SCHEMA`.
 - Maximum record sizes without an edit procedure are 4056, 8138, 16330, and 32714 bytes for 4/8/16/32 KB pages. With `EDITPROC`, subtract 10 bytes from each. Maximum row size is eight bytes below maximum record size.
 - For an implicitly created table space, Db2 can select a larger page-size buffer pool when the actual record approaches the documented 90% threshold.
 

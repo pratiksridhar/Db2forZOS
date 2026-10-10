@@ -623,14 +623,24 @@ def main(argv=None):
             print(dump(result))
             return 1 if result["status"] == "mismatch" else 0
         elif args.command == "validate":
+            import db2check
             profile = read(ROOT / "kb/campaigns/profiles/example.json")
+            options = db2check.Options.from_profile(profile, assume=["stogroup:" + profile["storage_group"]])
             for model in models().values():
                 validate_model(model, kb())
                 validate_profile(profile, model)
                 _, valid = candidates(model)
                 for selection in valid:
-                    make_case(model, selection, profile, "QA", 1)
-            print("Campaign model validation OK (static only)")
+                    record, contract = make_case(model, selection, profile, "QA", 1)
+                    # Every rendered case must also pass the IBM-rule checker used for agent-written SQL.
+                    terminator = contract["statement_terminator"]
+                    sql = f"CREATE DATABASE QASDB STOGROUP {profile['storage_group']};\n" if model.get("uses_database", True) else ""
+                    sql += (f"--#SET TERMINATOR {terminator}\n" if terminator != ";" else "") + sql_file(record["setup_sql"] + record["action_sql"], "", terminator)
+                    options.terminator = ";"
+                    findings = [f for f in db2check.analyze(sql, options).findings if f.severity in ("error", "unsupported", "warning")]
+                    if findings:
+                        raise ValueError(f"{model['id']} {selection}: lint {findings[0].rule}: {findings[0].message}")
+            print("Campaign model validation OK (static only; rendered SQL passes tools/ddl.py lint rules)")
     except (ValueError, KeyError, TypeError, OSError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2

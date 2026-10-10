@@ -22,6 +22,37 @@ requirements. It never treats a matching clause name as proof of complete syntax
 coverage. See [the September audit](kb/campaigns/reviews/compiler.md) for the
 correctness fixes and validation limits.
 
+## Check, measure and bundle any DDL
+
+Agent-written or product-generated SQL goes through the same offline gates. None
+of these commands connects to Db2.
+
+```sh
+python3 tools/ddl.py lint my-schema.sql --profile kb/campaigns/profiles/example.json
+python3 tools/ddl.py coverage my-schema.sql --baseline core
+python3 tools/ddl.py bundle my-schema.sql --run QA1 --out generated/qa1 \
+  --profile kb/campaigns/profiles/example.json \
+  --replay-schema APP=APPR --replay-database APPDB=APPRDB
+python3 tools/ddl.py diff generated/qa1/source.sql product-generated.sql \
+  --map generated/qa1/name-map.json
+```
+
+- `lint` applies IBM-sourced rules ([catalog](kb/data/db2z13-ddl-checks.json)):
+  identifier limits, data types and defaults, keys and foreign keys, enforcing
+  indexes, table-space/index ranges, LOB support objects, dialect traps
+  ([list](kb/dialect-traps.md)) and [function-level/APPLCOMPAT gates](kb/function-levels.md).
+  It reports the minimum APPLCOMPAT a script needs. Exit 1 means fix the script.
+- `coverage` counts the KB clauses and values a script exercises, including
+  omitted forms, and checks a [variety baseline](kb/authoring/variety-baseline.json).
+- `bundle` derives catalog queries with source expectations, ownership-aware
+  cleanup, a name map, an inventory of implicit objects and a schema-valid case.
+- `diff` compares parsed source and product DDL, separating real differences
+  from documented defaults and subsystem-dependent defaults.
+
+[The varied exemplar](kb/authoring/examples/varied-schema.sql) passes `lint` and
+meets the `core` baseline. See [the checker review](kb/campaigns/reviews/ddl-checker.md)
+for sources and limits.
+
 ## Generate your first campaign
 
 ```sh
@@ -111,6 +142,13 @@ The JSON is deliberately a normalized test model, not a replacement SQL parser. 
 | [kb/objects/trigger.md](kb/objects/trigger.md) | Basic/advanced `CREATE TRIGGER`, transition data, options, restrictions, packages, versions, and verification |
 | [kb/objects/procedure.md](kb/objects/procedure.md) | Native SQL, external, and deprecated external SQL `CREATE PROCEDURE` forms, parameters, versions, packages, WLM, and verification |
 | [kb/trigger-body-statements.md](kb/trigger-body-statements.md) | Direct-body, SQL control, 35 supported nested, and 34 excluded nested statement families with compact syntax |
+| [kb/dialect-traps.md](kb/dialect-traps.md) | Other-dialect habits that produce invalid Db2 for z/OS DDL, with the checker rule for each |
+| [kb/function-levels.md](kb/function-levels.md) | Db2 13 function levels 100 and 500-509, APPLCOMPAT gates, default changes and deprecations for DDL |
+| [kb/data/db2z13-ddl-checks.json](kb/data/db2z13-ddl-checks.json) | Static check rules with severities, KB rule references and IBM sources |
+| [kb/data/db2z13-function-levels.json](kb/data/db2z13-function-levels.json) | Machine-readable function-level and APPLCOMPAT gate data used by `lint` and `diff` |
+| [kb/data/db2z13-catalog-columns.json](kb/data/db2z13-catalog-columns.json) | Verified catalog column names/types that generated catalog queries may select |
+| [kb/authoring/variety-baseline.json](kb/authoring/variety-baseline.json) | `core` and `extended` syntax-variety requirements for QA schemas |
+| [tools/ddl.py](tools/ddl.py) | `plan`, `lint`, `coverage`, `diff` and `bundle` commands (offline) |
 | [kb/test-design/coverage-model.md](kb/test-design/coverage-model.md) | A systematic model for deriving positive, negative, boundary, default, and round-trip cases |
 | [kb/test-design/catalog-verification.sql](kb/test-design/catalog-verification.sql) | Catalog queries for semantic validation after DDL execution |
 | [kb/test-design/create-1000-table-qa-workload.sql](kb/test-design/create-1000-table-qa-workload.sql) | Generated positive workload: one storage group/database, 1,000 dedicated table spaces, 1,000 varied tables, indexes, and seed data |
@@ -207,7 +245,7 @@ DDL legality and generated text can depend on more than the product release. At 
 - procedure kind; for native SQL record routine/package version and body `APPLCOMPAT`, and for external procedures record program, package, WLM, and external-security context
 - `CURRENT RULES`
 - data sharing versus non-data-sharing
-- relevant subsystem parameters, especially `DPSEGSZ`, `IMPDSSIZE`, `IMPTKMOD`, `IMPTSCMP`, `PADIX`, `PAGESET_PAGENUM`, `PCTFREE_UPD`, `DEFAULT_INSERT_ALGORITHM`, and compression defaults
+- relevant subsystem parameters, especially `DPSEGSZ`, `IMPDSSIZE`, `IMPTKMOD`, `IMPTSCMP`, `PADIX`, `PAGESET_PAGENUM`, `PCTFREE_UPD`, `DEFAULT_INSERT_ALGORITHM`, `TABLE_COL_NAME_EXPANSION`, and compression defaults; see [function levels](kb/function-levels.md) for defaults that change with APPLCOMPAT
 - active buffer-pool sizes
 - SMS/DFSMS capabilities, extended-format/extended-addressability settings, and available storage classes
 

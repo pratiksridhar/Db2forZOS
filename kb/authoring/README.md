@@ -16,8 +16,10 @@ Give an agent this prompt from the repository root:
 > 13 for z/OS documentation to resolve gaps, recording the reviewed edition and
 > section. Produce the SQL and persistent design cases with dependencies, cleanup,
 > catalog expectations and behavioral checks. Keep unknown subsystem settings
-> explicit. Do not execute SQL. Validate the artifacts and tell me which requested
-> dimensions remain uncovered.
+> explicit. Do not execute SQL. The SQL must pass `tools/ddl.py lint`, meet the
+> `core` variety baseline of `tools/ddl.py coverage`, and have a `tools/ddl.py
+> bundle`. Validate the artifacts and tell me which requested dimensions remain
+> uncovered.
 
 The request is the agreement about what to generate. The agent translates natural
 language into this structure; `ddl.py` does not call an LLM or parse prose. Its
@@ -94,6 +96,45 @@ The plan includes all normalized clauses and rules for relevant objects, IBM
 source URLs, and the complete body-statement matrix when triggers are relevant.
 Request, KB, model, profile, tool and request-schema hashes support reproducibility.
 With the same inputs and repository version the output is deterministic.
+
+## Domain schemas: the SQL-first route
+
+Most requests describe a business domain (banking, insurance, logistics) rather
+than a bounded compiler family. Write the DDL directly, then let the tools hold it
+to IBM rules and to the QA goal of variety:
+
+1. Plan which tables carry which variants. The `core` baseline in
+   [variety-baseline.json](variety-baseline.json) lists the minimum: PBG and PBR,
+   partition overrides, distinct SEGSIZE/LOCKSIZE/LOCKMAX/COMPRESS/free-space/
+   MAXROWS/CLOSE/TRACKMOD/CCSID values, at least twelve type families, four default
+   forms, identity ALWAYS and BY DEFAULT, row-change and hidden columns, unique and
+   check constraints, three delete rules, NOT ENFORCED, single and composite keys,
+   PARTITION BY RANGE, several AUDIT/DATA CAPTURE/APPEND/VOLATILE values, explicit
+   and implicit placement, LOB support, and index variety (unique, WHERE NOT NULL,
+   INCLUDE, ASC/DESC, CLUSTER, PADDED/NOT PADDED, PARTITIONED, FREEPAGE/PCTFREE).
+   Realistic schemas usually repeat one production option set; that is not enough
+   for extraction testing. [The exemplar](examples/varied-schema.sql) shows one way
+   to spread these variants over five tables.
+2. Avoid the [dialect traps](../dialect-traps.md). In particular: 8-byte database and
+   table-space names, 30-byte column names unless TABLE_COL_NAME_EXPANSION is on, no
+   `DEFAULT CURRENT TIMESTAMP`, no self-referencing FK inside CREATE TABLE, an
+   enforcing unique index for every key in an explicit table space before children,
+   and LOB support objects (or `IN DATABASE`) for LOB columns.
+3. `python3 tools/ddl.py lint <sql> --profile <profile>` must PASS. Read each
+   finding's IBM source; findings are rules, not style.
+4. `python3 tools/ddl.py coverage <sql> --baseline core` must meet every
+   requirement unless the user narrowed scope. The text output also lists normalized
+   clauses the script never exercises; use them to choose companion cases.
+5. `python3 tools/ddl.py bundle <sql> ...` writes the source copy, catalog queries
+   and expectations, cleanup scripts, name map, inventory of implicit objects, lint
+   and coverage results, and a case record. Then run
+   `.venv/bin/python tools/qa.py validate-case <bundle>/case.json`.
+
+Use `--assume KIND:NAME` for objects that already exist on the target, such as a
+storage group, database or distinct type. Use `--max-line 72` when the SQL must fit
+fixed 72-column records. Function-level and APPLCOMPAT requirements come from
+[the function-level chapter](../function-levels.md); `lint` prints
+`compatibility.minimum_applcompat` with `--json`.
 
 ## Bespoke schemas and text stress tests
 

@@ -1,0 +1,849 @@
+{
+  "schema_version": "1.0.0",
+  "title": "Db2 13 for z/OS function levels and APPLCOMPAT gates that affect DDL",
+  "reviewed": "2026-10-10",
+  "authority": "Official IBM Db2 13 for z/OS documentation only: the function-level pages, the V12R1Mnnn/V13R1Mnnn APPLCOMPAT tables, the APPLCOMPAT incompatibility list, the Db2 13 incompatible-changes list and the Db2 13 deprecation list. Capability titles are IBM's; DDL notes are summaries with source IDs.",
+  "how_gates_work": [
+    "A function level (FL) activates capabilities subsystem-wide. Activating a level also activates every lower level.",
+    "Most new SQL syntax and behavior also needs an equal or higher application compatibility (APPLCOMPAT) level for the package that runs the statement; otherwise Db2 returns an error such as SQLCODE -4743 or keeps the previous behavior.",
+    "APPLCOMPAT cannot exceed the highest activated function level. Db2 13 still accepts lower APPLCOMPAT values (V10R1, V11R1, V12R1M100-M510, V13R1Mnnn), and some DDL defaults change across those levels.",
+    "Record the activated FL, the catalog level, and the APPLCOMPAT of the package that runs the DDL (for example SPUFI or DSNTEP2) in the environment profile."
+  ],
+  "source_refs": [
+    "ibm-db2-function-levels",
+    "ibm-applcompat-v13",
+    "ibm-applcompat-v12",
+    "ibm-applcompat-incompatible",
+    "ibm-db2-13-incompatible",
+    "ibm-db2-13-deprecated"
+  ],
+  "levels": [
+    {
+      "id": "V13R1M100",
+      "label": "FL 100",
+      "release": "2022-05",
+      "catalog_level": "V13R1M100",
+      "enabling_apar": null,
+      "source_ref": "ibm-fl100",
+      "capabilities": [
+        "Index look-aside optimization",
+        "Sort optimization",
+        "Expanded SORTL usage with learning from execution (IBM z15)",
+        "Improved locking and cross-partition search for INSERT to PBG table spaces",
+        "Reduced ECSA storage for IFI buffers",
+        "Column names longer than 30 bytes",
+        "Relative page numbering for new PBR table spaces (PAGESET_PAGENUM default RELATIVE)",
+        "Improved default statistics collection granularity",
+        "Enhanced space-level recovery with the RECOVER utility"
+      ],
+      "ddl_notes": [
+        {
+          "id": "fl100-long-column-names",
+          "summary": "Column names can be up to 128 bytes when the TABLE_COL_NAME_EXPANSION subsystem parameter is ON (the limits page spells it TABLE_COLUMN_NAME_EXPANSION); otherwise 30 bytes. Names over 30 bytes can be truncated in SQLDA-based APIs.",
+          "kb_clauses": [
+            "table.column-definition"
+          ],
+          "checker_rules": [
+            "name.length",
+            "name.column-expansion"
+          ]
+        },
+        {
+          "id": "fl100-pagenum-default",
+          "summary": "The PAGESET_PAGENUM default changed to RELATIVE, so an omitted PAGENUM on a new PBR table space uses relative page numbering unless the installation overrides it.",
+          "kb_clauses": [
+            "tablespace.pagenum",
+            "table.pagenum"
+          ],
+          "checker_rules": []
+        },
+        {
+          "id": "fl100-key-label-archived",
+          "summary": "A KEY LABEL on CREATE/ALTER STOGROUP or CREATE/ALTER TABLE cannot name an ICSF key archived for decryption only.",
+          "kb_clauses": [
+            "stogroup.key-label",
+            "table.key-label"
+          ],
+          "checker_rules": []
+        }
+      ]
+    },
+    {
+      "id": "V13R1M500",
+      "label": "FL 500",
+      "release": "2022-05",
+      "catalog_level": "V13R1M100",
+      "enabling_apar": null,
+      "source_ref": "ibm-fl500",
+      "capabilities": [
+        "Increased flexibility for package ownership",
+        "Page sampling for inline statistics",
+        "SQL Data Insights",
+        "Reduced ECSA storage for IFI buffers",
+        "Online conversion of tables from growth-based (PBG) to range-based (PBR) partitions",
+        "Fast index traversal (FTB) support for larger index keys",
+        "Increased control for applications over how long to wait for a lock",
+        "Profile table enhancements for application environment settings",
+        "Ability to delete an active log data set from the BSDS while Db2 is running",
+        "SPT01 and SYSLGRNX table spaces are converted to DSSIZE 256 GB",
+        "Improved concurrency for altering tables for DATA CAPTURE",
+        "Change REORG INDEX SHRLEVEL REFERENCE or CHANGE so the NOSYSUT1 keyword is the default",
+        "CREATE TABLESPACE uses MAXPARTITIONS 254 by default",
+        "Long names support for timeout and deadlock messages in IRLM"
+      ],
+      "ddl_notes": [
+        {
+          "id": "fl500-maxpartitions-254",
+          "summary": "At APPLCOMPAT V13R1M500 or higher an omitted MAXPARTITIONS gives 254 (previously 256 from V12R1M504); the calculated default DSSIZE is 4 G. IBM lists this as an incompatible change.",
+          "kb_clauses": [
+            "tablespace.maxpartitions",
+            "tablespace.dssize"
+          ],
+          "checker_rules": [
+            "fl.behavior-change"
+          ]
+        },
+        {
+          "id": "fl500-package-owner-type",
+          "summary": "CREATE/ALTER PROCEDURE (SQL native) and CREATE/ALTER FUNCTION (compiled SQL scalar) accept AS ROLE or AS USER on PACKAGE OWNER at APPLCOMPAT V13R1M500.",
+          "kb_clauses": [
+            "procedure.qualifier-path-owner"
+          ],
+          "checker_rules": [
+            "fl.applcompat-gate"
+          ]
+        },
+        {
+          "id": "fl500-pbg-to-pbr",
+          "summary": "ALTER TABLE ... ALTER PARTITIONING TO PARTITION BY RANGE converts PBG to PBR (pending change, materialized by REORG; result uses relative page numbering).",
+          "kb_clauses": [],
+          "checker_rules": [
+            "fl.applcompat-gate"
+          ]
+        },
+        {
+          "id": "fl500-lock-timeout",
+          "summary": "CURRENT LOCK TIMEOUT special register and SET CURRENT LOCK TIMEOUT statement.",
+          "kb_clauses": [],
+          "checker_rules": [
+            "fl.applcompat-gate"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V13R1M501",
+      "label": "FL 501",
+      "release": "2022-05",
+      "catalog_level": "V13R1M501",
+      "enabling_apar": null,
+      "source_ref": "ibm-fl501",
+      "capabilities": [
+        "Allow applications to specify a deadlock resolution priority",
+        "DEADLOCK_RESOLUTION_PRIORITY global variable",
+        "Real-time statistics scalability",
+        "Collection of real-time and historical information about utility execution",
+        "Real-time statistics support for index splits"
+      ],
+      "ddl_notes": [
+        {
+          "id": "fl501-deadlock-priority",
+          "summary": "SYSIBMADM.DEADLOCK_RESOLUTION_PRIORITY built-in global variable (APPLCOMPAT V13R1M501). No CREATE-statement syntax changes.",
+          "kb_clauses": [],
+          "checker_rules": [
+            "fl.applcompat-gate"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V13R1M502",
+      "label": "FL 502",
+      "release": "2022-10",
+      "catalog_level": "V13R1M501",
+      "enabling_apar": "PH47891",
+      "source_ref": "ibm-fl502",
+      "capabilities": [
+        "Db2 controlled sysplex workload balancing (PH48253)",
+        "Record dependencies and validity at the statement level for packages (PH47560)"
+      ],
+      "ddl_notes": [
+        {
+          "id": "fl502-statement-deps",
+          "summary": "DEPLEVEL(STATEMENT) bind option; SYSPACKAGE.VALID can be 'S'. Affects routine/trigger package verification queries, not CREATE syntax.",
+          "kb_clauses": [],
+          "checker_rules": []
+        }
+      ]
+    },
+    {
+      "id": "V13R1M503",
+      "label": "FL 503",
+      "release": "2023-02",
+      "catalog_level": "V13R1M501",
+      "enabling_apar": "PH51469",
+      "source_ref": "ibm-fl503",
+      "capabilities": [
+        "New default values in existing rows for added ROW CHANGE TIMESTAMP columns (PH51185)",
+        "Accelerator-only support for more than 32K elements in an IN list (PH50756)",
+        "SELECT INTO statement support for OPTIMIZE FOR n ROWS (PH50010)"
+      ],
+      "ddl_notes": [
+        {
+          "id": "fl503-rct-add-column",
+          "summary": "At APPLCOMPAT V13R1M503, ALTER TABLE ADD COLUMN for a ROW CHANGE TIMESTAMP column sets SYSCOLUMNS.DEFAULTVALUE to the ALTER timestamp (incompatible change). CREATE TABLE does not set DEFAULTVALUE.",
+          "kb_clauses": [
+            "table.row-change-timestamp"
+          ],
+          "checker_rules": []
+        }
+      ]
+    },
+    {
+      "id": "V13R1M504",
+      "label": "FL 504",
+      "release": "2023-10",
+      "catalog_level": "V13R1M504",
+      "enabling_apar": "PH54919",
+      "source_ref": "ibm-fl504",
+      "capabilities": [
+        "Minimized impact of invalidated packages with statement-level invalidation (PH55497)",
+        "Db2 trace capacity: More OP buffers (PH55622)",
+        "Utility object-level history (PH55476, PH55914, PH55915, PH55916)",
+        "Enhancements to SQL Data Insights (PH55212)",
+        "ORDER BY support for a fullselect that invokes LISTAGG (PH55596)"
+      ],
+      "ddl_notes": [
+        {
+          "id": "fl504-listagg-order-by",
+          "summary": "A fullselect that invokes LISTAGG can specify ORDER BY at APPLCOMPAT V13R1M504 (relevant to view and MQT definitions).",
+          "kb_clauses": [
+            "table.mqt"
+          ],
+          "checker_rules": []
+        }
+      ]
+    },
+    {
+      "id": "V13R1M505",
+      "label": "FL 505",
+      "release": "2024-04",
+      "catalog_level": "V13R1M505",
+      "enabling_apar": "PH59534",
+      "source_ref": "ibm-fl505",
+      "capabilities": [
+        "New token-based authentication capability (PH55599)",
+        "Temporal support for security-related catalog tables (PH59531)",
+        "New trace destination for Db2ZAI (PH56369)",
+        "INTERPRET scalar function (PH59595)"
+      ],
+      "ddl_notes": [
+        {
+          "id": "fl505-interpret",
+          "summary": "INTERPRET built-in function (APPLCOMPAT V13R1M505). No CREATE-statement syntax changes.",
+          "kb_clauses": [],
+          "checker_rules": [
+            "fl.applcompat-gate"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V13R1M506",
+      "label": "FL 506",
+      "release": "2024-10",
+      "catalog_level": "V13R1M505",
+      "enabling_apar": "PH62635",
+      "source_ref": "ibm-fl506",
+      "capabilities": [
+        "Non-disruptive clearing of data partitions with LOAD (PH62543)",
+        "Improved performance for IN-list predicates (PH58750)",
+        "Db2 trace capacity: More concurrently active traces (PH59020)",
+        "INSERT with multi-row VALUES clause (PH62561)",
+        "Add implicitly hidden ROWID columns (PH61629)",
+        "Lift certain restrictions for column masks (PH62393, PH62690)"
+      ],
+      "ddl_notes": [
+        {
+          "id": "fl506-hidden-rowid-add",
+          "summary": "ALTER TABLE ADD COLUMN can define an IMPLICITLY HIDDEN ROWID column in a UTS table at APPLCOMPAT V13R1M506 (one per table); lower levels return SQLCODE -270.",
+          "kb_clauses": [
+            "table.rowid",
+            "table.implicitly-hidden"
+          ],
+          "checker_rules": [
+            "fl.applcompat-gate"
+          ]
+        },
+        {
+          "id": "fl506-multirow-insert",
+          "summary": "INSERT ... VALUES (...), (...) with multiple rows at APPLCOMPAT V13R1M506 (seed data in QA scripts).",
+          "kb_clauses": [],
+          "checker_rules": [
+            "fl.applcompat-gate"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V13R1M507",
+      "label": "FL 507",
+      "release": "2025-04",
+      "catalog_level": "V13R1M507",
+      "enabling_apar": "PH64907",
+      "source_ref": "ibm-fl507",
+      "capabilities": [
+        "Online conversion of table partitioning from PBR to PBG (PH64949, PH64950)",
+        "Enhanced application availability for system temporal tables (PH65039)",
+        "LASTUSED column support in the SYSIBM.SYSPLAN catalog table (PH64762)",
+        "Referencing temporal and archive-enabled tables in the same SELECT statement (PH65133)",
+        "Specify greater than 64 GB primary and secondary space allocation quantities (PH64760)"
+      ],
+      "ddl_notes": [
+        {
+          "id": "fl507-pbr-to-pbg",
+          "summary": "ALTER TABLE ... ALTER PARTITIONING TO PARTITION BY GROWTH at APPLCOMPAT V13R1M507; can be stacked with PBG-to-PBR conversion in one REORG.",
+          "kb_clauses": [],
+          "checker_rules": [
+            "fl.applcompat-gate"
+          ]
+        },
+        {
+          "id": "fl507-space-quantities",
+          "summary": "CREATE/ALTER TABLESPACE and CREATE LOB TABLESPACE accept PRIQTY up to 1 TB (1073741824 KB) and SECQTY up to 200 GB (209715200 KB) at APPLCOMPAT V13R1M507. Larger values are reduced to those caps; below this level the cap is 64 GB.",
+          "kb_clauses": [
+            "tablespace.priqty",
+            "tablespace.secqty"
+          ],
+          "checker_rules": [
+            "fl.applcompat-gate"
+          ]
+        },
+        {
+          "id": "fl507-systime-adjust",
+          "summary": "SYSTIME_PERIOD_ADJUST built-in global variable for system-period temporal tables (APPLCOMPAT V13R1M507).",
+          "kb_clauses": [
+            "table.system-period"
+          ],
+          "checker_rules": [
+            "fl.applcompat-gate"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V13R1M508",
+      "label": "FL 508",
+      "release": "2025-10",
+      "catalog_level": "V13R1M508",
+      "enabling_apar": "PH66983",
+      "source_ref": "ibm-fl508",
+      "capabilities": [
+        "BLOCKING_THREADS table function enhancements (PH67082)",
+        "Increasing the maximum number of active and archive logs (PH67380)",
+        "Specify sort work or DGTT usage for PBG table spaces in the work file database (PH67418)",
+        "Generation of UUID values (PH67353)",
+        "More local applications control with Db2 profile tables (PH67138)",
+        "Consistent DSSIZE records in Db2 catalog tables for UTS and LOB objects (PH67419)",
+        "Rebind phase-in for SQL PL and trigger packages (PH67404)",
+        "Preparation for conversion of non-UTS catalog and directory objects (PH67554)"
+      ],
+      "ddl_notes": [
+        {
+          "id": "fl508-for-sort-dgtt",
+          "summary": "CREATE TABLESPACE ... FOR SORT | FOR DGTT for PBG table spaces in a work file database at APPLCOMPAT V13R1M508 (ALTER TABLESPACE support needs PH71332). SYSTABLESPACE.USAGE records it.",
+          "kb_clauses": [
+            "tablespace.for-sort",
+            "tablespace.for-dgtt"
+          ],
+          "checker_rules": [
+            "fl.applcompat-gate"
+          ]
+        },
+        {
+          "id": "fl508-uuid",
+          "summary": "GENERATE_UUID, GENERATE_UUID_BINARY, VARBINARY_FORMAT and VARCHAR_FORMAT_BINARY built-in functions at APPLCOMPAT V13R1M508; the UUID generators need IBM z14 or later.",
+          "kb_clauses": [],
+          "checker_rules": [
+            "fl.applcompat-gate"
+          ]
+        },
+        {
+          "id": "fl508-catalog-dssize",
+          "summary": "From catalog level V13R1M508, DSSIZE columns in SYSINDEXES/SYSINDEXPART are BIGINT and DSSIZE/PIECESIZE are populated consistently for UTS and LOB objects. Catalog queries that select SYSINDEXES.DSSIZE need catalog level V13R1M508.",
+          "kb_clauses": [
+            "index.dssize",
+            "index.piecesize"
+          ],
+          "checker_rules": []
+        }
+      ]
+    },
+    {
+      "id": "V13R1M509",
+      "label": "FL 509",
+      "release": "2026-04",
+      "catalog_level": "V13R1M509",
+      "enabling_apar": "PH70028",
+      "source_ref": "ibm-fl509",
+      "capabilities": [
+        "Converting Db2 catalog table spaces to UTS (PH70027)",
+        "Subnet wildcard filtering for resource limit facility (RLF) (PH70071)",
+        "Online ownership transfer of application objects (PH69677)",
+        "Utility history for SHRLEVEL information (PH70075)",
+        "New catalog columns for STMT_HASHID2 (PH70030)",
+        "I/O counts in real time statistics (PH70074)",
+        "Reduced false page P-lock contention in data sharing (PH69217)"
+      ],
+      "ddl_notes": [
+        {
+          "id": "fl509-transfer-ownership",
+          "summary": "TRANSFER OWNERSHIP accepts function-designator, PROCEDURE and SEQUENCE at APPLCOMPAT V13R1M509.",
+          "kb_clauses": [],
+          "checker_rules": [
+            "fl.applcompat-gate"
+          ]
+        },
+        {
+          "id": "fl509-plock-hash",
+          "summary": "Page sets created after FL 509 with DSSIZE above 64 GB (4 KB pages) or 128 GB (8 KB pages) use a new lock hash algorithm; behavioral, not syntax.",
+          "kb_clauses": [
+            "tablespace.dssize"
+          ],
+          "checker_rules": []
+        }
+      ]
+    }
+  ],
+  "announced_levels": [
+    {
+      "id": "V13R1M510",
+      "evidence": "The V13R1Mnnn APPLCOMPAT table lists CREATE TRIGGER (basic) REFERENCING UNIT_OF_RECOVERY_ID AS ur-identifier at V13R1M510. No function level 510 page was published on the review date.",
+      "source_ref": "ibm-applcompat-v13"
+    },
+    {
+      "id": "V13R1M511",
+      "evidence": "The Db2 13 deprecation table lists V13R1M511 as the level at which synonyms, hash-organized tables, non-UTS table spaces for base tables, index-controlled partitioning, basic row format, 6-byte RBA/LRSN page sets and SNA/VTAM can no longer be created or accessed.",
+      "source_ref": "ibm-db2-13-deprecated"
+    }
+  ],
+  "applcompat_gates": [
+    {
+      "id": "v12-function-level-500-ddl",
+      "applcompat": "V12R1M500",
+      "statements": [
+        "CREATE TABLESPACE",
+        "CREATE TABLE",
+        "CREATE INDEX",
+        "CREATE TRIGGER (advanced)",
+        "CREATE PROCEDURE (SQL native)"
+      ],
+      "syntax": "CREATE TABLESPACE PAGENUM and INSERT ALGORITHM; CREATE TABLE PAGENUM, column CCSID on CHAR/GRAPHIC/CLOB/DBCLOB, PERIOD BUSINESS_TIME EXCLUSIVE/INCLUSIVE, PERIOD BUSINESS_TIME in constraints; CREATE INDEX DSSIZE; advanced triggers; WRAPPED; CONCENTRATE STATEMENTS. CREATE TABLESPACE/INDEX without USING fail with -204 if the database storage group does not exist.",
+      "kb_clauses": [
+        "tablespace.pagenum",
+        "tablespace.insert-algorithm",
+        "table.pagenum",
+        "table.business-period",
+        "index.dssize",
+        "trigger.wrapped",
+        "procedure.wrapped"
+      ],
+      "source_ref": "ibm-applcompat-v12"
+    },
+    {
+      "id": "key-label",
+      "applcompat": "V12R1M502",
+      "statements": [
+        "CREATE STOGROUP",
+        "ALTER STOGROUP",
+        "CREATE TABLE",
+        "ALTER TABLE"
+      ],
+      "syntax": "KEY LABEL",
+      "kb_clauses": [
+        "stogroup.key-label",
+        "table.key-label"
+      ],
+      "source_ref": "ibm-applcompat-v12"
+    },
+    {
+      "id": "on-delete-add-extra-row",
+      "applcompat": "V12R1M503",
+      "statements": [
+        "ALTER TABLE"
+      ],
+      "syntax": "ON DELETE ADD EXTRA ROW (system-period temporal versioning)",
+      "kb_clauses": [],
+      "source_ref": "ibm-applcompat-v12"
+    },
+    {
+      "id": "uts-only-creation",
+      "applcompat": "V12R1M504",
+      "statements": [
+        "CREATE TABLESPACE",
+        "CREATE TABLE",
+        "CREATE SYNONYM",
+        "CREATE AUXILIARY TABLE"
+      ],
+      "syntax": "Base table spaces are always PBG or PBR; synonyms and hash-organized tables cannot be created; one table per UTS; CREATE AUX TABLE needs PART when the base table is in a PBG table space.",
+      "kb_clauses": [
+        "tablespace.maxpartitions",
+        "table.organization-by-hash"
+      ],
+      "source_ref": "ibm-applcompat-incompatible"
+    },
+    {
+      "id": "decfloat-keys",
+      "applcompat": "V12R1M505",
+      "statements": [
+        "CREATE TABLE",
+        "ALTER TABLE",
+        "CREATE INDEX"
+      ],
+      "syntax": "DECFLOAT columns in PRIMARY KEY, UNIQUE and index keys",
+      "kb_clauses": [
+        "table.primary-key",
+        "table.unique",
+        "index.key-list"
+      ],
+      "source_ref": "ibm-applcompat-v12"
+    },
+    {
+      "id": "trigger-when-changed",
+      "applcompat": "V12R1M505",
+      "statements": [
+        "CREATE TRIGGER (basic)",
+        "CREATE TRIGGER (advanced)"
+      ],
+      "syntax": "Changed WHEN search-condition",
+      "kb_clauses": [
+        "trigger.when"
+      ],
+      "source_ref": "ibm-applcompat-v12"
+    },
+    {
+      "id": "drop-table-explicit-uts",
+      "applcompat": "V12R1M506",
+      "statements": [
+        "DROP TABLE"
+      ],
+      "syntax": "DROP TABLE for a table in an explicitly created UTS implicitly drops the table space; dropping an auxiliary table drops its explicit LOB table space. Below this level DROP TABLE of a PBG table fails with SQLCODE -669.",
+      "kb_clauses": [],
+      "source_ref": "ibm-applcompat-incompatible"
+    },
+    {
+      "id": "procedure-or-replace-specific",
+      "applcompat": "V12R1M507",
+      "statements": [
+        "CREATE PROCEDURE (SQL native)",
+        "CREATE PROCEDURE (external)"
+      ],
+      "syntax": "OR REPLACE; SPECIFIC",
+      "kb_clauses": [
+        "procedure.or-replace",
+        "procedure.specific"
+      ],
+      "source_ref": "ibm-applcompat-v12"
+    },
+    {
+      "id": "alter-tablespace-move-table",
+      "applcompat": "V12R1M508",
+      "statements": [
+        "ALTER TABLESPACE"
+      ],
+      "syntax": "MOVE TABLE",
+      "kb_clauses": [],
+      "source_ref": "ibm-applcompat-v12"
+    },
+    {
+      "id": "compress-algorithm",
+      "applcompat": "V12R1M509",
+      "statements": [
+        "CREATE TABLESPACE",
+        "CREATE TABLE",
+        "ALTER TABLESPACE"
+      ],
+      "syntax": "COMPRESS YES FIXEDLENGTH | COMPRESS YES HUFFMAN",
+      "kb_clauses": [
+        "tablespace.compress",
+        "table.compress"
+      ],
+      "source_ref": "ibm-applcompat-v12"
+    },
+    {
+      "id": "ai-functions",
+      "applcompat": "V13R1M500",
+      "statements": [
+        "any SQL"
+      ],
+      "syntax": "AI_ANALOGY, AI_SEMANTIC_CLUSTER, AI_SIMILARITY",
+      "kb_clauses": [],
+      "source_ref": "ibm-applcompat-v13"
+    },
+    {
+      "id": "alter-partitioning-range",
+      "applcompat": "V13R1M500",
+      "statements": [
+        "ALTER TABLE"
+      ],
+      "syntax": "ALTER PARTITIONING TO PARTITION BY RANGE",
+      "kb_clauses": [],
+      "source_ref": "ibm-applcompat-v13"
+    },
+    {
+      "id": "lock-timeout",
+      "applcompat": "V13R1M500",
+      "statements": [
+        "SET CURRENT LOCK TIMEOUT",
+        "any SQL"
+      ],
+      "syntax": "CURRENT LOCK TIMEOUT special register",
+      "kb_clauses": [],
+      "source_ref": "ibm-applcompat-v13"
+    },
+    {
+      "id": "package-owner-type",
+      "applcompat": "V13R1M500",
+      "statements": [
+        "CREATE PROCEDURE (SQL native)",
+        "CREATE FUNCTION (compiled SQL scalar)"
+      ],
+      "syntax": "PACKAGE OWNER ... AS ROLE | AS USER",
+      "kb_clauses": [
+        "procedure.qualifier-path-owner"
+      ],
+      "source_ref": "ibm-applcompat-v13"
+    },
+    {
+      "id": "deadlock-priority",
+      "applcompat": "V13R1M501",
+      "statements": [
+        "SET assignment"
+      ],
+      "syntax": "SYSIBMADM.DEADLOCK_RESOLUTION_PRIORITY",
+      "kb_clauses": [],
+      "source_ref": "ibm-applcompat-v13"
+    },
+    {
+      "id": "ai-commonality",
+      "applcompat": "V13R1M504",
+      "statements": [
+        "any SQL"
+      ],
+      "syntax": "AI_COMMONALITY",
+      "kb_clauses": [],
+      "source_ref": "ibm-applcompat-v13"
+    },
+    {
+      "id": "interpret-function",
+      "applcompat": "V13R1M505",
+      "statements": [
+        "any SQL"
+      ],
+      "syntax": "INTERPRET",
+      "kb_clauses": [],
+      "source_ref": "ibm-applcompat-v13"
+    },
+    {
+      "id": "hidden-rowid-add-column",
+      "applcompat": "V13R1M506",
+      "statements": [
+        "ALTER TABLE"
+      ],
+      "syntax": "ADD COLUMN ... ROWID ... IMPLICITLY HIDDEN",
+      "kb_clauses": [
+        "table.rowid",
+        "table.implicitly-hidden"
+      ],
+      "source_ref": "ibm-applcompat-v13"
+    },
+    {
+      "id": "multirow-insert",
+      "applcompat": "V13R1M506",
+      "statements": [
+        "INSERT"
+      ],
+      "syntax": "VALUES (row), (row), ...",
+      "kb_clauses": [],
+      "source_ref": "ibm-applcompat-v13"
+    },
+    {
+      "id": "alter-partitioning-growth",
+      "applcompat": "V13R1M507",
+      "statements": [
+        "ALTER TABLE"
+      ],
+      "syntax": "ALTER PARTITIONING TO PARTITION BY GROWTH",
+      "kb_clauses": [],
+      "source_ref": "ibm-applcompat-v13"
+    },
+    {
+      "id": "large-space-quantities",
+      "applcompat": "V13R1M507",
+      "statements": [
+        "CREATE TABLESPACE",
+        "CREATE LOB TABLESPACE",
+        "ALTER TABLESPACE"
+      ],
+      "syntax": "PRIQTY above 64 GB up to 1 TB; SECQTY above 64 GB up to 200 GB",
+      "kb_clauses": [
+        "tablespace.priqty",
+        "tablespace.secqty"
+      ],
+      "source_ref": "ibm-applcompat-v13"
+    },
+    {
+      "id": "systime-period-adjust",
+      "applcompat": "V13R1M507",
+      "statements": [
+        "SET assignment"
+      ],
+      "syntax": "SYSTIME_PERIOD_ADJUST",
+      "kb_clauses": [
+        "table.system-period"
+      ],
+      "source_ref": "ibm-applcompat-v13"
+    },
+    {
+      "id": "uuid-functions",
+      "applcompat": "V13R1M508",
+      "statements": [
+        "any SQL"
+      ],
+      "syntax": "GENERATE_UUID, GENERATE_UUID_BINARY, VARBINARY_FORMAT, VARCHAR_FORMAT_BINARY",
+      "kb_clauses": [],
+      "source_ref": "ibm-applcompat-v13"
+    },
+    {
+      "id": "workfile-usage",
+      "applcompat": "V13R1M508",
+      "statements": [
+        "CREATE TABLESPACE",
+        "ALTER TABLESPACE"
+      ],
+      "syntax": "FOR SORT | FOR DGTT",
+      "kb_clauses": [
+        "tablespace.for-sort",
+        "tablespace.for-dgtt"
+      ],
+      "source_ref": "ibm-applcompat-v13"
+    },
+    {
+      "id": "transfer-ownership-routines",
+      "applcompat": "V13R1M509",
+      "statements": [
+        "TRANSFER OWNERSHIP"
+      ],
+      "syntax": "function-designator | PROCEDURE procedure-name | SEQUENCE sequence-name",
+      "kb_clauses": [],
+      "source_ref": "ibm-applcompat-v13"
+    },
+    {
+      "id": "trigger-unit-of-recovery-id",
+      "applcompat": "V13R1M510",
+      "statements": [
+        "CREATE TRIGGER (basic)"
+      ],
+      "syntax": "REFERENCING UNIT_OF_RECOVERY_ID AS ur-identifier",
+      "kb_clauses": [
+        "trigger.referencing-row"
+      ],
+      "source_ref": "ibm-applcompat-v13",
+      "note": "Listed in the APPLCOMPAT table; no FL 510 page existed on the review date."
+    }
+  ],
+  "behavior_changes": [
+    {
+      "id": "pbg-default-maxpartitions",
+      "applcompat": "V13R1M500",
+      "summary": "Omitted MAXPARTITIONS on CREATE TABLESPACE: 254 at V13R1M500 or higher; 256 (with default DSSIZE 4 G) at V12R1M504 through V13R1M100.",
+      "incompatible": true,
+      "source_ref": "ibm-applcompat-incompatible"
+    },
+    {
+      "id": "uts-only",
+      "applcompat": "V12R1M504",
+      "summary": "Statements that create base table spaces always create PBG or PBR; non-UTS, synonyms and hash organization return errors.",
+      "incompatible": true,
+      "source_ref": "ibm-applcompat-incompatible"
+    },
+    {
+      "id": "drop-table-uts",
+      "applcompat": "V12R1M506",
+      "summary": "DROP TABLE in an explicit UTS also drops the table space; DROP of an auxiliary table also drops its explicit LOB table space.",
+      "incompatible": false,
+      "source_ref": "ibm-applcompat-incompatible"
+    },
+    {
+      "id": "rct-add-column-default",
+      "applcompat": "V13R1M503",
+      "summary": "ALTER TABLE ADD COLUMN for ROW CHANGE TIMESTAMP records the ALTER timestamp in SYSCOLUMNS.DEFAULTVALUE.",
+      "incompatible": true,
+      "source_ref": "ibm-applcompat-incompatible"
+    },
+    {
+      "id": "workfile-display-type",
+      "function_level": "V13R1M508",
+      "summary": "DISPLAY DATABASE can return WF, WD or WS instead of TS for work file table spaces.",
+      "incompatible": true,
+      "source_ref": "ibm-db2-13-incompatible"
+    }
+  ],
+  "deprecations": [
+    {
+      "feature": "Absolute page numbering for PBR table spaces",
+      "alternative": "PBR with relative page numbering (PAGENUM RELATIVE)",
+      "removal": null,
+      "kb_clauses": [
+        "tablespace.pagenum"
+      ],
+      "source_ref": "ibm-db2-13-deprecated"
+    },
+    {
+      "feature": "Hash-organized tables",
+      "alternative": "ALTER TABLE ... DROP ORGANIZATION and fast index traversal",
+      "removal": "Cannot be created at APPLCOMPAT V12R1M504+; cannot be created or accessed at V13R1M511",
+      "kb_clauses": [
+        "table.organization-by-hash"
+      ],
+      "source_ref": "ibm-db2-13-deprecated"
+    },
+    {
+      "feature": "Non-UTS table spaces for base tables (segmented, partitioned, simple) and index-controlled partitioning",
+      "alternative": "PBG or PBR UTS",
+      "removal": "Cannot be created at APPLCOMPAT V12R1M504+; cannot be created or accessed at V13R1M511",
+      "kb_clauses": [],
+      "source_ref": "ibm-db2-13-deprecated"
+    },
+    {
+      "feature": "Synonyms",
+      "alternative": "Aliases",
+      "removal": "Cannot be created at APPLCOMPAT V12R1M504+; cannot be created or accessed at V13R1M511",
+      "kb_clauses": [],
+      "source_ref": "ibm-db2-13-deprecated"
+    },
+    {
+      "feature": "External SQL procedures",
+      "alternative": "Native SQL procedures",
+      "removal": null,
+      "kb_clauses": [
+        "procedure.kind-discriminator"
+      ],
+      "source_ref": "ibm-db2-13-deprecated"
+    },
+    {
+      "feature": "Basic row format table spaces",
+      "alternative": "Reordered row format",
+      "removal": "Cannot be accessed at V13R1M511",
+      "kb_clauses": [],
+      "source_ref": "ibm-db2-13-deprecated"
+    },
+    {
+      "feature": "Page sets with basic 6-byte RBA or LRSN",
+      "alternative": "Extended 10-byte RBA/LRSN",
+      "removal": "Cannot be accessed at V13R1M511",
+      "kb_clauses": [],
+      "source_ref": "ibm-db2-13-deprecated"
+    }
+  ]
+}

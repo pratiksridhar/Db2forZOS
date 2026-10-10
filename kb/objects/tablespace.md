@@ -135,7 +135,7 @@ At V12R1M504 and above, a base table cannot be created in an existing non-UTS ta
 
 | Clause | Rules and effective default |
 |---|---|
-| `<table-space-name>` | Required; qualified by the explicit/implicit database; traditionally up to 8 characters; cannot collide with an existing/pending table, index, or LOB space name in that database. |
+| `<table-space-name>` | Required; qualified by the explicit/implicit database; at most 8 bytes, starting with a letter and without special characters (`ibm-limits`, `ibm-naming-conventions`); cannot collide with an existing/pending table, index, or LOB space name in that database. |
 | `IN <database>` | Database must exist; cannot be DSNDB06, TEMP, or implicitly created. Default is `DSNDB04`. A work-file database forces PBG. |
 | `BUFFERPOOL` | Active 4/8/16/32 KB pool and required USE/authority; determines page size. Defaults from the database. Work-file table spaces cannot use 8/16 KB. |
 | `SEGSIZE` | Multiple of 4 from 4–64. Omission uses `DPSEGSZ`; if that parameter is 0, Db2 uses 32. Work-file spaces always use 16 and cannot specify the clause. |

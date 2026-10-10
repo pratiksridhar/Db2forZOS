@@ -1,0 +1,25 @@
+name: Validate knowledge base and campaign compiler
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.10', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m unittest discover -s tests -v
+      - run: python tools/qa.py validate
+      - run: python tools/agent.py validate
+      - run: python tools/ddl.py lint kb/authoring/examples/varied-schema.sql --profile kb/campaigns/profiles/example.json
+      - run: python tools/ddl.py coverage kb/authoring/examples/varied-schema.sql --baseline core > /dev/null
+      - run: python tools/ddl.py lint kb/test-design/create-1000-table-qa-workload.sql --allow-placeholders > /dev/null
+      - run: git diff --check

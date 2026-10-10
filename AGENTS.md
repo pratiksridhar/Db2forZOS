@@ -2,20 +2,49 @@
 
 This repository helps a Broadcom administration-product QA engineer create diverse
 catalog objects, extract their DDL with the product, recreate them, and detect lost
-semantics. More object names do not establish more syntax coverage.
+semantics. **Variety of catalog states is the goal, not volume.** Ninety tables that
+repeat one option set exercise the product less than eight tables that each differ.
+Realistic domain models are welcome, but spread syntax variants across them.
 
-## Start here
+## Route the request
 
-1. Read `README.md` and `kb/campaigns/README.md`.
-   For everyday requests, follow `kb/authoring/README.md` and use
-   `python3 tools/ddl.py plan --request <request.json>` to expose exact choices,
-   source context and gaps before authoring. Free-text intent still needs agent review.
-2. Run `python3 tools/qa.py inventory` to see implemented compiler coverage and gaps.
-3. Run `python3 tools/qa.py context <object>` for normalized clauses, rules, IBM links,
-   and available executable models. Use `tools/kb.py show <object> <rule-id>` for a
-   narrower lookup. Trigger context includes the body-statement matrix.
-4. For a supported campaign, use `tools/qa.py build`. Otherwise extend a model or
-   author a schema-valid case using the existing templates and source references.
+| Request | Path |
+|---|---|
+| A bounded family the compiler models (`python3 tools/qa.py models`) | Write a request, run `tools/ddl.py plan`, then `tools/qa.py build` with the plan's argv |
+| A domain or bespoke schema (most requests) | SQL-first workflow below |
+| Product-generated DDL to assess | `tools/ddl.py diff`, then catalog comparison (see Product verification) |
+| A clause or object nothing models yet | IBM research, then `kb/campaigns/EXTENDING.md` and new checker rules with fixtures |
+
+## SQL-first workflow for domain schemas
+
+1. Read `kb/dialect-traps.md` and the object chapters you need under `kb/objects/`.
+   Read `kb/function-levels.md` when a level is named or newer syntax is used.
+2. Record the request in `kb/authoring/requests/<id>.json` (see
+   `kb/authoring/README.md`). Unknown environment values stay explicit and unverified.
+3. Plan variety before writing SQL. Map tables to the requirements of the `core`
+   baseline in `kb/authoring/variety-baseline.json` (PBG and PBR, partition
+   overrides, several SEGSIZE/LOCKSIZE/COMPRESS/free-space values, many type
+   families, identity ALWAYS and BY DEFAULT, hidden and row-change columns, several
+   delete rules, NOT ENFORCED, INCLUDE, DESC, PADDED/NOT PADDED, partitioned
+   indexes, implicit and explicit placement, LOB support). Study
+   `kb/authoring/examples/varied-schema.sql`.
+4. Write the SQL, or a small generator, under `generated/<id>/` (ignored by git)
+   unless the user asks for a tracked file. Name every constraint. Create each
+   enforcing unique index (same columns, same order) right after its table and
+   before any child references it. Add self-references with `ALTER TABLE`.
+5. **Gate 1, static checks:** `python3 tools/ddl.py lint generated/<id>/source.sql
+   --profile <profile>` must print PASS. Fix findings; do not reword around them.
+   `--allow-unsupported` is acceptable only with a per-finding explanation in the
+   report and IBM evidence that the construct is valid.
+6. **Gate 2, variety:** `python3 tools/ddl.py coverage <sql> --baseline core` must
+   report every requirement met, unless the user narrowed the scope. Report any
+   unmet requirement and why.
+7. **Gate 3, QA bundle:** `python3 tools/ddl.py bundle <sql> --run <RUN>
+   --out generated/<id>/bundle --profile <profile> --replay-schema S=T
+   --replay-database D=E` derives catalog queries and expectations, cleanup, name
+   map, inventory and a schema-valid case. Run `qa.py validate-case` on the case.
+8. Report the deliverables, gate results, `compatibility.minimum_applcompat` from
+   lint, unmet requirements, and that no Db2 or product execution occurred.
 
 ## Authority and uncertainty
 
@@ -25,13 +54,15 @@ semantics. More object names do not establish more syntax coverage.
   and catalog definitions. Use the official SQL Reference PDF if HTML fails.
 - Record source IDs and the exact reviewed edition/section. Never mark a whole
   object reviewed because one clause was checked.
-- Normalized JSON is a test model, not a complete SQL grammar or SQL validator.
-  The legacy agent recipes are planning aids; a scaffold is not executable support.
+- Normalized JSON is a test model, and `ddl.py lint` is a rule checker, not a
+  complete grammar. A PASS never proves Db2 acceptance. Statements it reports as
+  not checked (views, routines, triggers, GRANT, COMMENT) still need IBM review.
 - Views remain scaffolded. Other unmodeled objects must be researched and normalized
   before their syntax can be treated as source-derived truth.
-- Ask for real function level, APPLCOMPAT, CURRENT RULES, subsystem settings,
-  storage group, pool sizes, and privileges when execution depends on them.
-  Continue offline work with an explicitly unverified profile if those are unknown.
+- Ask for the real function level, APPLCOMPAT, CURRENT RULES, subsystem settings
+  (including TABLE_COL_NAME_EXPANSION, DPSEGSZ, PADIX, PAGESET_PAGENUM), storage
+  group, pool sizes, and privileges when execution depends on them. Continue offline
+  work with an explicitly unverified profile if those are unknown.
 
 ## Case generation
 
@@ -61,11 +92,16 @@ semantics. More object names do not establish more syntax coverage.
 
 - Preserve actual product-generated SQL, product version/options, name mappings,
   environment, and statement-level execution results.
+- First offline check: `python3 tools/ddl.py diff source.sql product-generated.sql
+  --map name-map.json --profile <profile>`. `different` entries are candidate
+  defects; `environment-dependent` entries need recorded subsystem values or
+  catalog evidence; `equivalent-default` entries are not defects.
 - Recreate actual product output under clean names. A reference script produced by
   this repository does not prove that the product generated correct DDL.
-- Compare selected semantic catalog fields and add behavioral probes where catalogs
-  are insufficient. Preserve case, literal whitespace, ordered keys/parameters,
-  and object relationships. Never normalize SQL with blanket string replacement.
+- Compare selected semantic catalog fields (`tools/qa.py compare` with the bundle
+  contract) and add behavioral probes where catalogs are insufficient. Preserve
+  case, literal whitespace, ordered keys/parameters, and object relationships.
+  Never normalize SQL with blanket string replacement.
 - Missing or empty evidence is not a pass. A catalog `match` is only a scoped result,
   not the case lifecycle state. Keep source acceptance, extraction, replay, and
   semantic verification as separate outcomes.
@@ -76,7 +112,9 @@ semantics. More object names do not establish more syntax coverage.
 
 Use `kb/campaigns/EXTENDING.md`. Preserve existing chapters, rule IDs, user changes,
 and the legacy 1,000-table workload. New normalized features need matching chapters,
-sources, rule references, catalog oracles, and regression coverage.
+sources, rule references, catalog oracles, and regression coverage. A new checker
+rule needs an entry in `kb/data/db2z13-ddl-checks.json` with IBM sources and a
+triggering fixture in `tests/test_db2check.py`; the tests fail otherwise.
 
 Run:
 
@@ -86,6 +124,7 @@ python3 -m venv .venv
 .venv/bin/python -m unittest discover -s tests -v
 python3 tools/qa.py validate
 python3 tools/agent.py validate
+python3 tools/ddl.py lint kb/authoring/examples/varied-schema.sql
 git diff --check
 ```
 

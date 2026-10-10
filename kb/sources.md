@@ -123,6 +123,39 @@ The SQL comment and SPUFI processor topics below were reviewed on 2026-09-12.
 - `ibm-catalog-syspackdep` — [SYSIBM.SYSPACKDEP catalog table](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=tables-syspackdep)
 - `ibm-catalog-sysenvironment` — [SYSIBM.SYSENVIRONMENT catalog table](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=spaces-sysenvironment)
 
+## Static DDL checker and limits
+
+Reviewed 2026-10-10 for `tools/ddl.py lint`, `coverage`, `diff` and `bundle`. See
+[the checker review](campaigns/reviews/ddl-checker.md) for the reviewed sections.
+
+- `ibm-limits` — [Limits in Db2 for z/OS](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=sql-limits-in-db2forzos)
+- `ibm-naming-conventions` — [Naming conventions in SQL](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=elements-naming-conventions)
+- `ibm-record-lengths` — [Calculations for record lengths and pages](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=table-calculations-record-lengths-pages)
+- `ibm-create-auxiliary-table` — [CREATE AUXILIARY TABLE statement](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-create-auxiliary-table)
+- `ibm-catalog-sysauxrels` — [SYSIBM.SYSAUXRELS catalog table](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=spaces-sysauxrels)
+- `ibm-clustering-indexes` — [Clustering indexes](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=attributes-clustering-indexes)
+
+## Function levels and application compatibility
+
+Reviewed 2026-10-10 for `kb/function-levels.md` and `kb/data/db2z13-function-levels.json`.
+
+- `ibm-db2-function-levels` — [Db2 13 function levels](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=db213-function-levels)
+- `ibm-fl100` — [Function level 100 (migration - May 2022)](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=levels-function-level-100-migration-may-2022)
+- `ibm-fl500` — [Function level 500 (migration - May 2022)](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=levels-function-level-500-migration-may-2022)
+- `ibm-fl501` — [Function level 501 (installation or migration - May 2022)](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=levels-function-level-501-installation-migration-may-2022)
+- `ibm-fl502` — [Function level 502](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=levels-function-level-502)
+- `ibm-fl503` — [Function level 503](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=levels-function-level-503)
+- `ibm-fl504` — [Function level 504](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=levels-function-level-504)
+- `ibm-fl505` — [Function level 505](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=levels-function-level-505)
+- `ibm-fl506` — [Function level 506](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=levels-function-level-506)
+- `ibm-fl507` — [Function level 507](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=levels-function-level-507)
+- `ibm-fl508` — [Function level 508](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=levels-function-level-508)
+- `ibm-applcompat-v13` — [V13R1Mnnn application compatibility levels](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=db213-v13r1mnnn-application-compatibility-levels)
+- `ibm-applcompat-v12` — [V12R1Mnnn application compatibility levels](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=db213-v12r1mnnn-application-compatibility-levels)
+- `ibm-applcompat-incompatible` — [Incompatible changes for APPLCOMPAT levels](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=db213-incompatible-changes-applcompat-levels)
+- `ibm-db2-13-incompatible` — [Incompatible changes in Db2 13, function levels, and APARs](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=db213-incompatible-changes-in)
+- `ibm-db2-13-deprecated` — [Deprecated function in Db2 13](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=db213-deprecated-function-in)
+
 ## Citation policy
 
 Chapters cite source IDs at the section or rule cluster level instead of reproducing IBM prose. Examples in this repository are newly authored and use placeholders; IBM examples are not copied into the templates. Recheck the source manifest before adding a feature introduced after the review date.
