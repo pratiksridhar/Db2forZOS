@@ -1,0 +1,161 @@
+{
+  "schema_version": "1.0.0",
+  "id": "DB2Z13-DATABASE-SUPPLY-CHAIN-001",
+  "title": "Supply-chain logistics database dependency and round-trip case",
+  "description": "Deploys the dependency-ordered multi-tenant logistics schema, captures the real administration-product output, recreates it under clean database and schema names, and compares table-space, key, referential, index, audit, CDC, and implicit LOB semantics.",
+  "object": "database",
+  "category": "round_trip",
+  "status": "design",
+  "product_context": {
+    "release": "Db2 13 for z/OS",
+    "function_level": "UNVERIFIED-V13R1M500-OR-HIGHER",
+    "applcompat": "UNVERIFIED-V13R1M500-OR-HIGHER",
+    "current_rules": "DB2",
+    "data_sharing": false,
+    "member": null,
+    "subsystem_parameters": {
+      "DPSEGSZ": null,
+      "IMPDSSIZE": null,
+      "IMPTKMOD": null,
+      "IMPTSCMP": null,
+      "PADIX": null,
+      "TBSBPLOB": null
+    },
+    "active_buffer_pools": ["BP0"],
+    "storage_context": {
+      "stogroup": "SYSDEFLT-UNVERIFIED",
+      "extended_format": null,
+      "extended_addressability": null,
+      "sms_managed": null
+    }
+  },
+  "source_refs": [
+    "ibm-create-database",
+    "ibm-create-tablespace",
+    "ibm-create-lob-tablespace",
+    "ibm-implicit-tablespace",
+    "ibm-create-table",
+    "ibm-create-index",
+    "ibm-catalog-systablespace",
+    "ibm-catalog-systables",
+    "ibm-catalog-sysindexes",
+    "ibm-catalog-sysrels"
+  ],
+  "variation": {
+    "primary_clause": "database.child-default-inheritance",
+    "dimensions": [
+      "topology:one-database",
+      "table-space:pbg-explicit-and-implicit",
+      "tenant-key:composite",
+      "dependency:parent-keys-before-children",
+      "lob-support:implicit",
+      "source-record:utf8-max-72"
+    ],
+    "explicitness": "explicit_nondefault",
+    "boundary_position": "not_applicable",
+    "companion_case_ids": []
+  },
+  "parameters": {
+    "SOURCE_DATABASE": "SCLDB",
+    "SOURCE_SCHEMA": "LOGISTICS",
+    "RECREATE_DATABASE": "SCLRDB",
+    "RECREATE_SCHEMA": "LOGRPLAY",
+    "STOGROUP": "SYSDEFLT",
+    "BUFFERPOOL": "BP0"
+  },
+  "prerequisites": [
+    "Use an isolated authorized Db2 13 subsystem and replace every unverified environment value before execution",
+    "SCLDB, SCLRDB, LOGISTICS, LOGRPLAY, and generated child object names are unused",
+    "SYSDEFLT and BP0 exist and the authorization ID has required USE and object-creation privileges",
+    "The SQL processor accepts semicolon terminators and correctly converts the UTF-8 source file",
+    "The administration product can extract a complete database with dependent table spaces, tables, constraints, indexes, and implicit LOB objects"
+  ],
+  "setup_sql": [],
+  "setup_sql_files": [
+    "generated/supply-chain-logistics/source.sql"
+  ],
+  "action_sql": [
+    "SELECT COUNT(*) FROM SYSIBM.SYSTABLES WHERE CREATOR = 'LOGISTICS'"
+  ],
+  "expected": {
+    "outcome": "success",
+    "failure_phase": "none",
+    "sqlcode": null,
+    "sqlstate": null,
+    "catalog_assertions": [
+      "SYSIBM.SYSDATABASE has exactly one SCLDB row with Unicode defaults and the recorded storage and buffer pools",
+      "SYSIBM.SYSTABLESPACE has 67 explicit PBG spaces plus the implicit DOCUMENT_CONTENT base and required LOB space in SCLDB",
+      "SYSIBM.SYSTABLES has all 68 LOGISTICS base tables with the intended AUDIT, DATA CAPTURE, and APPEND attributes",
+      "SYSIBM.SYSINDEXES has all 260 explicit indexes plus the Db2-created DOCUMENT_CONTENT enforcing and LOB support indexes",
+      "SYSIBM.SYSRELS contains every declared relationship with RESTRICT delete behavior and no cross-tenant foreign key omits TENANT_ID",
+      "SYSIBM.SYSAUXRELS identifies the DOCUMENT_CONTENT BLOB auxiliary table for every created base partition",
+      "No table, table space, index, or referential constraint is left in an incomplete or advisory-only state"
+    ],
+    "warnings": [
+      "The expected SQLCODE and SQLSTATE remain null until live source execution is observed",
+      "Static generation does not validate Db2 prepare, allocation, implicit LOB naming, or product extraction/replay"
+    ],
+    "notes": "The action query is a first existence check only. Retain statement-level setup results and execute the catalog review queries embedded at the end of the SQL file before extraction."
+  },
+  "ofs_validation": {
+    "generation_target": "SCLDB",
+    "generation_options": {
+      "include_storage": true,
+      "include_constraints": true,
+      "include_indexes": true,
+      "include_implicit_objects": true,
+      "preserve_explicit_defaults": true
+    },
+    "name_map": {
+      "SCLDB": "SCLRDB",
+      "LOGISTICS": "LOGRPLAY"
+    },
+    "generated_ddl_must_include": [
+      "CREATE DATABASE",
+      "CREATE TABLESPACE",
+      "CREATE TABLE",
+      "CREATE UNIQUE INDEX",
+      "FOREIGN KEY",
+      "AUDIT CHANGES",
+      "DATA CAPTURE CHANGES",
+      "PARTITION BY SIZE EVERY 4 G",
+      "BLOB(50M)"
+    ],
+    "generated_ddl_must_exclude": [
+      "LOGISTICS.",
+      " IN SCLDB",
+      " IN DATABASE SCLDB"
+    ],
+    "comparison_policy": {
+      "semantic_fields": [
+        "database storage, buffer-pool, and encoding defaults",
+        "table-space type, partition count, maximum partitions, DSSIZE, SEGSIZE, locking, logging, allocation, and encoding",
+        "table columns, types, nullability, defaults, generated attributes, keys, checks, tenant-scoped foreign keys, audit, data capture, and append",
+        "index uniqueness, key order, clustering, storage, free space, buffer pool, and enforcing role",
+        "implicit DOCUMENT_CONTENT base and LOB support-object relationships"
+      ],
+      "ignored_fields": [
+        "internal identifiers and generated replay object names covered by the explicit name map",
+        "creation timestamps",
+        "statistics and real-time statistics",
+        "data-set names and allocation values that legitimately differ under the recorded replay storage policy"
+      ],
+      "notes": "Compare source and replay evidence separately. Missing objects or empty evidence is a mismatch; a scoped catalog match does not make the overall case pass without source acceptance, actual product extraction, replay, and behavioral probes."
+    }
+  },
+  "cleanup_sql": [
+    "DROP DATABASE SCLRDB",
+    "DROP DATABASE SCLDB",
+    "COMMIT"
+  ],
+  "artifacts": {
+    "source_ddl": "generated/supply-chain-logistics/source.sql",
+    "structured_request": "examples/domains/supply-chain-logistics/request.json",
+    "structured_plan": "examples/domains/supply-chain-logistics/plan.json",
+    "source_catalog": "artifacts/DB2Z13-DATABASE-SUPPLY-CHAIN-001/source-catalog.json",
+    "ofs_generated_ddl": "artifacts/DB2Z13-DATABASE-SUPPLY-CHAIN-001/ofs-generated.sql",
+    "name_map": "artifacts/DB2Z13-DATABASE-SUPPLY-CHAIN-001/name-map.json",
+    "replay_results": "artifacts/DB2Z13-DATABASE-SUPPLY-CHAIN-001/replay-results.json",
+    "replay_catalog": "artifacts/DB2Z13-DATABASE-SUPPLY-CHAIN-001/replay-catalog.json"
+  }
+}

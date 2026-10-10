@@ -1,0 +1,112 @@
+{
+  "schema_version": "1.0.0",
+  "id": "supply-chain-logistics",
+  "intent": "Design a source-reviewed Db2 13 for z/OS schema for a multi-tenant third-party logistics control tower. Support customer orders, warehouse inventory, shipment planning, multimodal legs, load consolidation, carrier tenders, appointments, live tracking, customs, documents, exceptions, customer billing, carrier settlement, accounting, idempotent integrations, audit, and transactional outbox delivery.",
+  "profile": "kb/campaigns/profiles/example.json",
+  "strategy": "pairwise",
+  "run_prefix": "SC",
+  "output_root": "generated/supply-chain-logistics",
+  "objects": [
+    {
+      "id": "database",
+      "object": "database",
+      "clause_refs": [
+        "database.bufferpool",
+        "database.indexbp",
+        "database.stogroup",
+        "database.ccsid"
+      ]
+    },
+    {
+      "id": "table-spaces",
+      "object": "tablespace",
+      "depends_on": ["database"],
+      "model": "tablespace-pbg",
+      "clause_refs": [
+        "tablespace.maxpartitions",
+        "tablespace.numparts",
+        "tablespace.dssize",
+        "tablespace.segsize",
+        "tablespace.locksize"
+      ],
+      "select": {
+        "segsize": ["32"],
+        "maxpartitions": ["1", "4"],
+        "dssize": ["1", "4"],
+        "locksize": ["row"]
+      }
+    },
+    {
+      "id": "relational-tables",
+      "object": "table",
+      "depends_on": ["table-spaces"],
+      "model": "table-relational",
+      "clause_refs": [
+        "table.explicit-elements",
+        "table.primary-key",
+        "table.unique",
+        "table.foreign-key",
+        "table.check",
+        "table.in-explicit-tablespace"
+      ]
+    },
+    {
+      "id": "indexes",
+      "object": "index",
+      "depends_on": ["relational-tables"],
+      "model": "index-core",
+      "clause_refs": [
+        "index.unique",
+        "index.key-list",
+        "index.key-order",
+        "index.using-stogroup",
+        "index.freepage",
+        "index.pctfree"
+      ]
+    }
+  ],
+  "requirements": [
+    {
+      "id": "tenant-boundaries",
+      "kind": "behavior",
+      "text": "Put TENANT_ID in every tenant-owned primary, unique, and foreign key so a valid identifier from one tenant cannot be attached to another tenant's row.",
+      "objects": ["relational-tables", "indexes"]
+    },
+    {
+      "id": "operational-history",
+      "kind": "behavior",
+      "text": "Keep inventory movements, tracking and sensor events, exception actions, document versions, financial allocation movements, posted journals, audit events, and outbox payloads immutable by application contract; corrections use compensating rows. Preserve stateful tender, load, invoice, delivery, and job transitions without erasing their terminal history.",
+      "objects": ["relational-tables"]
+    },
+    {
+      "id": "transaction-boundaries",
+      "kind": "dependency",
+      "text": "Model order-to-shipment allocation, shipment-leg-to-load assignment, customer-charge-to-invoice allocation, carrier-invoice-to-payment allocation, and balanced journal posting with enforced relational links.",
+      "objects": ["relational-tables", "indexes"]
+    },
+    {
+      "id": "physical-growth",
+      "kind": "syntax",
+      "text": "Use one explicit logged PBG UTS per ordinary table: 1 x 1 GB for reference tables, 16 x 4 GB for core master data, and 64 x 4 GB for high-growth transactional tables. Treat these values as reviewable starting ceilings, not capacity proof.",
+      "objects": ["table-spaces", "relational-tables", "indexes"]
+    },
+    {
+      "id": "document-content",
+      "kind": "syntax",
+      "text": "Store versioned document bytes in a BLOB with Db2-created base and LOB support objects inside the same application database, and expose catalog checks for every implicit auxiliary object.",
+      "objects": ["database", "relational-tables"]
+    },
+    {
+      "id": "client-records",
+      "kind": "length",
+      "text": "Keep executable UTF-8 SQL source records at or below 72 characters without changing string literals or identifiers.",
+      "objects": ["database", "table-spaces", "relational-tables", "indexes"]
+    },
+    {
+      "id": "environment",
+      "kind": "environment",
+      "text": "Assume an existing approved storage group, active 4 KB buffer pool, Db2 13 APPLCOMPAT V13R1M500 or higher, CURRENT RULES DB2, and authorization to create all objects; keep these assumptions unverified until supplied by an operator.",
+      "objects": ["database", "table-spaces", "relational-tables", "indexes"]
+    }
+  ]
+}
