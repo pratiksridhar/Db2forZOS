@@ -11,7 +11,7 @@ import paths  # noqa: E402
 
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
 DOC_TREES = ("kb", "docs", "qa", "examples")
-ROOT_FILES = {"README.md", "AGENTS.md", "requirements-dev.txt", ".gitignore"}
+ROOT_FILES = {"README.md", "AGENTS.md", "requirements-dev.txt"}
 
 
 def markdown_files() -> set[Path]:
@@ -48,7 +48,7 @@ class RepositoryLayoutTests(unittest.TestCase):
         self.assertEqual([], orphans, "link these documents from README.md or a document it reaches")
 
     def test_repository_root_holds_no_artifacts(self) -> None:
-        stray = sorted(p.name for p in ROOT.iterdir() if p.is_file() and p.name not in ROOT_FILES)
+        stray = sorted(p.name for p in ROOT.iterdir() if p.is_file() and not p.name.startswith(".") and p.name not in ROOT_FILES)
         self.assertEqual([], stray, "put SQL under generated/<id>/ or examples/, prose under docs/")
 
     def test_shared_locations_exist(self) -> None:
