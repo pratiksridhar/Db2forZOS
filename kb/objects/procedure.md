@@ -144,7 +144,7 @@ External procedures execute in a WLM-managed external address space. An omitted 
 
 ## Catalog verification
 
-Use [catalog-verification.sql](../test-design/catalog-verification.sql) with these semantic targets:
+Use [catalog-verification.sql](../catalog-verification.sql) with these semantic targets:
 
 - `SYSIBM.SYSROUTINES`: one procedure row/version, with `ROUTINETYPE='P'`; `ORIGIN='N'` for native SQL and `ORIGIN='E'` for external or external SQL; compare identity, language, data access, result-set count, commit behavior, version/active state, debug state, WLM fields, and relevant options.
 - `SYSIBM.SYSPARMS`: one row per scalar parameter and multiple rows for a table parameter; compare ordinal, `ROWTYPE` (`P`, `O`, or `B`), data type, length/precision/scale, CCSID, locator flag, and table metadata.

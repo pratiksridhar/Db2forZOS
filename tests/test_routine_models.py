@@ -10,6 +10,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
+import paths  # noqa: E402
 import qa
 from sqltext import inspect_sql
 
@@ -18,7 +19,7 @@ class RoutineCampaignTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.models = {name: qa.models()[name] for name in ('trigger-basic', 'procedure-native')}
-        cls.profile = qa.read(ROOT / 'kb/campaigns/profiles/example.json')
+        cls.profile = qa.read(paths.EXAMPLE_PROFILE)
         cls.payload = "  MiXeD; 'quoted'  tail "
 
     def test_restrictions_have_independent_positive_denominators_and_isolated_negatives(self):
@@ -134,7 +135,7 @@ class RoutineCampaignTests(unittest.TestCase):
             with tempfile.TemporaryDirectory() as tmp:
                 destination = Path(tmp) / name
                 result = subprocess.run([sys.executable, str(ROOT / 'tools/qa.py'), 'build',
-                    '--model', name, '--profile', str(ROOT / 'kb/campaigns/profiles/example.json'),
+                    '--model', name, '--profile', str(paths.EXAMPLE_PROFILE),
                     '--run', 'RN', '--budget', '1', '--out', str(destination)], capture_output=True, text=True)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 folder = next((destination / 'cases').iterdir())

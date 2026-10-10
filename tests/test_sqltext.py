@@ -10,6 +10,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
+import paths  # noqa: E402
 import qa
 from sqltext import emit_sql, inspect_sql, validate_statement
 
@@ -46,7 +47,7 @@ class SQLTextTests(unittest.TestCase):
         model["dimensions"]["column"][next(iter(model["dimensions"]["column"]))]["sql"] = "V INTEGER); DROP TABLE QA.T"
         selection = qa.candidates(model)[1][0]
         with self.assertRaises(ValueError):
-            qa.make_case(model, selection, qa.read(ROOT / "kb/campaigns/profiles/example.json"), "QA", 1)
+            qa.make_case(model, selection, qa.read(paths.EXAMPLE_PROFILE), "QA", 1)
 
 
 class SelectionTests(unittest.TestCase):
@@ -72,7 +73,7 @@ class SelectionTests(unittest.TestCase):
     def test_infeasible_filter_creates_no_output(self):
         with tempfile.TemporaryDirectory() as tmp:
             destination = Path(tmp) / "bundle"
-            result = subprocess.run([sys.executable, str(ROOT / "tools/qa.py"), "build", "--model", "index-core", "--profile", str(ROOT / "kb/campaigns/profiles/example.json"), "--run", "QA", "--set", "unique=no", "--set", "include=yes", "--out", str(destination)], capture_output=True, text=True)
+            result = subprocess.run([sys.executable, str(ROOT / "tools/qa.py"), "build", "--model", "index-core", "--profile", str(paths.EXAMPLE_PROFILE), "--run", "QA", "--set", "unique=no", "--set", "include=yes", "--out", str(destination)], capture_output=True, text=True)
             self.assertEqual(result.returncode, 2, result.stdout)
             self.assertIn("no valid combinations", result.stderr)
             self.assertFalse(destination.exists())
@@ -80,7 +81,7 @@ class SelectionTests(unittest.TestCase):
     def test_filtered_report_retains_full_model_denominator(self):
         with tempfile.TemporaryDirectory() as tmp:
             destination = Path(tmp) / "bundle"
-            result = subprocess.run([sys.executable, str(ROOT / "tools/qa.py"), "build", "--model", "index-core", "--profile", str(ROOT / "kb/campaigns/profiles/example.json"), "--run", "QA", "--set", "unique=yes", "--out", str(destination)], capture_output=True, text=True)
+            result = subprocess.run([sys.executable, str(ROOT / "tools/qa.py"), "build", "--model", "index-core", "--profile", str(paths.EXAMPLE_PROFILE), "--run", "QA", "--set", "unique=yes", "--out", str(destination)], capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
             report = qa.read(destination / "coverage.json")
             self.assertEqual(report["selection_filters"], {"unique": ["yes"]})
@@ -90,7 +91,7 @@ class SelectionTests(unittest.TestCase):
 class ProcedureCorrectionTests(unittest.TestCase):
     def test_standalone_procedure_needs_no_storage_or_database_setup(self):
         model = qa.models()["procedure-native"]
-        profile = qa.read(ROOT / "kb/campaigns/profiles/example.json")
+        profile = qa.read(paths.EXAMPLE_PROFILE)
         for key in ("storage_group", "table_bufferpool", "index_bufferpool"):
             profile.pop(key)
         profile["product_context"]["active_buffer_pools"] = []
@@ -121,7 +122,7 @@ class ProcedureCorrectionTests(unittest.TestCase):
 
     def test_templates_cannot_choose_a_different_specific_name(self):
         for name in ("native-sql-procedure", "external-procedure"):
-            text = (ROOT / f"kb/templates/{name}.template.sql").read_text()
+            text = (paths.TEMPLATES / f"{name}.template.sql").read_text()
             self.assertIn("SPECIFIC {{PROCEDURE_SCHEMA}}.{{PROCEDURE_NAME}}", text)
             self.assertNotIn("PROCEDURE_SPECIFIC_NAME", text)
         rules = {r["id"] for r in qa.kb()["objects"]["procedure"]["rules"]}
@@ -129,7 +130,7 @@ class ProcedureCorrectionTests(unittest.TestCase):
         self.assertIn("native-compound-not-atomic", rules)
 
     def test_cleanup_owns_tables_and_does_not_double_drop_spaces(self):
-        profile = qa.read(ROOT / "kb/campaigns/profiles/example.json")
+        profile = qa.read(paths.EXAMPLE_PROFILE)
         for name in ("table-core", "tablespace-pbg", "index-core"):
             model = qa.models()[name]
             case, contract = qa.make_case(model, qa.candidates(model)[1][0], profile, "QA", 1)

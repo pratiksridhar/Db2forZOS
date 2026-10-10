@@ -11,6 +11,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
+import paths  # noqa: E402
 import qa
 
 
@@ -18,7 +19,7 @@ class CampaignTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.models = qa.models()
-        cls.profile = qa.read(ROOT / "kb/campaigns/profiles/example.json")
+        cls.profile = qa.read(paths.EXAMPLE_PROFILE)
 
     def test_pairwise_covers_independently_enumerated_feasible_pairs(self):
         for model in self.models.values():
@@ -145,7 +146,7 @@ class CampaignTests(unittest.TestCase):
             from jsonschema import Draft202012Validator
         except ImportError:
             self.fail("Install requirements-dev.txt to run JSON Schema validation")
-        validator = Draft202012Validator(qa.read(ROOT / "kb/data/test-case.schema.json"))
+        validator = Draft202012Validator(qa.read(paths.CASE_SCHEMA))
         for model in self.models.values():
             raw, valid = qa.candidates(model)
             for selection in valid:
@@ -170,7 +171,7 @@ class CampaignTests(unittest.TestCase):
 
     def test_cli_build_is_reproducible_and_never_overwrites(self):
         with tempfile.TemporaryDirectory() as tmp:
-            base = [sys.executable, str(ROOT / "tools/qa.py"), "build", "--model", "index-core", "--profile", str(ROOT / "kb/campaigns/profiles/example.json"), "--run", "QA", "--budget", "2", "--negative"]
+            base = [sys.executable, str(ROOT / "tools/qa.py"), "build", "--model", "index-core", "--profile", str(paths.EXAMPLE_PROFILE), "--run", "QA", "--budget", "2", "--negative"]
             for dest in ("first", "second"):
                 result = subprocess.run(base + ["--out", str(Path(tmp) / dest)], cwd=tmp, capture_output=True, text=True)
                 self.assertEqual(result.returncode, 0, result.stderr)

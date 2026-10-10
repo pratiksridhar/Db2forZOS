@@ -14,14 +14,15 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
+import paths  # noqa: E402
 import qa
 
 
 class RelationalCampaignTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.model = qa.read(ROOT / 'kb/campaigns/models/table-relational.json')
-        cls.profile = qa.read(ROOT / 'kb/campaigns/profiles/example.json')
+        cls.model = qa.read(paths.MODELS / 'table-relational.json')
+        cls.profile = qa.read(paths.EXAMPLE_PROFILE)
 
     def selection(self, **changes):
         return {**dict(fk_nullability='one-nullable', delete_rule='cascade',
@@ -103,7 +104,7 @@ class RelationalCampaignTests(unittest.TestCase):
     def test_build_preflight_checks_suffix_objects_on_both_sides(self):
         with tempfile.TemporaryDirectory() as tmp:
             args = SimpleNamespace(model='table-relational',
-                profile=ROOT / 'kb/campaigns/profiles/example.json', run='QA',
+                profile=paths.EXAMPLE_PROFILE, run='QA',
                 budget=1, negative=False, strategy='pairwise',
                 out=Path(tmp) / 'case')
             with redirect_stdout(io.StringIO()):

@@ -11,13 +11,14 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
+import paths  # noqa: E402
 import ddl
 import qa
 
 
 class AuthoringPlanTests(unittest.TestCase):
     def setUp(self):
-        self.request = qa.read(ROOT / "kb/authoring/examples/index-include.json")
+        self.request = qa.read(paths.REQUEST_EXAMPLES / "index-include.json")
 
     def plan(self, request=None):
         return ddl.make_plan(self.request if request is None else request)
@@ -199,7 +200,7 @@ class AuthoringPlanTests(unittest.TestCase):
         self.request["profile"] = "/missing/db2-ddl-profile.json"
         self.assertIn("profile_unreadable", self.codes(self.plan()))
         with tempfile.TemporaryDirectory() as tmp:
-            profile = qa.read(ROOT / "kb/campaigns/profiles/example.json")
+            profile = qa.read(paths.EXAMPLE_PROFILE)
             profile["product_context"]["current_rules"] = "STD"
             path = Path(tmp) / "profile.json"
             path.write_text(json.dumps(profile))
@@ -228,14 +229,14 @@ class AuthoringPlanTests(unittest.TestCase):
     def test_examples_conform_to_json_schema_and_builtin_validation(self):
         from jsonschema import Draft202012Validator
         validator = Draft202012Validator(qa.read(ddl.SCHEMA))
-        for path in (ROOT / "kb/authoring/examples").glob("*.json"):
+        for path in (paths.REQUEST_EXAMPLES).glob("*.json"):
             request = qa.read(path)
             validator.validate(request)
             ddl.validate_request(request)
 
     def test_output_is_reproducible_across_working_directories_and_preserves_existing_files(self):
         with tempfile.TemporaryDirectory() as tmp:
-            base = [sys.executable, str(ROOT / "tools/ddl.py"), "plan", "--request", str(ROOT / "kb/authoring/examples/index-include.json"), "--require-modeled"]
+            base = [sys.executable, str(ROOT / "tools/ddl.py"), "plan", "--request", str(paths.REQUEST_EXAMPLES / "index-include.json"), "--require-modeled"]
             first = subprocess.run(base, cwd=ROOT, text=True, capture_output=True)
             second = subprocess.run(base, cwd=tmp, text=True, capture_output=True)
             self.assertEqual(first.returncode, 0, first.stderr)

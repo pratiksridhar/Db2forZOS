@@ -12,10 +12,11 @@ from pathlib import Path
 import re
 import sys
 
+import paths
 from sqltext import emit_sql, validate_statement
 
-ROOT = Path(__file__).resolve().parents[1]
-MODEL_DIR = ROOT / "kb" / "campaigns" / "models"
+ROOT = paths.ROOT
+MODEL_DIR = paths.MODELS
 TOKEN = re.compile(r"\{\{([A-Z][A-Z0-9_]*)\}\}")
 
 
@@ -32,7 +33,7 @@ def digest(value):
 
 
 def kb():
-    return read(ROOT / "kb/data/db2z13-create-ddl.json")
+    return read(paths.CREATE_DDL)
 
 
 def models():
@@ -80,7 +81,7 @@ def validate_profile(profile, model):
     context = profile["product_context"]
     if not isinstance(context, dict):
         raise ValueError("product_context must be an object")
-    context_schema = read(ROOT / "kb/data/test-case.schema.json")["$defs"]["product_context"]
+    context_schema = read(paths.CASE_SCHEMA)["$defs"]["product_context"]
     if set(context) - context_schema["properties"].keys() or set(context_schema["required"]) - context.keys():
         raise ValueError("product_context has unknown or missing fields; follow the case schema")
     if context.get("release") != "Db2 13 for z/OS":
@@ -458,7 +459,7 @@ def write_campaign(args):
         "6. Run bootstrap-replay.sql once if it contains database setup. Apply the recorded name map through the product or an SQL-aware adapter; replay actual product output. reference-replay.sql only tests the harness and is never product evidence.\n"
         "7. Capture catalog-replay.sql with the same adapter. Run tools/qa.py compare with the case contract and both JSON snapshots. A matching snapshot covers only the selected fields. Run required behavioral probes on both sides separately.\n"
         "8. Retain execution evidence before cleanup. Run only drops for objects this run created. Where present, database cleanup removes entire dedicated databases; separately clean routine objects listed in case cleanup.\n\n"
-        "Snapshot format and the execution protocol are in kb/campaigns/README.md. No credentials or automatic execution are provided.\n")
+        "Snapshot format and the execution protocol are in docs/workflows/campaign.md. No credentials or automatic execution are provided.\n")
     args.out.mkdir(parents=True, exist_ok=False)
     for path, content in files.items():
         target = args.out / path
@@ -553,12 +554,12 @@ def context_pack(object_name):
         raise ValueError("Object is not normalized. Research and normalize its IBM syntax before generation.")
     obj = data["objects"][object_name]
     sources = {s for group in ("clauses", "rules") for item in obj[group] for s in item["source_refs"]}
-    pack = {"object": object_name, "policy": "Read AGENTS.md and kb/campaigns/README.md. IBM Db2 13 is authoritative; all generated cases start in design.",
+    pack = {"object": object_name, "policy": "Read AGENTS.md and docs/workflows/campaign.md. IBM Db2 13 is authoritative; all generated cases start in design.",
             "normalized": obj, "sources": {s: data["sources"][s] for s in sorted(sources)},
             "campaign_models": [m for m in models().values() if m["object"] == object_name],
             "coverage": next(x for x in coverage_inventory() if x["object"] == object_name)}
     if object_name == "trigger":
-        pack["body_matrix"] = read(ROOT / "kb/data/db2z13-trigger-body-statements.json")
+        pack["body_matrix"] = read(paths.TRIGGER_BODY)
     return pack
 
 
@@ -567,7 +568,7 @@ def validate_case(record):
         from jsonschema import Draft202012Validator
     except ImportError as error:
         raise ValueError("Case schema validation requires requirements-dev.txt; use .venv/bin/python") from error
-    validator = Draft202012Validator(read(ROOT / "kb/data/test-case.schema.json"))
+    validator = Draft202012Validator(read(paths.CASE_SCHEMA))
     errors = sorted(validator.iter_errors(record), key=lambda e: str(list(e.path)))
     if errors:
         raise ValueError("; ".join(f"{'.'.join(map(str, e.path)) or '$'}: {e.message}" for e in errors))
@@ -624,7 +625,7 @@ def main(argv=None):
             return 1 if result["status"] == "mismatch" else 0
         elif args.command == "validate":
             import db2check
-            profile = read(ROOT / "kb/campaigns/profiles/example.json")
+            profile = read(paths.EXAMPLE_PROFILE)
             options = db2check.Options.from_profile(profile, assume=["stogroup:" + profile["storage_group"]])
             for model in models().values():
                 validate_model(model, kb())

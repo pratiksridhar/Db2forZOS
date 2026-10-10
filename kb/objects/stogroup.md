@@ -77,4 +77,4 @@ SELECT *
  ORDER BY VOLID;
 ```
 
-See [catalog-verification.sql](../test-design/catalog-verification.sql) for the consolidated query set.
+See [catalog-verification.sql](../catalog-verification.sql) for the consolidated query set.

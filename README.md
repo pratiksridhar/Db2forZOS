@@ -7,19 +7,19 @@ Future agents should start with [AGENTS.md](AGENTS.md).
 ## Use it with any LLM agent
 
 Describe the objects, clauses, boundaries, formatting and relationships you need.
-Ask the agent to follow [the authoring workflow](kb/authoring/README.md), turn the
+Ask the agent to follow [the authoring workflow](docs/workflows/domain-schema.md), turn the
 request into a structured plan, and generate either a supported campaign or a
 source-reviewed custom case. No particular LLM vendor, API key or service is required.
 
 ```sh
-python3 tools/ddl.py plan --request kb/authoring/examples/index-include.json
+python3 tools/ddl.py plan --request examples/requests/index-include.json
 python3 tools/qa.py models
 python3 tools/qa.py context trigger
 ```
 
 The plan exposes exact choices, IBM references, dependencies and unsupported
 requirements. It never treats a matching clause name as proof of complete syntax
-coverage. See [the September audit](kb/campaigns/reviews/compiler.md) for the
+coverage. See [the September audit](docs/history/reviews/compiler.md) for the
 correctness fixes and validation limits.
 
 ## Check, measure and bundle any DDL
@@ -28,10 +28,10 @@ Agent-written or product-generated SQL goes through the same offline gates. None
 of these commands connects to Db2.
 
 ```sh
-python3 tools/ddl.py lint my-schema.sql --profile kb/campaigns/profiles/example.json
+python3 tools/ddl.py lint my-schema.sql --profile qa/profiles/example.json
 python3 tools/ddl.py coverage my-schema.sql --baseline core
 python3 tools/ddl.py bundle my-schema.sql --run QA1 --out generated/qa1 \
-  --profile kb/campaigns/profiles/example.json \
+  --profile qa/profiles/example.json \
   --replay-schema APP=APPR --replay-database APPDB=APPRDB
 python3 tools/ddl.py diff generated/qa1/source.sql product-generated.sql \
   --map generated/qa1/name-map.json
@@ -43,21 +43,21 @@ python3 tools/ddl.py diff generated/qa1/source.sql product-generated.sql \
   ([list](kb/dialect-traps.md)) and [function-level/APPLCOMPAT gates](kb/function-levels.md).
   It reports the minimum APPLCOMPAT a script needs. Exit 1 means fix the script.
 - `coverage` counts the KB clauses and values a script exercises, including
-  omitted forms, and checks a [variety baseline](kb/authoring/variety-baseline.json).
+  omitted forms, and checks a [variety baseline](qa/variety-baseline.json).
 - `bundle` derives catalog queries with source expectations, ownership-aware
   cleanup, a name map, an inventory of implicit objects and a schema-valid case.
 - `diff` compares parsed source and product DDL, separating real differences
   from documented defaults and subsystem-dependent defaults.
 
-[The varied exemplar](kb/authoring/examples/varied-schema.sql) passes `lint` and
-meets the `core` baseline. See [the checker review](kb/campaigns/reviews/ddl-checker.md)
+[The varied exemplar](examples/varied-schema.sql) passes `lint` and
+meets the `core` baseline. See [the checker review](docs/history/reviews/ddl-checker.md)
 for sources and limits.
 
 ## Generate your first campaign
 
 ```sh
 python3 tools/qa.py build --model table-core \
-  --profile kb/campaigns/profiles/example.json \
+  --profile qa/profiles/example.json \
   --run T01 --out generated/table-demo
 ```
 
@@ -74,13 +74,13 @@ IBM research and subsystem validation.
 
 ```sh
 python3 tools/qa.py build --model table-relational \
-  --profile kb/campaigns/profiles/example.json --run R01 \
+  --profile qa/profiles/example.json --run R01 \
   --strategy three-way --negative --out generated/relational-demo
 python3 tools/qa.py build --model trigger-basic \
-  --profile kb/campaigns/profiles/example.json --run G01 \
+  --profile qa/profiles/example.json --run G01 \
   --set body=long-comment --out generated/trigger-demo
 python3 tools/qa.py build --model procedure-native \
-  --profile kb/campaigns/profiles/example.json --run P01 \
+  --profile qa/profiles/example.json --run P01 \
   --negative --out generated/procedure-demo
 ```
 
@@ -88,10 +88,10 @@ Trigger/procedure bundles use `@` as the outer terminator. Set the SQL processor
 accordingly and preserve comments/line structure for body-format tests. Generated
 text metrics measure UTF-8 artifacts, not target CCSID byte limits.
 
-- [Campaign guide](kb/campaigns/README.md): commands, scope, catalog export format,
+- [Campaign guide](docs/workflows/campaign.md): commands, scope, catalog export format,
   product replay, evidence and cleanup.
-- [Reusable agent prompts](kb/campaigns/prompts.md): generation, extension and defect investigation.
-- [Expansion roadmap](kb/campaigns/ROADMAP.md): PBR/constraints, LOB/XML/temporal,
+- [Reusable agent prompts](docs/prompts.md): generation, extension and defect investigation.
+- [Expansion roadmap](docs/roadmap.md): PBR/constraints, LOB/XML/temporal,
   procedures, runtime adapters and coverage of syntax paths.
 
 Use `python3 tools/qa.py inventory` to inspect compiler gaps and
@@ -147,27 +147,27 @@ The JSON is deliberately a normalized test model, not a replacement SQL parser. 
 | [kb/data/db2z13-ddl-checks.json](kb/data/db2z13-ddl-checks.json) | Static check rules with severities, KB rule references and IBM sources |
 | [kb/data/db2z13-function-levels.json](kb/data/db2z13-function-levels.json) | Machine-readable function-level and APPLCOMPAT gate data used by `lint` and `diff` |
 | [kb/data/db2z13-catalog-columns.json](kb/data/db2z13-catalog-columns.json) | Verified catalog column names/types that generated catalog queries may select |
-| [kb/authoring/variety-baseline.json](kb/authoring/variety-baseline.json) | `core` and `extended` syntax-variety requirements for QA schemas |
+| [qa/variety-baseline.json](qa/variety-baseline.json) | `core` and `extended` syntax-variety requirements for QA schemas |
 | [tools/ddl.py](tools/ddl.py) | `plan`, `lint`, `coverage`, `diff` and `bundle` commands (offline) |
-| [kb/test-design/coverage-model.md](kb/test-design/coverage-model.md) | A systematic model for deriving positive, negative, boundary, default, and round-trip cases |
-| [kb/test-design/catalog-verification.sql](kb/test-design/catalog-verification.sql) | Catalog queries for semantic validation after DDL execution |
-| [kb/test-design/create-1000-table-qa-workload.sql](kb/test-design/create-1000-table-qa-workload.sql) | Generated positive workload: one storage group/database, 1,000 dedicated table spaces, 1,000 varied tables, indexes, and seed data |
-| [kb/templates/object-stack.template.sql](kb/templates/object-stack.template.sql) | Parameterized explicit storage-group-to-index object stack |
-| [kb/templates/pbg-table.template.sql](kb/templates/pbg-table.template.sql) | PBG-focused table and index template |
-| [kb/templates/pbr-table.template.sql](kb/templates/pbr-table.template.sql) | PBR/RPN-focused table and index template |
-| [kb/templates/basic-trigger.template.sql](kb/templates/basic-trigger.template.sql) | Multi-statement basic-trigger template |
-| [kb/templates/advanced-trigger.template.sql](kb/templates/advanced-trigger.template.sql) | SQL PL variables, handler, condition, diagnostics, and DML template |
-| [kb/templates/advanced-trigger-ddl-body.template.sql](kb/templates/advanced-trigger-ddl-body.template.sql) | Advanced compound body with supported `CREATE TABLE`, `CREATE INDEX`, and `CREATE VIEW` |
-| [kb/templates/native-sql-procedure.template.sql](kb/templates/native-sql-procedure.template.sql) | Versioned native SQL procedure with parameters, handler, diagnostics, and package options |
-| [kb/templates/external-procedure.template.sql](kb/templates/external-procedure.template.sql) | Current COBOL external-procedure registration with linkage, package, and WLM inputs |
+| [docs/test-design/coverage-model.md](docs/test-design/coverage-model.md) | A systematic model for deriving positive, negative, boundary, default, and round-trip cases |
+| [kb/catalog-verification.sql](kb/catalog-verification.sql) | Catalog queries for semantic validation after DDL execution |
+| [examples/workloads/1000-table/create-1000-table-qa-workload.sql](examples/workloads/1000-table/create-1000-table-qa-workload.sql) | Generated positive workload: one storage group/database, 1,000 dedicated table spaces, 1,000 varied tables, indexes, and seed data |
+| [qa/legacy-agent/templates/object-stack.template.sql](qa/legacy-agent/templates/object-stack.template.sql) | Parameterized explicit storage-group-to-index object stack |
+| [qa/legacy-agent/templates/pbg-table.template.sql](qa/legacy-agent/templates/pbg-table.template.sql) | PBG-focused table and index template |
+| [qa/legacy-agent/templates/pbr-table.template.sql](qa/legacy-agent/templates/pbr-table.template.sql) | PBR/RPN-focused table and index template |
+| [qa/legacy-agent/templates/basic-trigger.template.sql](qa/legacy-agent/templates/basic-trigger.template.sql) | Multi-statement basic-trigger template |
+| [qa/legacy-agent/templates/advanced-trigger.template.sql](qa/legacy-agent/templates/advanced-trigger.template.sql) | SQL PL variables, handler, condition, diagnostics, and DML template |
+| [qa/legacy-agent/templates/advanced-trigger-ddl-body.template.sql](qa/legacy-agent/templates/advanced-trigger-ddl-body.template.sql) | Advanced compound body with supported `CREATE TABLE`, `CREATE INDEX`, and `CREATE VIEW` |
+| [qa/legacy-agent/templates/native-sql-procedure.template.sql](qa/legacy-agent/templates/native-sql-procedure.template.sql) | Versioned native SQL procedure with parameters, handler, diagnostics, and package options |
+| [qa/legacy-agent/templates/external-procedure.template.sql](qa/legacy-agent/templates/external-procedure.template.sql) | Current COBOL external-procedure registration with linkage, package, and WLM inputs |
 | [kb/data/db2z13-create-ddl.json](kb/data/db2z13-create-ddl.json) | Machine-readable clause, rule, dimension, and source index |
 | [kb/data/db2z13-trigger-body-statements.json](kb/data/db2z13-trigger-body-statements.json) | Machine-readable trigger statement syntax and support matrix |
-| [kb/data/test-case.schema.json](kb/data/test-case.schema.json) | JSON Schema for persistent OFS test-case records |
-| [kb/test-design/sample-case.json](kb/test-design/sample-case.json) | Example test-case record |
-| [kb/agent/README.md](kb/agent/README.md) | Agent-first planning layer: object registry, specs, rules, dimensions, fixtures, and recipes |
+| [qa/schemas/test-case.schema.json](qa/schemas/test-case.schema.json) | JSON Schema for persistent OFS test-case records |
+| [examples/sample-case.json](examples/sample-case.json) | Example test-case record |
+| [qa/legacy-agent/README.md](qa/legacy-agent/README.md) | Agent-first planning layer: object registry, specs, rules, dimensions, fixtures, and recipes |
 | [tools/kb.py](tools/kb.py) | Dependency-free command-line query tool for the normalized IBM-derived KB |
 | [tools/agent.py](tools/agent.py) | Dependency-free command-line query and validation tool for the agent generation layer |
-| [tools/generate_1000_table_qa_sql.py](tools/generate_1000_table_qa_sql.py) | Deterministically regenerates and validates the 1,000-table SQL workload |
+| [examples/workloads/1000-table/generate.py](examples/workloads/1000-table/generate.py) | Deterministically regenerates and validates the 1,000-table SQL workload |
 
 ## Quick use
 
@@ -205,11 +205,11 @@ python3 tools/agent.py fixtures
 python3 tools/agent.py validate
 ```
 
-The agent layer under [kb/agent](kb/agent/README.md) provides object routing, dependency/capability graphs, structured constraints, coverage dimensions, fixtures, recipes, and template manifests. Objects marked `normalized` are backed by the IBM-derived KB. Objects marked `extension_candidate`, such as the initial `view` scaffold, are planning aids until their IBM syntax chapter and normalized JSON rules are added.
+The agent layer under [qa/legacy-agent](qa/legacy-agent/README.md) provides object routing, dependency/capability graphs, structured constraints, coverage dimensions, fixtures, recipes, and template manifests. Objects marked `normalized` are backed by the IBM-derived KB. Objects marked `extension_candidate`, such as the initial `view` scaffold, are planning aids until their IBM syntax chapter and normalized JSON rules are added.
 
 To create a durable test:
 
-1. Choose one primary semantic variation from [the coverage model](kb/test-design/coverage-model.md).
+1. Choose one primary semantic variation from [the coverage model](docs/test-design/coverage-model.md).
 2. Add boundary, explicit-default/omitted-default, and illegal-pair companions.
 3. Copy the closest SQL template and replace every `{{TOKEN}}`.
 4. Record the subsystem context, source IDs, expected outcome, and OFS comparison policy in a JSON case that conforms to the test-case schema.
@@ -230,8 +230,8 @@ python3 tools/qa.py validate
 python3 tools/agent.py validate
 python3 -m json.tool kb/data/db2z13-create-ddl.json > /dev/null
 python3 -m json.tool kb/data/db2z13-trigger-body-statements.json > /dev/null
-python3 -m json.tool kb/data/test-case.schema.json > /dev/null
-python3 -m json.tool kb/test-design/sample-case.json > /dev/null
+python3 -m json.tool qa/schemas/test-case.schema.json > /dev/null
+python3 -m json.tool examples/sample-case.json > /dev/null
 ```
 
 These are repository checks, not a substitute for preparing the SQL on a Db2 subsystem. The parameterized templates intentionally require environment values and must be executed under the recorded function level, `APPLCOMPAT`, authority, buffer-pool, and storage context before they become product test evidence.

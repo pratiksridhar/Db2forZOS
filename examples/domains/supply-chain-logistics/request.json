@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "id": "supply-chain-logistics",
   "intent": "Design a source-reviewed Db2 13 for z/OS schema for a multi-tenant third-party logistics control tower. Support customer orders, warehouse inventory, shipment planning, multimodal legs, load consolidation, carrier tenders, appointments, live tracking, customs, documents, exceptions, customer billing, carrier settlement, accounting, idempotent integrations, audit, and transactional outbox delivery.",
-  "profile": "kb/campaigns/profiles/example.json",
+  "profile": "qa/profiles/example.json",
   "strategy": "pairwise",
   "run_prefix": "SC",
   "output_root": "generated/supply-chain-logistics",

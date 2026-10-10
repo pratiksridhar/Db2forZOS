@@ -13,21 +13,21 @@ Realistic domain models are welcome, but spread syntax variants across them.
 | A bounded family the compiler models (`python3 tools/qa.py models`) | Write a request, run `tools/ddl.py plan`, then `tools/qa.py build` with the plan's argv |
 | A domain or bespoke schema (most requests) | SQL-first workflow below |
 | Product-generated DDL to assess | `tools/ddl.py diff`, then catalog comparison (see Product verification) |
-| A clause or object nothing models yet | IBM research, then `kb/campaigns/EXTENDING.md` and new checker rules with fixtures |
+| A clause or object nothing models yet | IBM research, then `docs/workflows/extending.md` and new checker rules with fixtures |
 
 ## SQL-first workflow for domain schemas
 
 1. Read `kb/dialect-traps.md` and the object chapters you need under `kb/objects/`.
    Read `kb/function-levels.md` when a level is named or newer syntax is used.
 2. Record the request in `kb/authoring/requests/<id>.json` (see
-   `kb/authoring/README.md`). Unknown environment values stay explicit and unverified.
+   `docs/workflows/domain-schema.md`). Unknown environment values stay explicit and unverified.
 3. Plan variety before writing SQL. Map tables to the requirements of the `core`
-   baseline in `kb/authoring/variety-baseline.json` (PBG and PBR, partition
+   baseline in `qa/variety-baseline.json` (PBG and PBR, partition
    overrides, several SEGSIZE/LOCKSIZE/COMPRESS/free-space values, many type
    families, identity ALWAYS and BY DEFAULT, hidden and row-change columns, several
    delete rules, NOT ENFORCED, INCLUDE, DESC, PADDED/NOT PADDED, partitioned
    indexes, implicit and explicit placement, LOB support). Study
-   `kb/authoring/examples/varied-schema.sql`.
+   `examples/varied-schema.sql`.
 4. Write the SQL, or a small generator, under `generated/<id>/` (ignored by git)
    unless the user asks for a tracked file. Name every constraint. Create each
    enforcing unique index (same columns, same order) right after its table and
@@ -110,7 +110,7 @@ Realistic domain models are welcome, but spread syntax variants across them.
 
 ## Extending and checking
 
-Use `kb/campaigns/EXTENDING.md`. Preserve existing chapters, rule IDs, user changes,
+Use `docs/workflows/extending.md`. Preserve existing chapters, rule IDs, user changes,
 and the legacy 1,000-table workload. New normalized features need matching chapters,
 sources, rule references, catalog oracles, and regression coverage. A new checker
 rule needs an entry in `kb/data/db2z13-ddl-checks.json` with IBM sources and a
@@ -124,7 +124,7 @@ python3 -m venv .venv
 .venv/bin/python -m unittest discover -s tests -v
 python3 tools/qa.py validate
 python3 tools/agent.py validate
-python3 tools/ddl.py lint kb/authoring/examples/varied-schema.sql
+python3 tools/ddl.py lint examples/varied-schema.sql
 git diff --check
 ```
 

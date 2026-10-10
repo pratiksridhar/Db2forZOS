@@ -11,12 +11,13 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
+import paths  # noqa: E402
 import db2check  # noqa: E402
 import db2sql  # noqa: E402
 import qa  # noqa: E402
 
-EXAMPLE = ROOT / "kb/authoring/examples/varied-schema.sql"
-PROFILE = qa.read(ROOT / "kb/campaigns/profiles/example.json")
+EXAMPLE = paths.VARIED_SCHEMA
+PROFILE = qa.read(paths.EXAMPLE_PROFILE)
 DB = "CREATE DATABASE QADB1 STOGROUP SYSDEFLT BUFFERPOOL BP0 INDEXBP BP0;\n"
 TS = "CREATE TABLESPACE TS1 IN QADB1;\n"
 
@@ -173,8 +174,8 @@ NEGATIVE = {
 
 class CatalogIntegrityTests(unittest.TestCase):
     def setUp(self):
-        self.catalog = qa.read(ROOT / "kb/data/db2z13-ddl-checks.json")
-        self.kb = qa.read(ROOT / "kb/data/db2z13-create-ddl.json")
+        self.catalog = qa.read(paths.DDL_CHECKS)
+        self.kb = qa.read(paths.CREATE_DDL)
         self.ids = [rule["id"] for rule in self.catalog["rules"]]
 
     def test_rules_are_unique_sourced_and_reference_known_kb_rules(self):
@@ -207,7 +208,7 @@ class CatalogIntegrityTests(unittest.TestCase):
         self.assertFalse(used - set(self.ids), "rule IDs used in code but missing from the catalog")
 
     def test_function_level_data_resolves_sources_and_clauses(self):
-        data = qa.read(ROOT / "kb/data/db2z13-function-levels.json")
+        data = qa.read(paths.FUNCTION_LEVELS)
         clauses = {f"{o}.{c['id']}" for o, obj in self.kb["objects"].items() for c in obj["clauses"]}
         levels = [level["id"] for level in data["levels"]]
         self.assertEqual(levels, ["V13R1M100"] + [f"V13R1M5{n:02d}" for n in range(0, 10)])
@@ -229,7 +230,7 @@ class CatalogIntegrityTests(unittest.TestCase):
 
     def test_chapters_match_the_data(self):
         chapter = (ROOT / "kb/function-levels.md").read_text()
-        data = qa.read(ROOT / "kb/data/db2z13-function-levels.json")
+        data = qa.read(paths.FUNCTION_LEVELS)
         for item in data["levels"] + data["applcompat_gates"] + data["announced_levels"]:
             self.assertIn(item["id"], chapter)
         traps = (ROOT / "kb/dialect-traps.md").read_text()
@@ -237,7 +238,7 @@ class CatalogIntegrityTests(unittest.TestCase):
         self.assertFalse({m for m in mentioned if not m.startswith("tablespace.*")} - set(self.ids))
 
     def test_catalog_queries_use_only_verified_columns(self):
-        columns = qa.read(ROOT / "kb/data/db2z13-catalog-columns.json")["tables"]
+        columns = qa.read(paths.CATALOG_COLUMNS)["tables"]
         for table, data in columns.items():
             self.assertIn(data["source_ref"], self.kb["sources"], table)
             self.assertTrue(data["columns"], table)
@@ -295,7 +296,7 @@ class LintBehaviorTests(unittest.TestCase):
                     self.assertFalse([f.as_dict(report.rules) for f in report.findings if f.severity in ("error", "unsupported", "warning")])
 
     def test_legacy_workload_is_clean_and_needs_v13r1m506(self):
-        text = (ROOT / "kb/test-design/create-1000-table-qa-workload.sql").read_text()
+        text = (paths.WORKLOAD_1000).read_text()
         report = db2check.analyze(text, db2check.Options.from_profile(profile("V13R1M509"), allow_placeholders=True))
         self.assertFalse([f.rule for f in report.findings if f.severity in ("error", "unsupported", "warning")])
         self.assertEqual(report.compatibility["minimum_applcompat"], "V13R1M506")
@@ -471,7 +472,7 @@ class BundleTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / "bundle"
             args = [sys.executable, str(ROOT / "tools/ddl.py"), "bundle", str(EXAMPLE), "--run", "VX1", "--out", str(out),
-                    "--profile", str(ROOT / "kb/campaigns/profiles/example.json"),
+                    "--profile", str(paths.EXAMPLE_PROFILE),
                     "--replay-schema", "QAV=QAVR", "--replay-database", "QAVDB01=QAVDB02"]
             self.assertEqual(subprocess.run(args, capture_output=True).returncode, 0)
             self.assertEqual((out / "source.sql").read_bytes(), EXAMPLE.read_bytes())

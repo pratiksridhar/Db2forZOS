@@ -169,7 +169,7 @@ Advanced compound trigger body
   CREATE TRIGGER     no; it is not listed in SQL-procedure-statement grammar
 ```
 
-`CREATE TABLE` and `CREATE INDEX` must be nested within an SQL control statement because they are not in the advanced direct-body list. Use [advanced-trigger-ddl-body.template.sql](templates/advanced-trigger-ddl-body.template.sql) as a focused test skeleton. Creating fixed-name objects on every activation introduces repeat-activation and authorization concerns; isolate the subject data and clean up exact names between runs.
+`CREATE TABLE` and `CREATE INDEX` must be nested within an SQL control statement because they are not in the advanced direct-body list. Use [advanced-trigger-ddl-body.template.sql](../qa/legacy-agent/templates/advanced-trigger-ddl-body.template.sql) as a focused test skeleton. Creating fixed-name objects on every activation introduces repeat-activation and authorization concerns; isolate the subject data and clean up exact names between runs.
 
 ## Cross-cutting restrictions checklist
 

@@ -22,11 +22,12 @@ import re
 import sys
 
 import db2check
+import paths
 import qa
 
 
-ROOT = Path(__file__).resolve().parents[1]
-SCHEMA = ROOT / "kb/authoring/request.schema.json"
+ROOT = paths.ROOT
+SCHEMA = paths.REQUEST_SCHEMA
 
 
 def validate_shape(value, schema, path="$"):
@@ -115,7 +116,7 @@ def object_context(name, data):
     source_ids = {s for group in ("clauses", "rules") for item in obj[group] for s in item["source_refs"]}
     result = {"normalized": copy.deepcopy(obj), "sources": {s: data["sources"][s] for s in sorted(source_ids)}}
     if name == "trigger":
-        result["body_matrix"] = qa.read(ROOT / "kb/data/db2z13-trigger-body-statements.json")
+        result["body_matrix"] = qa.read(paths.TRIGGER_BODY)
     return result
 
 
@@ -131,7 +132,7 @@ def make_plan(request, root=ROOT):
             profile = qa.read(profile_path)
         except (OSError, ValueError) as error:
             profile_error = str(error)
-    registry = {o["id"]: o for o in qa.read(ROOT / "kb/agent/object-registry.json")["objects"]}
+    registry = {o["id"]: o for o in qa.read(paths.OBJECT_REGISTRY)["objects"]}
     plans, gaps, context_names = [], [], set()
 
     def gap(instance, code, message, **details):
@@ -367,7 +368,7 @@ def main(argv=None):
     cover = commands.add_parser("coverage", help="syntax-variety report; with --baseline exit 1 when requirements are unmet")
     cover.add_argument("sql")
     _add_common(cover)
-    cover.add_argument("--baseline", help="baseline id from kb/authoring/variety-baseline.json (core, extended) or a file")
+    cover.add_argument("--baseline", help="baseline id from qa/variety-baseline.json (core, extended) or a file")
     cover.add_argument("--json", action="store_true")
     compare = commands.add_parser("diff", help="semantic DDL diff; exit 0 match, 1 mismatch, 3 unresolved, 2 bad input")
     compare.add_argument("source")

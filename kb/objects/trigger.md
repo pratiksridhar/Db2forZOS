@@ -223,7 +223,7 @@ A compound body contains semicolons, which can look like the end of `CREATE TRIG
 
 ## Catalog verification
 
-Use [catalog-verification.sql](../test-design/catalog-verification.sql) to collect:
+Use [catalog-verification.sql](../catalog-verification.sql) to collect:
 
 - `SYSIBM.SYSTRIGGERS` for event/time/granularity, basic versus advanced marker, version, active state, security/debug attributes, create timestamp, environment ID, and definition text;
 - `SYSIBM.SYSTRIGGERS_STMT` where the trigger statement text is externalized;

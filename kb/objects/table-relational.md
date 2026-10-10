@@ -3,11 +3,11 @@
 Use `table-relational` when you need a source-derived parent/child fixture with
 composite referential integrity, enforcing indexes and varied column/CHECK clauses.
 Start with [the main table chapter](table.md) and the
-[scoped IBM review](../campaigns/reviews/table-relational.md).
+[scoped IBM review](../../docs/history/reviews/table-relational.md).
 
 ```sh
 python3 tools/qa.py build --model table-relational \
-  --profile kb/campaigns/profiles/example.json \
+  --profile qa/profiles/example.json \
   --run R01 --negative --out generated/relational-demo
 ```
 

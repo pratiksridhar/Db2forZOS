@@ -17,11 +17,12 @@ from pathlib import Path
 import re
 
 import db2sql as sq
+import paths
 
-ROOT = Path(__file__).resolve().parents[1]
-CHECKS = ROOT / "kb/data/db2z13-ddl-checks.json"
-KB = ROOT / "kb/data/db2z13-create-ddl.json"
-FUNCTION_LEVELS = ROOT / "kb/data/db2z13-function-levels.json"
+ROOT = paths.ROOT
+CHECKS = paths.DDL_CHECKS
+KB = paths.CREATE_DDL
+FUNCTION_LEVELS = paths.FUNCTION_LEVELS
 LEVEL = re.compile(r"V(10|11|12|13)R1(?:M(\d{3}))?")
 UTS_BASELINE = (12, 504)
 TOKEN_GATES = {  # identifier tokens that are only valid at a gated APPLCOMPAT level
@@ -1455,7 +1456,7 @@ def _table_features(report, result, features, facets):
             add("check")
 
 
-BASELINES = ROOT / "kb/authoring/variety-baseline.json"
+BASELINES = paths.VARIETY_BASELINE
 
 
 def load_baseline(name):
@@ -1851,7 +1852,7 @@ def _strip_names(value):
 
 # =========================================================================== QA bundle
 
-CATALOG_COLUMNS = ROOT / "kb/data/db2z13-catalog-columns.json"
+CATALOG_COLUMNS = paths.CATALOG_COLUMNS
 COLTYPE = {"INTEGER": "INTEGER", "SMALLINT": "SMALLINT", "BIGINT": "BIGINT", "DECIMAL": "DECIMAL", "FLOAT": "FLOAT",
            "DECFLOAT": "DECFLOAT", "CHAR": "CHAR", "VARCHAR": "VARCHAR", "GRAPHIC": "GRAPHIC", "VARGRAPHIC": "VARG",
            "CLOB": "CLOB", "BLOB": "BLOB", "DBCLOB": "DBCLOB", "BINARY": "BINARY", "VARBINARY": "VARBIN",
@@ -2173,7 +2174,7 @@ def bundle(report, text, names, run, profile, out=None):
     name_map = {"schemas": names.schemas, "databases": names.databases, "objects": {o["source"]: o["replay"] for o in objects if o["source"] != o["replay"]}}
     context = (profile or {}).get("product_context")
     if not context:
-        raise ValueError("A profile with product_context is required (use kb/campaigns/profiles/example.json for unverified offline work)")
+        raise ValueError("A profile with product_context is required (use qa/profiles/example.json for unverified offline work)")
     statements = [p.statement.sql for p in report.parsed]
     record = {
         "schema_version": "1.0.0", "id": case_id, "title": f"DDL bundle {run}: product extraction round trip",

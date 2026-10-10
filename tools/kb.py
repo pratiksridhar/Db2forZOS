@@ -9,11 +9,13 @@ import sys
 from pathlib import Path
 from typing import Any, Iterable
 
+import paths
 
-REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_DATA = REPOSITORY_ROOT / "kb" / "data" / "db2z13-create-ddl.json"
+
+REPOSITORY_ROOT = paths.ROOT
+DEFAULT_DATA = paths.CREATE_DDL
 DEFAULT_TRIGGER_BODY_DATA = (
-    REPOSITORY_ROOT / "kb" / "data" / "db2z13-trigger-body-statements.json"
+    paths.TRIGGER_BODY
 )
 
 

@@ -126,7 +126,7 @@ The SQL comment and SPUFI processor topics below were reviewed on 2026-09-12.
 ## Static DDL checker and limits
 
 Reviewed 2026-10-10 for `tools/ddl.py lint`, `coverage`, `diff` and `bundle`. See
-[the checker review](campaigns/reviews/ddl-checker.md) for the reviewed sections.
+[the checker review](../docs/history/reviews/ddl-checker.md) for the reviewed sections.
 
 - `ibm-limits` — [Limits in Db2 for z/OS](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=sql-limits-in-db2forzos)
 - `ibm-naming-conventions` — [Naming conventions in SQL](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=elements-naming-conventions)

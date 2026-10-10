@@ -9,11 +9,14 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DATA_PATH = ROOT / "kb" / "data" / "db2z13-create-ddl.json"
-TRIGGER_BODY_PATH = ROOT / "kb" / "data" / "db2z13-trigger-body-statements.json"
-SCHEMA_PATH = ROOT / "kb" / "data" / "test-case.schema.json"
-SAMPLE_PATH = ROOT / "kb" / "test-design" / "sample-case.json"
-QA_1000_SQL_PATH = ROOT / "kb" / "test-design" / "create-1000-table-qa-workload.sql"
+sys.path.insert(0, str(ROOT / "tools"))
+import paths  # noqa: E402
+
+DATA_PATH = paths.CREATE_DDL
+TRIGGER_BODY_PATH = paths.TRIGGER_BODY
+SCHEMA_PATH = paths.CASE_SCHEMA
+SAMPLE_PATH = paths.SAMPLE_CASE
+QA_1000_SQL_PATH = paths.WORKLOAD_1000
 
 
 class KnowledgeBaseTests(unittest.TestCase):
@@ -75,7 +78,7 @@ class KnowledgeBaseTests(unittest.TestCase):
     def test_chapter_and_catalog_assets_exist(self) -> None:
         for obj in self.data["objects"].values():
             self.assertTrue((ROOT / obj["chapter"]).is_file())
-        self.assertTrue((ROOT / "kb" / "test-design" / "catalog-verification.sql").is_file())
+        self.assertTrue((paths.CATALOG_VERIFICATION).is_file())
         self.assertTrue(QA_1000_SQL_PATH.is_file())
         for name in (
             "object-stack",
@@ -87,19 +90,19 @@ class KnowledgeBaseTests(unittest.TestCase):
             "native-sql-procedure",
             "external-procedure",
         ):
-            self.assertTrue((ROOT / "kb" / "templates" / f"{name}.template.sql").is_file())
+            self.assertTrue((paths.TEMPLATES / f"{name}.template.sql").is_file())
         self.assertTrue(TRIGGER_BODY_PATH.is_file())
         self.assertTrue((ROOT / "kb" / "trigger-body-statements.md").is_file())
         self.assertTrue((ROOT / self.data["objects"]["trigger"]["body_statement_inventory"]).is_file())
 
     def test_trigger_templates_select_the_expected_trigger_kind(self) -> None:
-        basic = (ROOT / "kb" / "templates" / "basic-trigger.template.sql").read_text(
+        basic = (paths.TEMPLATES / "basic-trigger.template.sql").read_text(
             encoding="utf-8"
         )
-        advanced = (ROOT / "kb" / "templates" / "advanced-trigger.template.sql").read_text(
+        advanced = (paths.TEMPLATES / "advanced-trigger.template.sql").read_text(
             encoding="utf-8"
         )
-        ddl = (ROOT / "kb" / "templates" / "advanced-trigger-ddl-body.template.sql").read_text(
+        ddl = (paths.TEMPLATES / "advanced-trigger-ddl-body.template.sql").read_text(
             encoding="utf-8"
         )
         mode_clause = re.compile(r"^\s+MODE DB2SQL\s*$", re.MULTILINE)
@@ -113,17 +116,17 @@ class KnowledgeBaseTests(unittest.TestCase):
             self.assertIn(statement, ddl)
         self.assertGreaterEqual(sum(text.count("END!") for text in (basic, advanced, ddl)), 3)
 
-        basic_before = (ROOT / "kb" / "templates" / "basic-before-validation.template.sql").read_text(
+        basic_before = (paths.TEMPLATES / "basic-before-validation.template.sql").read_text(
             encoding="utf-8"
         )
         self.assertIn("NO CASCADE BEFORE", basic_before)
         self.assertNotRegex(basic_before, r"\b(?:OLD|NEW)\s+ROW\b")
 
     def test_procedure_templates_select_current_definition_kinds(self) -> None:
-        native = (ROOT / "kb" / "templates" / "native-sql-procedure.template.sql").read_text(
+        native = (paths.TEMPLATES / "native-sql-procedure.template.sql").read_text(
             encoding="utf-8"
         )
-        external = (ROOT / "kb" / "templates" / "external-procedure.template.sql").read_text(
+        external = (paths.TEMPLATES / "external-procedure.template.sql").read_text(
             encoding="utf-8"
         )
         native_sql = "\n".join(line for line in native.splitlines() if not line.startswith("--"))
@@ -137,7 +140,7 @@ class KnowledgeBaseTests(unittest.TestCase):
         self.assertIn("WLM ENVIRONMENT", external)
         self.assertNotIn("LANGUAGE SQL", external)
 
-        catalog = (ROOT / "kb" / "test-design" / "catalog-verification.sql").read_text(
+        catalog = (paths.CATALOG_VERIFICATION).read_text(
             encoding="utf-8"
         )
         for table in ("SYSROUTINES", "SYSPARMS", "SYSPACKAGE", "SYSPACKDEP", "SYSROUTINEAUTH"):
@@ -164,12 +167,12 @@ class KnowledgeBaseTests(unittest.TestCase):
         self.assertIn("procedure", self.schema["properties"]["object"]["enum"])
 
     def test_source_manifest_mentions_every_normalized_source(self) -> None:
-        manifest = (ROOT / "kb" / "sources.md").read_text(encoding="utf-8")
+        manifest = (paths.SOURCES).read_text(encoding="utf-8")
         for source_id in self.data["sources"]:
             self.assertIn(f"`{source_id}`", manifest)
 
     def test_markdown_source_ids_and_local_links_resolve(self) -> None:
-        markdown_files = [ROOT / "README.md", *(ROOT / "kb").rglob("*.md")]
+        markdown_files = [ROOT / "README.md", ROOT / "AGENTS.md", *(d for top in ("kb", "docs", "qa", "examples") for d in (ROOT / top).rglob("*.md"))]
         known_sources = set(self.data["sources"])
         for path in markdown_files:
             text = path.read_text(encoding="utf-8")
@@ -551,18 +554,18 @@ class KnowledgeBaseTests(unittest.TestCase):
 
 
     def test_agent_layer_json_and_references_are_valid(self) -> None:
-        agent_root = ROOT / "kb" / "agent"
+        agent_root = paths.AGENT
         self.assertTrue((agent_root / "README.md").is_file())
         self.assertTrue((agent_root / "TASKS.md").is_file())
 
         agent_json = {}
-        for path in [*agent_root.rglob("*.json"), *(ROOT / "kb" / "templates").glob("*.manifest.json")]:
+        for path in [*agent_root.rglob("*.json"), *(paths.TEMPLATES).glob("*.manifest.json")]:
             relative = path.relative_to(ROOT).as_posix()
             with self.subTest(path=relative):
                 agent_json[relative] = json.loads(path.read_text(encoding="utf-8"))
                 self.assertEqual(agent_json[relative]["schema_version"], "1.0.0")
 
-        registry = agent_json["kb/agent/object-registry.json"]
+        registry = agent_json["qa/legacy-agent/object-registry.json"]
         registry_objects = {row["id"]: row for row in registry["objects"]}
         self.assertIn("trigger", registry_objects)
         self.assertIn("view", registry_objects)
@@ -585,7 +588,7 @@ class KnowledgeBaseTests(unittest.TestCase):
             self.assertIn(recipe["expected"]["failure_phase"], self.schema["$defs"]["expected_failure_phase"]["enum"] if "$defs" in self.schema and "expected_failure_phase" in self.schema["$defs"] else {"none", "prepare_or_execute", "data_set_allocation", "data_change", "rebuild_or_utility", "ofs_generation", "recreate"})
 
     def test_agent_template_manifests_match_templates(self) -> None:
-        for manifest_path in (ROOT / "kb" / "templates").glob("*.manifest.json"):
+        for manifest_path in (paths.TEMPLATES).glob("*.manifest.json"):
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
             template_path = ROOT / manifest["template"]
             self.assertTrue(template_path.is_file(), manifest_path)

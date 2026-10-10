@@ -8,9 +8,11 @@ import json
 from pathlib import Path
 from typing import Any, Iterable
 
+import paths
 
-REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
-AGENT_ROOT = REPOSITORY_ROOT / "kb" / "agent"
+
+REPOSITORY_ROOT = paths.ROOT
+AGENT_ROOT = paths.AGENT
 
 
 def load_json(path: Path) -> Any:
@@ -148,7 +150,7 @@ def command_validate(args: argparse.Namespace) -> None:
             if not (REPOSITORY_ROOT / fixture).is_file():
                 errors.append(f"{recipe_path}: missing fixture {fixture}")
 
-    for manifest_path in sorted((REPOSITORY_ROOT / "kb" / "templates").glob("*.manifest.json")):
+    for manifest_path in sorted((paths.TEMPLATES).glob("*.manifest.json")):
         manifest = load_json(manifest_path)
         template = REPOSITORY_ROOT / manifest["template"]
         if not template.is_file():
