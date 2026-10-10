@@ -54,9 +54,9 @@ real subsystem values first; see [environment and profiles](docs/environment.md)
 | [kb/](kb/README.md) | IBM-derived chapters, normalized JSON, source manifest | Only official IBM Db2 13 for z/OS content |
 | [qa/](qa/README.md) | Models, profiles, schemas, variety baseline, legacy agent layer | Inputs the tools read |
 | [examples/](examples/README.md) | Exemplar SQL, request examples, domain schemas, workloads | Tracked worked examples |
-| [docs/](docs/commands.md) | Workflows, commands, environment, roadmap, dated reviews | How to work; history under `docs/history/` |
-| `tools/` | `ddl.py`, `qa.py`, `kb.py`, `agent.py` and their libraries | Locations live in `tools/paths.py` |
-| `tests/` | Unit and regression tests | Run before every change |
+| [docs/](docs/README.md) | Workflows, commands, environment, roadmap, dated reviews | How to work; history under `docs/history/` |
+| [tools/](tools/README.md) | `ddl.py`, `qa.py`, `kb.py`, `agent.py` and their libraries | Locations live in `tools/paths.py` |
+| [tests/](tests/README.md) | Unit and regression tests | Run before every change |
 | `generated/`, `local-profiles/` | Your output and real environment values | Ignored by git |
 
 Repository checks are listed in [the command reference](docs/commands.md#repository-checks).

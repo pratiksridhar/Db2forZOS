@@ -22,7 +22,7 @@ command connects to Db2 or executes SQL.** Each tool prints full options with
 | `bundle SQL --run R --out DIR --profile P --replay-schema S=T --replay-database D=E` | Catalog queries/expectations, cleanup, name map, inventory and case from a lint-clean script | 0; 2 bad input |
 | `diff SOURCE TARGET [--map name-map.json] [--profile P]` | Semantic diff of source and product-generated DDL | 0 match; 1 mismatch; 3 unresolved; 2 bad input |
 | `levels [--applcompat V13R1M500] [--json]` | Function levels, or syntax gated above an APPLCOMPAT | 0 |
-| `context OBJECT` | Full IBM-linked object and model context, including the legacy registry entry | 0 |
+| `context OBJECT` | Full IBM-linked context for a normalized object: clauses, rules, sources, campaign models and coverage | 0 |
 
 `lint` covers identifier limits, data types and defaults, keys and foreign keys,
 enforcing indexes, table-space/index ranges, LOB support objects,

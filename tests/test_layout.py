@@ -10,7 +10,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 import paths  # noqa: E402
 
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
-DOC_TREES = ("kb", "docs", "qa", "examples")
+DOC_TREES = ("kb", "docs", "qa", "examples", "tools", "tests")
 ROOT_FILES = {"README.md", "AGENTS.md", "requirements-dev.txt"}
 
 

@@ -3,7 +3,7 @@
 Everything under `kb/` comes from official IBM Db2 13 for z/OS documentation:
 chapters for people, normalized JSON for tools, and the source manifest that
 every rule cites. Test machinery lives in [qa/](../qa/README.md); workflows in
-[docs/](../docs/commands.md).
+[docs/](../docs/README.md).
 
 ## Coverage
 
@@ -59,6 +59,39 @@ The JSON is deliberately a normalized test model, not a replacement SQL parser. 
 | [data/db2z13-ddl-checks.json](data/db2z13-ddl-checks.json) | Static check rules with severities, KB rule references and IBM sources |
 | [data/db2z13-function-levels.json](data/db2z13-function-levels.json) | Function-level and APPLCOMPAT gate data used by `lint` and `diff` |
 | [data/db2z13-catalog-columns.json](data/db2z13-catalog-columns.json) | Verified catalog column names/types that generated queries may select |
+
+## Object cross-reference
+
+C/R/D counts the normalized clauses, cross-clause rules and coverage dimensions of each
+object in [db2z13-create-ddl.json](data/db2z13-create-ddl.json). Checker prefixes are IDs in
+[db2z13-ddl-checks.json](data/db2z13-ddl-checks.json) that start with the object name or cite
+one of its rules in `kb_rules`; generic script checks are omitted, so `—` means no explicit
+mapping, not that nothing is checked.
+
+| Chapter | JSON object | C/R/D | Checker prefixes | Most cited sources |
+|---|---|---:|---|---|
+| [STOGROUP](objects/stogroup.md) | `stogroup` | 9/6/6 | — | `ibm-create-stogroup`, `ibm-stogroup-create-task` |
+| [DATABASE](objects/database.md) | `database` | 7/7/7 | `name.` | `ibm-create-database` |
+| [TABLESPACE](objects/tablespace.md) | `tablespace` | 31/16/14 | `tablespace.`, `deprecated.`, `fl.` | `ibm-create-tablespace`, `ibm-create-lob-tablespace` |
+| [TABLE](objects/table.md) | `table` | 53/36/14 | `table.`, `dialect.`, `syntax.`, `auxtable.`, `fl.` | `ibm-create-table`, `ibm-implicit-tablespace` |
+| [Relational tables](objects/table-relational.md) | companion to `table` | — | — | — |
+| [INDEX](objects/index.md) | `index` | 27/20/14 | `index.`, `table.`, `cleanup.` | `ibm-create-index`, `ibm-partitioned-indexes` |
+| [PROCEDURE](objects/procedure.md) | `procedure` | 23/25/16 | `dialect.` | `ibm-create-procedure-native`, `ibm-create-procedure-external` |
+| [TRIGGER](objects/trigger.md) | `trigger` | 26/37/14 | — | `ibm-create-trigger-advanced`, `ibm-create-trigger-basic` |
+
+## Find a rule
+
+From the repository root:
+
+- **By clause name:** `python3 tools/kb.py search LOCKSIZE` gives the object and ID;
+  `python3 tools/kb.py show tablespace locksize` prints it; then
+  `grep -n -i LOCKSIZE kb/objects/tablespace.md` finds the chapter text.
+- **By checker ID:** `grep -n '"id": "table.identity-cardinality"' kb/data/db2z13-ddl-checks.json`,
+  then follow its `kb_rules` with `python3 tools/kb.py show table identity-cardinality`.
+  Checks with empty `kb_rules` have no chapter mapping; follow their `source_refs`.
+- **By source ID:** `python3 tools/kb.py search ibm-create-database` lists the entries
+  that cite it; `grep -n ibm-create-database kb/sources.md kb/objects/*.md` finds the
+  manifest entry and chapter citations.
 
 Query the normalized data with `tools/kb.py` ([commands](../docs/commands.md#kbpy-query-the-ibm-derived-reference)).
 

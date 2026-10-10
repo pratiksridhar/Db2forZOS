@@ -6,6 +6,7 @@ lint      static checks of any DDL script against encoded IBM rules
 coverage  syntax-variety report against normalized KB clause IDs (+ baseline gate)
 diff      semantic comparison of source DDL and product-generated DDL
 bundle    QA bundle (catalog queries/assertions, cleanup, name map, case) from a lint-clean script
+context   IBM-linked context for one normalized object
 levels    Db2 13 function levels and the DDL syntax gated above a given APPLCOMPAT
 
 None of these commands connects to Db2 or executes SQL.
