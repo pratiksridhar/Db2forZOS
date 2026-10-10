@@ -4,9 +4,10 @@
    `kb/data/db2z13-create-ddl.json`. For new objects, add its IBM source manifest,
    chapter, normalized clauses/rules, registry entry and case-schema support first.
 2. Review exact Db2 13 syntax diagrams plus descriptions/restrictions and catalog
-   tables. Record the edition, pages/topics and scope in SOURCE-REVIEW.md. Model
+   tables. Record the edition, pages/topics and scope in a new dated review under
+   `docs/history/reviews/`, following [the checker review](../history/reviews/ddl-checker.md). Model
    individual diagram paths; do not flatten context-specific copy/generated forms.
-3. Add `models/<id>.json`. `dimensions` map named values to SQL fragments, clause
+3. Add `qa/models/<id>.json`. `dimensions` map named values to SQL fragments, clause
    references and optional catalog assertions. SQL fragments are repository-authored
    code, not arbitrary user input. Fragments cannot contain further placeholders.
 4. Add constraints as `when` implies `requires`. Conditions map axis names to one

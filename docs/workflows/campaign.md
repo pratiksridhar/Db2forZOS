@@ -1,8 +1,10 @@
-# Reproducible DDL campaigns
+# Modeled campaigns
 
-Create source objects, extract their definitions using the administration product,
-replay that output, and compare the resulting semantics. This is the executable
-layer above the existing reference KB and agent recipes.
+Bounded families the compiler models end to end: dimensions, constraints,
+dependency nodes and catalog oracles in [qa/models](../../qa/models). Use a
+[request and plan](requests-and-plans.md) to choose exact values, or call
+`qa.py build` directly. [Product verification](product-verification.md) covers
+what happens after a bundle is executed.
 
 ## First campaign
 
@@ -24,12 +26,8 @@ overwrites an existing output directory. Choose a new run prefix and output path
 for another campaign. Run prefixes are 2–4 uppercase alphanumeric characters,
 starting with a letter. Case object names incorporate that prefix.
 
-For work, copy the profile into ignored `local-profiles/`. Record actual subsystem
-values there; do not put credentials into this repository. Both activated function
-level and APPLCOMPAT are checked against model gates. Current models require
-`CURRENT RULES DB2`; database-fixture models additionally require recorded active
-4 KB pools, `BP0` through `BP49`.
-A verified profile requires verification evidence, but cases still start in `design`.
+Profiles, local copies and the environment values models gate on are described
+in [environment and profiles](../environment.md).
 
 ## Available executable families
 
@@ -152,81 +150,7 @@ VARCHAR casts or blanket name replacement. Whole-definition text often contains
 relocated names, so raw text capture and behavioral verification remain separate
 from the selected-field comparator. A catalog match alone cannot prove body fidelity.
 
-## Catalog evidence protocol
+## Related
 
-Run the generated catalog queries with your local SQL client or test harness.
-An adapter exports each result set under the query ID printed in the SQL file:
-
-```json
-{
-  "case_id": "DB2Z13-TABLE-T01-001",
-  "side": "source",
-  "catalog": {
-    "table": [{"TYPE": "T", "AUDITING": " ", "DATACAPTURE": " ", "APPEND": "N"}]
-  }
-}
-```
-
-This is a format illustration, not a complete table-case snapshot. Every query in
-the case contract must be present. Use uppercase column names, JSON numbers for
-numeric values, JSON null for SQL NULL, and lossless strings for text. Do not trim
-DEFAULTVALUE or change letter case. Identify the second export with `side: replay`.
-
-```sh
-python3 tools/qa.py compare \
-  --contract generated/table-demo/cases/DB2Z13-TABLE-T01-001/catalog-contract.json \
-  --source source-catalog.json --replay replay-catalog.json
-```
-
-Exit codes: **0** selected fields match and encoded expectations hold; **1** semantic
-differences or failed expectations; **2** malformed/missing evidence or bad inputs.
-Rows are compared by declared keys independent of export order. Missing columns,
-duplicate keys and unexpected row counts are rejected. Only explicitly declared
-catalog padding fields are right-trimmed; literal defaults retain whitespace.
-Case IDs and source/replay sides must agree with the contract.
-
-The comparator checks encoded source expectations as well as source/replay equality.
-This prevents identical wrong definitions from passing those assertions. Current
-contracts cover only their listed fields. Identity generator options, dependencies,
-all partition attributes, and DML behavior need additional contracts/probes before
-claiming comprehensive semantic equivalence.
-
-## Evidence needed for a product test pass
-
-Keep these separate in the external harness or case artifacts:
-
-1. Source setup/action acceptance, subsystem identity, effective settings and diagnostics.
-2. Source catalog assertions and any required behavioral probes.
-3. Product version/options, exact extraction scope, raw generated SQL and name map.
-4. Actual replay SQL and statement-level acceptance results in the clean target.
-5. Catalog comparison and behavioral probe outcomes, plus cleanup ownership/results.
-
-The offline compiler/comparator does not promote a case to `pass`. Only the harness
-that has all required evidence can do so. Negative Db2 syntax cases cannot directly
-test product extraction because their target objects should not exist.
-
-## Arbitrary scripts and product output
-
-Campaign bundles cover modeled families. For any other DDL, including domain schemas
-and raw product output, use `tools/ddl.py lint`, `coverage`, `bundle` and `diff`
-([authoring guide](domain-schema.md#domain-schemas-the-sql-first-route)).
-`bundle` writes a `catalog-contract.json` in the format this guide describes, so
-`tools/qa.py compare` works the same way. `diff` gives an offline first look at
-product output before replay; it does not replace catalog evidence.
-
-## Future agents
-
-```sh
-python3 tools/qa.py context table > table-context.json
-python3 tools/qa.py inventory
-python3 tools/kb.py show table identity-cardinality --json
-.venv/bin/python tools/qa.py validate-case path/to/case.json
-```
-
-`validate-case` also supports manually/agent-authored records from the wider KB.
-It requires `requirements-dev.txt`, checks the full case schema, IBM source IDs
-and unresolved placeholders, and does not parse or validate arbitrary Db2 SQL.
-
-See [prompts.md](../prompts.md) for reusable requests,
-[EXTENDING.md](extending.md) for model authoring, and
-[ROADMAP.md](../roadmap.md) for the remaining high-value expansion.
+[Command reference](../commands.md), [prompts](../prompts.md),
+[extending a family](extending.md) and the [roadmap](../roadmap.md).

@@ -2,8 +2,8 @@
 
 ## Generate a varied domain schema
 
-> Read AGENTS.md, kb/dialect-traps.md and docs/workflows/domain-schema.md. Design a Db2 13
-> for z/OS schema for [domain] with about [N] tables. Use realistic keys and
+> Read AGENTS.md, kb/dialect-traps.md and docs/workflows/domain-schema.md.
+> Design a Db2 13 for z/OS schema for [domain] with about [N] tables. Use realistic keys and
 > relationships, but spread syntax variants so the `core` variety baseline is met.
 > Write the SQL under generated/[id]/source.sql. It must pass `tools/ddl.py lint`
 > with my profile at [profile], meet `tools/ddl.py coverage --baseline core`, and

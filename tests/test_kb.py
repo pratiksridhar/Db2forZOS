@@ -92,7 +92,7 @@ class KnowledgeBaseTests(unittest.TestCase):
         ):
             self.assertTrue((paths.TEMPLATES / f"{name}.template.sql").is_file())
         self.assertTrue(TRIGGER_BODY_PATH.is_file())
-        self.assertTrue((ROOT / "kb" / "trigger-body-statements.md").is_file())
+        self.assertTrue((paths.KB / "trigger-body-statements.md").is_file())
         self.assertTrue((ROOT / self.data["objects"]["trigger"]["body_statement_inventory"]).is_file())
 
     def test_trigger_templates_select_the_expected_trigger_kind(self) -> None:

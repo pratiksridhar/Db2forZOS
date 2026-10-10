@@ -1,27 +1,12 @@
-# From DDL examples to a QA system
+# Roadmap
 
-## What inspection found
+## Current checker gaps
 
-The starting repository had seven normalized objects, useful rule/source records,
-templates, a 20-family 1,000-table workload and 22 passing tests. Agent recipes
-covered only triggers and scaffolded views. `tools/agent.py validate` checked file
-and token references, but did not select combinations, render complete case bundles,
-measure design coverage, or compare product recreation evidence.
-
-The original executable layer added those foundations for three bounded families.
-The 2026-09-12 extension adds `table-relational`, `trigger-basic`, `procedure-native`,
-structured request plans, filtered selections, feasible three-way coverage and
-lossless SQL PL framing. See [the current audit](history/reviews/compiler.md).
-Existing reference chapters and the legacy workload remain useful for wider manual
-authoring. They are not automatically promoted to compiler support.
-
-The 2026-10-10 change adds a statically checked SQL-first path for domain schemas:
-IBM-sourced lint rules, function-level and APPLCOMPAT gates, a variety baseline,
-a semantic DDL diff for product output, and bundle derivation from any lint-clean
-script. See [the checker review](history/reviews/ddl-checker.md). Remaining checker gaps:
-views, sequences, aliases, routines and triggers are recognized but not checked;
+Views, sequences, aliases, routines and triggers are recognized but not checked;
 CHECK and generated expressions are not validated; XML modifiers and temporal
-versioning (`ALTER TABLE ADD VERSIONING`) are outside the modeled subset.
+versioning (`ALTER TABLE ADD VERSIONING`) are outside the modeled subset. See
+[the checker review](history/reviews/ddl-checker.md). How the repository got
+here is in [the changelog](history/CHANGELOG.md).
 
 ## Next: finish the product feedback loop
 

@@ -19,8 +19,10 @@ Realistic domain models are welcome, but spread syntax variants across them.
 
 1. Read `kb/dialect-traps.md` and the object chapters you need under `kb/objects/`.
    Read `kb/function-levels.md` when a level is named or newer syntax is used.
-2. Record the request in `kb/authoring/requests/<id>.json` (see
-   `docs/workflows/domain-schema.md`). Unknown environment values stay explicit and unverified.
+2. Record the request in `generated/<id>/request.json`, or
+   `examples/domains/<id>/request.json` when the user wants it tracked (see
+   `docs/workflows/requests-and-plans.md`). Unknown environment values stay explicit
+   and unverified.
 3. Plan variety before writing SQL. Map tables to the requirements of the `core`
    baseline in `qa/variety-baseline.json` (PBG and PBR, partition
    overrides, several SEGSIZE/LOCKSIZE/COMPRESS/free-space values, many type
@@ -61,8 +63,9 @@ Realistic domain models are welcome, but spread syntax variants across them.
   before their syntax can be treated as source-derived truth.
 - Ask for the real function level, APPLCOMPAT, CURRENT RULES, subsystem settings
   (including TABLE_COL_NAME_EXPANSION, DPSEGSZ, PADIX, PAGESET_PAGENUM), storage
-  group, pool sizes, and privileges when execution depends on them. Continue offline
-  work with an explicitly unverified profile if those are unknown.
+  group, pool sizes, and privileges when execution depends on them; the full list is
+  `docs/environment.md`. Continue offline work with an explicitly unverified profile
+  if those are unknown.
 
 ## Case generation
 
@@ -108,6 +111,21 @@ Realistic domain models are welcome, but spread syntax variants across them.
 - Offline generation does not authorize running SQL. Cleanup targets only objects
   this run created. Dedicated database cleanup drops their entire contents.
 
+## Where things go
+
+| Content | Location |
+|---|---|
+| IBM-derived chapters, normalized JSON, source manifest | `kb/` (official IBM Db2 13 content only) |
+| Models, profiles, schemas, variety baseline | `qa/` |
+| Your output for a request | `generated/<id>/` (ignored by git) |
+| A domain schema the user wants kept | `examples/domains/<id>/` |
+| Workflows, command reference, environment checklist | `docs/` |
+| Dated reviews and change history | `docs/history/` (new review: `docs/history/reviews/`) |
+| New repository paths used by code | `tools/paths.py`, then import it |
+
+Never add SQL or design files at the repository root. State each fact in one
+document and link to it from the others.
+
 ## Extending and checking
 
 Use `docs/workflows/extending.md`. Preserve existing chapters, rule IDs, user changes,
@@ -124,9 +142,11 @@ python3 -m venv .venv
 .venv/bin/python -m unittest discover -s tests -v
 python3 tools/qa.py validate
 python3 tools/agent.py validate
-python3 tools/ddl.py lint examples/varied-schema.sql
+python3 tools/ddl.py lint examples/varied-schema.sql --profile qa/profiles/example.json
 git diff --check
 ```
+
+`docs/commands.md` lists every command, its exit codes and the full CI check list.
 
 Report what changed, checks performed, uncovered scope, and whether any live Db2 or
 product execution actually occurred. Keep chat updates short and decision-focused.

@@ -5,7 +5,10 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-GENERATOR = ROOT / "examples" / "domains" / "supply-chain-logistics" / "generate.py"
+sys.path.insert(0, str(ROOT / "tools"))
+import paths  # noqa: E402
+
+GENERATOR = paths.DOMAINS / "supply-chain-logistics" / "generate.py"
 _spec = importlib.util.spec_from_file_location("supply_chain_logistics", GENERATOR)
 logistics = importlib.util.module_from_spec(_spec)
 sys.modules[_spec.name] = logistics

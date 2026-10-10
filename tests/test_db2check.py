@@ -229,11 +229,11 @@ class CatalogIntegrityTests(unittest.TestCase):
             self.assertIn(gate, {g["id"] for g in data["applcompat_gates"]})
 
     def test_chapters_match_the_data(self):
-        chapter = (ROOT / "kb/function-levels.md").read_text()
+        chapter = (paths.KB / "function-levels.md").read_text()
         data = qa.read(paths.FUNCTION_LEVELS)
         for item in data["levels"] + data["applcompat_gates"] + data["announced_levels"]:
             self.assertIn(item["id"], chapter)
-        traps = (ROOT / "kb/dialect-traps.md").read_text()
+        traps = (paths.KB / "dialect-traps.md").read_text()
         mentioned = set(re.findall(r"`([a-z]+\.[a-z0-9-]+)`", traps)) - {"*"}
         self.assertFalse({m for m in mentioned if not m.startswith("tablespace.*")} - set(self.ids))
 

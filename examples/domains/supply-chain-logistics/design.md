@@ -1,5 +1,10 @@
 # Supply-chain logistics backend design
 
+> **Status, 2026-10-10:** the generated DDL fails `tools/ddl.py lint` with three
+> `table.fk-self-reference` errors (F01803, F05604, F05804) and meets 11 of 43
+> `core` variety requirements. Move each self-reference to `ALTER TABLE ... ADD
+> FOREIGN KEY` after the parent's enforcing index before using it as source DDL.
+
 ## Use case
 
 A multi-tenant third-party logistics company operates a shared control tower for
