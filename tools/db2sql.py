@@ -15,6 +15,7 @@ import re
 
 WORD_START = re.compile(r"[A-Za-z$#@]")
 WORD_CHARS = re.compile(r"[A-Za-z0-9_$#@]*")
+ORDINARY_IDENTIFIER = re.compile(r"[A-Z][A-Z0-9_]*")  # Identifiers in SQL: the uppercase ordinary form
 NUMBER = re.compile(r"(?:\d+\.\d*|\.\d+|\d+)(?:[Ee][+-]?\d+)?")
 PLACEHOLDER = re.compile(r"\{\{[A-Z][A-Z0-9_]*\}\}")
 TERMINATOR_DIRECTIVE = re.compile(r"--#SET\s+TERMINATOR\s+(\S)", re.IGNORECASE)
@@ -366,10 +367,12 @@ class Column:
     default_raw: str | None = None
     generated: str | None = None  # identity, row-change-timestamp, rowid, row-begin, row-end, transaction-start-id, expression
     generated_mode: str | None = None  # ALWAYS, BY DEFAULT
+    generated_expression: tuple = ()  # tokens inside GENERATED ... AS (expression)
     identity_options: dict = field(default_factory=dict)
     hidden: bool = False
     inline_length: int | None = None
     fieldproc: str | None = None
+    fieldproc_parameters: tuple = ()  # tokens inside FIELDPROC name (...)
     security_label: bool = False
 
     @property
@@ -533,14 +536,22 @@ def split_commas(tokens):
     return parts
 
 
-def render_tokens(tokens):
+def render_tokens(tokens, text=None):
     """Readable token text: no space inside parentheses or before commas."""
     out = []
     for token in tokens:
         if out and not (token.kind == "op" and token.value in ",)." or out[-1] in ("(", ".")):
             out.append(" ")
-        out.append(token.raw)
+        out.append(text(token) if text else token.raw)
     return "".join(out)
+
+
+def normalized_text(token):
+    """Token text for comparison: keywords in uppercase, and a delimited identifier that spells an
+    ordinary identifier ("NAME") written as that identifier. Literals keep their exact text."""
+    if token.kind == "word" or (token.kind == "ident" and ORDINARY_IDENTIFIER.fullmatch(token.value)):
+        return token.value
+    return token.raw
 
 
 class Unsupported(Exception):
@@ -1263,7 +1274,7 @@ def _parse_column(tokens, table, state):
                 column.generated = "transaction-start-id"
             elif cur.is_word("AS") and cur.is_op("(", offset=1):
                 cur.next()
-                cur.group()
+                column.generated_expression = tuple(cur.group())
                 column.generated = "expression"
             elif column.type is not None and column.type.family == "ROWID":
                 column.generated = "rowid"
@@ -1294,7 +1305,7 @@ def _parse_column(tokens, table, state):
             once("FIELDPROC", line)
             column.fieldproc = cur.name().qualified()
             if cur.is_op("("):
-                cur.group()
+                column.fieldproc_parameters = tuple(cur.group())
         elif cur.accept("AS", "SECURITY", "LABEL"):
             once("AS SECURITY LABEL", line)
             column.security_label = True
@@ -1320,14 +1331,17 @@ def _parse_column(tokens, table, state):
 
 def _parse_partition_by_range(cur, obj, line):
     cur.accept("RANGE")
-    keys = []
+    keys, nulls_last = [], []
     for part in split_commas(cur.group()):
         k = Cursor(part)
         name = k.identifier().value
-        k.accept("NULLS", "LAST")
+        if k.accept("NULLS", "LAST"):
+            nulls_last.append(name)
         order = "ASC"
         if k.is_word("ASC", "DESC"):
             order = k.next().value
+        if not k.at_end():
+            _dialect(k, "a partitioning key")
         keys.append((name, order))
     partitions = []
     for part in split_commas(cur.group()):
@@ -1337,7 +1351,7 @@ def _parse_partition_by_range(cur, obj, line):
         number = p.integer()
         p.expect("ENDING")
         p.accept("AT")
-        values = [render_tokens(v) for v in split_commas(p.group())]
+        values = [render_tokens(v, normalized_text) for v in split_commas(p.group())]
         inclusive = p.accept("INCLUSIVE")
         if p.accept("HASH", "SPACE"):
             p.integer()
@@ -1346,6 +1360,7 @@ def _parse_partition_by_range(cur, obj, line):
             _dialect(p, "a table PARTITION element")
         partitions.append({"number": number, "values": values, "inclusive": inclusive, "line": pline})
     obj.attrs["partition_keys"] = keys
+    obj.attrs["partition_nulls_last"] = nulls_last
     obj.attrs["range_partitions"] = partitions
     _clause(obj, "partition-by-range", len(partitions), line)
 
@@ -1599,7 +1614,7 @@ def _parse_index(cur, result, state):
                 a["keys"].append((part[0].value, order))
             else:
                 a["expression"] = True
-                a["keys"].append((render_tokens(part), order))
+                a["keys"].append((render_tokens(part, normalized_text), order))
             _clause(obj, "key-order", order or "<omitted>", part[0].line if part else line)
         _clause(obj, "expression-key" if a["expression"] else "key-list", len(a["keys"]), line)
     else:

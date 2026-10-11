@@ -56,7 +56,10 @@ Add dependency-aware reduction that repeatedly removes clauses/objects while an
 external harness confirms the same failure signature. Preserve the original case,
 seed/model hash, SQL, environment and product output. Use mutation tests to show
 that oracles catch missing defaults, reversed keys, wrong referential actions,
-truncated routine text and lost partition overrides.
+truncated routine text and lost partition overrides. The DDL diff has such a test
+over the exemplar ([diff review](history/reviews/diff-product-output.md)); the
+catalog comparator and routine text checks do not yet. The diff still models no
+`ALTER TABLE` form other than an added constraint.
 
 Eventually rank campaign work by uncovered source-reviewed branches, historical
 defect yield, risk and execution cost. Thousands of repeated names are load coverage;

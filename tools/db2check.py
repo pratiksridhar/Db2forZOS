@@ -1523,11 +1523,23 @@ FIXED_DEFAULTS = {  # value used by Db2 when the clause is omitted; independent 
     "index": {"cluster": False, "freepage": 0, "pctfree": 10, "gbpcache": "CHANGED", "compress": "NO",
               "null_keys": "INCLUDE", "close": "YES", "defer": "NO", "copy": "NO", "partitioned": False, "erase": "NO",
               "priqty": -1, "secqty": -1},
+    "database": {"stogroup": "SYSDEFLT"},
 }
 DEFAULT_SOURCES = {"tablespace": "kb:tablespace (clause defaults); ibm-create-tablespace",
                    "lob-tablespace": "kb:tablespace (clause defaults); ibm-create-lob-tablespace",
                    "table": "kb:table (clause defaults); ibm-create-table",
-                   "index": "kb:index (clause defaults); ibm-create-index"}
+                   "index": "kb:index (clause defaults); ibm-create-index",
+                   "database": "kb:database (clause defaults); ibm-create-database"}
+# A partition without its own value takes the value given outside any PARTITION clause
+# (ibm-create-tablespace and ibm-create-index precedence lists). USING is inherited as one
+# block: a partition with its own USING clause takes none of the outer USING values.
+# Partition DSSIZE and PCTFREE ... FOR UPDATE have no documented inheritance and stay per partition.
+USING_BLOCK = ("stogroup", "vcat", "priqty", "secqty", "erase")
+PARTITION_INHERITED = {"tablespace": ("freepage", "pctfree", "gbpcache", "compress", "trackmod"),
+                       "index": ("freepage", "pctfree", "gbpcache")}
+EXPRESSION_SYNONYMS = {"USER": "SESSION_USER"}  # generated-expression inventory, kb/objects/table.md
+GENERATED_NAME = ("The source leaves this constraint unnamed, so Db2 generates its name (ibm-create-table); "
+                  "the target names it explicitly.")
 ENVIRONMENT_DEFAULTS = {  # attribute: subsystem parameter or container that supplies an omitted value
     "tablespace": {"segsize": "DPSEGSZ", "trackmod": "IMPTKMOD", "pctfree_for_update": "PCTFREE_UPD",
                    "maxpartitions": "APPLCOMPAT (254 at V13R1M500 or higher; 256 at V12R1M504-V13R1M100)",
@@ -1539,11 +1551,11 @@ ENVIRONMENT_DEFAULTS = {  # attribute: subsystem parameter or container that sup
               "logged": "implicit table space default", "ccsid": "database CCSID"},
     "index": {"padded": "PADIX", "bufferpool": "database INDEXBP", "define": "base table space allocation state",
               "stogroup": "database STOGROUP", "piecesize": "Db2 calculation", "dssize": "base table space"},
-    "database": {"bufferpool": "TBSBPOOL", "indexbp": "IDXBPOOL", "stogroup": "SYSDEFLT", "ccsid": "DEF ENCODING SCHEME"},
+    "database": {"bufferpool": "TBSBPOOL", "indexbp": "IDXBPOOL", "ccsid": "DEF ENCODING SCHEME"},
 }
 TYPE_MAX = {"SMALLINT": 32767, "INTEGER": 2147483647, "BIGINT": 9223372036854775807}
 INTERNAL = {"duplicate_clauses", "partial", "_table_key", "line", "columns", "constraints", "periods", "partitions",
-            "keys", "include", "range_partitions", "partition_keys", "words", "type", "database", "tablespace",
+            "keys", "include", "range_partitions", "partition_keys", "partition_nulls_last", "words", "type", "database", "tablespace",
             "table", "base", "unique", "where_not_null", "expression", "xmlpattern", "auxiliary", "placement",
             "definition", "source", "copy_options", "column_list", "references", "subject", "target", "sqlpl",
             "unbalanced_begin", "source_type", "business_time", "column", "part", "volumes", "hash"}
@@ -1577,53 +1589,111 @@ class NameMap:
 def semantic_objects(report, names=None):
     names = names or NameMap()
     out = {}
-    databases = {}
+    databases = {}  # databases this script creates, with the defaults they give child spaces and indexes
     for result in report.objects:
         obj = result.obj
         if obj.kind == "database":
-            databases[obj.name.name] = obj.attrs
+            databases[obj.name.name] = {**obj.attrs, "stogroup": obj.attrs.get("stogroup") or FIXED_DEFAULTS["database"]["stogroup"]}
     for result in report.objects:
         obj, a = result.obj, result.obj.attrs
         default = result.detail.get("schema_default")
         rules = result.detail.get("rules", "DB2")
         options = {k: v for k, v in a.items() if k not in INTERNAL}
+        if obj.kind in ("tablespace", "lob-tablespace"):
+            key = ("tablespace", names.tablespace(f"{a.get('database') or 'DSNDB04'}.{obj.name.name}"))
+        elif obj.kind in ("database", "stogroup"):
+            key = (obj.kind, names.database(obj.name.name) if obj.kind == "database" else obj.name.name)
+        else:
+            key = ("table" if obj.kind == "auxiliary-table" else obj.kind, names.relation(qualified(obj.name, default)))
+        if a.get("partial"):
+            issue = next((i for i in result.issues if report.rules.get(i[0], {}).get("severity") == "unsupported"), None)
+            out[key] = {"kind": obj.kind, "not_compared": f"Statement {result.statement.index} was only partly parsed"
+                        + (f" (line {issue[2]}: {issue[1]})" if issue else "") + "; its definition is not compared."}
+            continue
         if obj.kind == "database":
-            out[("database", names.database(obj.name.name))] = {"kind": "database", "options": options}
+            out[key] = {"kind": "database", "options": options}
         elif obj.kind == "stogroup":
-            out[("stogroup", obj.name.name)] = {"kind": "stogroup", "options": options, "volumes": sorted(a.get("volumes", []))}
+            out[key] = {"kind": "stogroup", "options": options, "volumes": sorted(a.get("volumes", []))}
         elif obj.kind in ("tablespace", "lob-tablespace"):
             database = a.get("database") or "DSNDB04"
             if a.get("type") == "PBG":
                 options.setdefault("numparts", 1)
             if "lockmax" not in options:
                 options["lockmax"] = "SYSTEM" if options.get("locksize", "ANY") in ("ANY", "LOB") else 0
-            for attribute, source in (("bufferpool", "bufferpool"), ("ccsid", "ccsid"), ("stogroup", "stogroup")):
-                if attribute not in options and database in databases and source in databases[database]:
-                    options[attribute] = databases[database][source]
-            parts = {str(p["number"]): {k: v for k, v in p.items() if k not in ("number", "line")} for p in a.get("partitions", [])}
-            out[("tablespace", names.tablespace(f"{database}.{obj.name.name}"))] = {
-                "kind": obj.kind, "type": a.get("type"), "options": options, "partitions": parts}
+            for attribute in ("bufferpool", "ccsid", "stogroup"):
+                if attribute not in options and database in databases and databases[database].get(attribute) \
+                        and not (attribute == "stogroup" and "vcat" in options):
+                    options[attribute] = databases[database][attribute]
+            parts = {}
+            if a.get("type") == "PBR":
+                parts = _effective_partitions(options, a.get("partitions", []), a.get("numparts"), "tablespace")
+            out[key] = {"kind": obj.kind, "type": a.get("type"), "options": options, "partitions": parts}
         elif obj.kind == "table":
-            out[("table", names.relation(qualified(obj.name, default)))] = _semantic_table(a, default, rules, names)
+            out[key] = _semantic_table(a, default, rules, names, _table_encoding(report, result, databases))
         elif obj.kind == "auxiliary-table":
-            out[("table", names.relation(qualified(obj.name, default)))] = {
+            out[key] = {
                 "kind": "auxiliary-table", "tablespace": names.tablespace(f"{a.get('database') or 'DSNDB04'}.{a['tablespace']}"),
                 "stores": names.relation(qualified(a["base"], default)), "column": a["column"], "part": a.get("part"),
                 "options": options}
         elif obj.kind == "index":
+            table = report.tables.get(qualified(a["table"], default))
+            database = databases.get(table.database) if table is not None and table.database else None
+            if database is not None:
+                # The database supplies an omitted index buffer pool (INDEXBP) and storage group (kb/objects/database.md).
+                for attribute, source in (("bufferpool", "indexbp"), ("stogroup", "stogroup")):
+                    if attribute not in options and database.get(source) and not (attribute == "stogroup" and "vcat" in options):
+                        options[attribute] = database[source]
+            parts = {}
+            if a.get("partitioned") or a.get("partitions"):
+                count = table.tablespace.obj.attrs.get("numparts") if table is not None and table.partitioned else None
+                parts = _effective_partitions(options, a.get("partitions", []), count, "index")
             keys = [{"key": k, "order": o or "ASC"} for k, o in a.get("keys", [])]
-            out[("index", names.relation(qualified(obj.name, default)))] = {
+            out[key] = {
                 "kind": "index", "table": names.relation(qualified(a["table"], default)),
                 "uniqueness": "UNIQUE WHERE NOT NULL" if a.get("where_not_null") else "UNIQUE" if a.get("unique") else "NONUNIQUE",
                 "keys": keys, "include": list(a.get("include", [])), "business_time": a.get("business_time"),
-                "options": options,
-                "partitions": {str(p["number"]): {k: v for k, v in p.items() if k != "number"} for p in a.get("partitions", [])}}
+                "options": options, "partitions": parts}
         else:
-            out[(obj.kind, names.relation(qualified(obj.name, default)))] = {"kind": obj.kind, "checked": False}
+            out[key] = {"kind": obj.kind, "not_compared": f"CREATE {obj.kind.upper()} is recognized, but its definition is not compared."}
     return out
 
 
-def _semantic_table(a, default, rules, names):
+def _effective_partitions(options, partitions, count, kind):
+    """Per-partition attributes after IBM's precedence. Inherited attributes move from `options` into
+    every partition, so a product that repeats them per partition, or omits them, compares equal."""
+    own = {str(p["number"]): {k: v for k, v in p.items() if k not in ("number", "line")} for p in partitions}
+    numbers = [str(n) for n in range(1, count + 1)] if count else sorted(own, key=int)
+    if not numbers:
+        return {}  # partition count unknown and no PARTITION clauses: compare the outer values as they are
+    inherited = PARTITION_INHERITED[kind]
+    outer = {k: options.pop(k) for k in USING_BLOCK + inherited if k in options}
+    result = {}
+    for number in numbers:
+        mine = own.get(number, {})
+        using = mine if any(k in mine for k in ("stogroup", "vcat")) else outer
+        effective = {k: using[k] for k in USING_BLOCK if k in using}
+        effective.update({k: mine.get(k, outer.get(k)) for k in inherited if k in mine or k in outer})
+        effective.update({k: v for k, v in mine.items() if k not in USING_BLOCK and k not in inherited})
+        result[number] = effective
+    for number in sorted(set(own) - set(numbers), key=int):
+        result[number] = own[number]  # a PARTITION clause outside NUMPARTS stays visible
+    return result
+
+
+def _table_encoding(report, result, databases):
+    """Encoding scheme of a table: its CCSID clause, else its table space's, else its database's, when the script shows it."""
+    a = result.obj.attrs
+    if a.get("ccsid"):
+        return a["ccsid"]
+    state = report.tables.get(qualified(result.obj.name, result.detail.get("schema_default")))
+    if state is None:
+        return None
+    if state.tablespace is not None and state.tablespace.obj.attrs.get("ccsid"):
+        return state.tablespace.obj.attrs["ccsid"]
+    return databases.get(state.database, {}).get("ccsid") if state.database else None
+
+
+def _semantic_table(a, default, rules, names, encoding=None):
     columns = []
     for column in a.get("columns", []):
         dt = column.type
@@ -1637,7 +1707,9 @@ def _semantic_table(a, default, rules, names):
                         "type_text": dt.raw if dt else None, "not_null": column.not_null or not column.nullable,
                         "default": default_value, "default_text": column.default_raw if column.default not in (None, "null", "type-default") else None,
                         "generated": column.generated, "generated_mode": column.generated_mode, "identity": identity,
+                        "generated_expression": _token_signature(column.generated_expression, EXPRESSION_SYNONYMS) if column.generated_expression else None,
                         "hidden": column.hidden, "inline_length": column.inline_length, "fieldproc": column.fieldproc,
+                        "fieldproc_parameters": _token_signature(column.fieldproc_parameters) if column.fieldproc_parameters else None,
                         "security_label": column.security_label})
     constraints = {"primary": None, "unique": [], "foreign": [], "check": []}
     for c in a.get("constraints", []):
@@ -1664,11 +1736,21 @@ def _semantic_table(a, default, rules, names):
     elif placement == "database":
         space = f"IN DATABASE {names.database(a['database'])}"
     options = {k: v for k, v in a.items() if k not in INTERNAL and k not in ("partition_by_size",)}
+    if encoding and "ccsid" not in options:
+        options["ccsid"] = encoding  # an omitted table CCSID takes the encoding of its table space or database
+    partitioning = None
+    if a.get("range_partitions"):
+        # ENDING AT defines the limit key, the highest key value of the partition (ibm-create-table,
+        # ibm-partition-boundary), so INCLUSIVE does not change the boundary and is not compared.
+        nulls_last = set(a.get("partition_nulls_last", []))
+        partitioning = {"keys": [[k, o] + (["NULLS LAST"] if k in nulls_last else []) for k, o in a["partition_keys"]],
+                        "partitions": [{"number": p["number"], "values": p["values"]} for p in a["range_partitions"]]}
+    elif "partition_by_size" in a:
+        partitioning = {"size": a.get("partition_by_size")}
     return {"kind": "table", "definition": a.get("definition"), "placement": space or placement,
             "columns": columns, "constraints": constraints,
             "periods": sorted([{"name": p["name"], "columns": p["columns"], "mode": p["mode"] or ("EXCLUSIVE" if p["name"] == "BUSINESS_TIME" else None)} for p in a.get("periods", [])], key=lambda p: p["name"]),
-            "partitioning": {"keys": a.get("partition_keys"), "partitions": [{k: v for k, v in p.items() if k != "line"} for p in a.get("range_partitions", [])]} if a.get("range_partitions") else ({"size": a.get("partition_by_size")} if "partition_by_size" in a else None),
-            "options": options}
+            "partitioning": partitioning, "options": options, "_encoding": encoding}
 
 
 def _identity(column):
@@ -1696,9 +1778,20 @@ def _identity(column):
     return effective
 
 
-def _token_signature(tokens):
-    """Order-preserving token identity: keywords compared case-insensitively, literals exactly."""
-    return " ".join(f"{t.kind}:{t.prefix}{t.value}" if t.kind in ("string", "ident") else t.value for t in tokens)
+def _token_signature(tokens, synonyms=None):
+    """Order-preserving token identity: keywords compared case-insensitively, literals exactly. A delimited
+    identifier that spells an ordinary identifier ("STATUS") is that identifier (ibm-sql-identifiers)."""
+    parts = []
+    for t in tokens:
+        if t.kind == "word":
+            parts.append((synonyms or {}).get(t.value, t.value))
+        elif t.kind == "ident" and sq.ORDINARY_IDENTIFIER.fullmatch(t.value):
+            parts.append(t.value)
+        elif t.kind in ("string", "ident"):
+            parts.append(f"{t.kind}:{t.prefix}{t.value}")
+        else:
+            parts.append(t.value)
+    return " ".join(parts)
 
 
 def diff(source, target, names=None, profile=None):
@@ -1720,14 +1813,36 @@ def diff(source, target, names=None, profile=None):
             differences.append({"object": label, "status": "extra", "detail": "Created only by the target script (for example an explicit form of an implicitly created object). Review it."})
             continue
         _compare_object(label, left[key], right[key], differences, params)
+    differences.extend(_uncompared_statements(source, "source") + _uncompared_statements(target, "target"))
     statuses = Counter(d["status"] for d in differences)
     definite = statuses["missing"] + statuses["different"]
-    unresolved = statuses["extra"] + statuses["environment-dependent"]
+    unresolved = statuses["extra"] + statuses["environment-dependent"] + statuses["not-compared"]
     return {"status": "mismatch" if definite else "unresolved" if unresolved else "match",
             "counts": dict(statuses), "differences": differences,
             "scope": "Parsed DDL semantics only. Equivalent-default entries are not defects. Environment-dependent entries "
-                     "need the recorded subsystem parameters or catalog evidence. A match does not replace execution and "
-                     "catalog comparison."}
+                     "need the recorded subsystem parameters or catalog evidence. Not-compared entries are statements or "
+                     "objects the diff could not read or does not model; review them separately. A match does not replace "
+                     "execution and catalog comparison."}
+
+
+def _uncompared_statements(report, side):
+    """Statements outside CREATE whose effect on the compared objects the diff cannot model."""
+    out = []
+    for result in report.parsed:
+        if result.obj is not None:
+            continue  # a partly parsed CREATE is reported with its object
+        issue = next((i for i in result.issues if report.rules.get(i[0], {}).get("severity") == "unsupported"), None)
+        if issue:
+            detail = f"Not parsed: {issue[1]}"
+        elif result.verb == "ALTER" and (result.kind != "table" or result.detail.get("unmodeled")):
+            detail = f"ALTER {(result.kind or '').upper()} is not modeled; its effect on compared objects is unknown."
+        elif result.verb == "RENAME":
+            detail = "RENAME is not modeled; names after it are unknown."
+        else:
+            continue
+        out.append({"object": f"statement {result.statement.index}", "status": "not-compared", "side": side,
+                    "line": result.statement.line, "detail": detail})
+    return out
 
 
 def _compare_object(label, left, right, out, params):
@@ -1735,28 +1850,46 @@ def _compare_object(label, left, right, out, params):
     if kind != right.get("kind"):
         out.append({"object": label, "status": "different", "attribute": "kind", "source": kind, "target": right.get("kind")})
         return
-    for attribute in sorted((set(left) | set(right)) - {"options", "kind"}):
+    if left.get("not_compared") or right.get("not_compared"):
+        sides = [side for side, value in (("source", left), ("target", right)) if value.get("not_compared")]
+        out.append({"object": label, "status": "not-compared", "side": sides[0] if len(sides) == 1 else "both",
+                    "detail": (left.get("not_compared") or right.get("not_compared"))})
+        return
+    for attribute in sorted((set(left) | set(right)) - {"options", "kind", "partitions"}):
         lv, rv = left.get(attribute), right.get(attribute)
+        if attribute.startswith("_"):
+            continue  # context for other comparisons, such as the table's resolved encoding
         if attribute == "columns":
-            _compare_columns(label, lv or [], rv or [], out)
+            _compare_columns(label, lv or [], rv or [], out, params, left.get("_encoding") or right.get("_encoding"))
         elif attribute == "constraints":
             _compare_constraints(label, lv, rv, out)
         elif lv != rv:
             out.append({"object": label, "status": "different", "attribute": attribute, "source": lv, "target": rv})
-    lo, ro = left.get("options", {}), right.get("options", {})
+    _compare_options(label, kind, left.get("options", {}), right.get("options", {}), out, params)
+    lp, rp = left.get("partitions") or {}, right.get("partitions") or {}
+    for number in sorted(set(lp) | set(rp), key=int):
+        if number in lp and number in rp:
+            _compare_options(label, kind, lp[number], rp[number], out, params, f"partition {number} ")
+        else:
+            out.append({"object": label, "status": "different", "attribute": f"partition {number}",
+                        "source": lp.get(number), "target": rp.get(number), "detail": "The partition is defined on one side only."})
+
+
+def _compare_options(label, kind, lo, ro, out, params, prefix=""):
+    """Compare option maps; an option given on one side only is judged against its documented default."""
     fixed = FIXED_DEFAULTS.get(kind, {})
     env = ENVIRONMENT_DEFAULTS.get(kind, {})
     for attribute in sorted(set(lo) | set(ro)):
         lv, rv = lo.get(attribute), ro.get(attribute)
         if attribute in lo and attribute in ro:
             if not _same(lv, rv):
-                out.append({"object": label, "status": "different", "attribute": attribute, "source": lv, "target": rv})
+                out.append({"object": label, "status": "different", "attribute": prefix + attribute, "source": lv, "target": rv})
             continue
         explicit = lv if attribute in lo else rv
         side = "source" if attribute in lo else "target"
         resolved = _resolve_env(kind, attribute, params)
         default = fixed.get(attribute, resolved)
-        entry = {"object": label, "attribute": attribute, "source": lv if attribute in lo else None,
+        entry = {"object": label, "attribute": prefix + attribute, "source": lv if attribute in lo else None,
                  "target": rv if attribute in ro else None, "explicit_on": side}
         if default is not None:
             entry.update(status="equivalent-default" if _same(default, explicit) else "different",
@@ -1803,7 +1936,31 @@ def _same(a, b):
         return str(a).upper() == str(b).upper() if isinstance(a, str) and isinstance(b, str) and a.isalpha() else False
 
 
-def _compare_columns(label, left, right, out):
+def _subtype_default(label, name, lv, rv, texts, params, encoding):
+    """Judge a character column whose FOR subtype DATA clause is given on one side only. The omitted
+    subtype is MIXED for Unicode data and, for ASCII or EBCDIC data, SBCS or MIXED as the MIXED DATA
+    field on installation panel DSNTIPF says (ibm-create-table). Returns None for other type changes."""
+    if not (lv and rv and len(lv) == len(rv) == 6 and lv[0] in ("CHAR", "VARCHAR", "CLOB") and lv[:4] == rv[:4]
+            and lv[5] == rv[5] and "" in (lv[4], rv[4]) and "BIT" not in (lv[4], rv[4])):
+        return None
+    explicit = lv[4] or rv[4]
+    entry = {"object": label, "attribute": f"column {name}.subtype", "source": texts[0], "target": texts[1],
+             "explicit_on": "source" if lv[4] else "target"}
+    default, origin = None, None
+    mixed = str(params.get("MIXED", params.get("MIXED_DATA", ""))).upper()
+    if encoding == "UNICODE":
+        default, origin = "MIXED", "ibm-create-table (Unicode data)"
+    elif encoding in ("EBCDIC", "ASCII") and mixed in ("YES", "Y", "NO", "N"):
+        default, origin = ("MIXED" if mixed in ("YES", "Y") else "SBCS"), "profile subsystem parameter MIXED"
+    if default:
+        entry.update(status="equivalent-default" if explicit == default else "different", default=default, default_source=origin)
+    else:
+        entry.update(status="environment-dependent", default_from="MIXED DATA (DSNTIPF)" if encoding in ("EBCDIC", "ASCII")
+                     else "the table's encoding scheme and MIXED DATA (DSNTIPF)")
+    return entry
+
+
+def _compare_columns(label, left, right, out, params=None, encoding=None):
     lnames, rnames = [c["name"] for c in left], [c["name"] for c in right]
     if lnames != rnames:
         if sorted(lnames) == sorted(rnames):
@@ -1823,6 +1980,12 @@ def _compare_columns(label, left, right, out):
             if attribute == "default_text" and lv is not None and rv is not None and _same(lv, rv):
                 continue
             if lv != rv and not (attribute == "default" and {lv, rv} <= {"type-default"}):
+                if attribute == "type":
+                    entry = _subtype_default(label, column["name"], lv, rv, (column["type_text"], other["type_text"]),
+                                             params or {}, encoding)
+                    if entry is not None:
+                        out.append(entry)
+                        continue
                 out.append({"object": label, "status": "different", "attribute": f"column {column['name']}.{attribute}",
                             "source": lv if attribute != "type" else column["type_text"],
                             "target": rv if attribute != "type" else other["type_text"]})
@@ -1836,10 +1999,36 @@ def _compare_constraints(label, left, right, out):
             lv = [{k: v for k, v in f.items() if k != "delete_rule_explicit"} for f in (lv or [])]
             rv = [{k: v for k, v in f.items() if k != "delete_rule_explicit"} for f in (rv or [])]
         if lv != rv:
-            names_only = _strip_names(lv) == _strip_names(rv)
-            out.append({"object": label, "status": "different", "attribute": f"{kind} constraints",
-                        "source": lv, "target": rv,
-                        "detail": "Only constraint names differ." if names_only else None})
+            litems, ritems = _items(lv), _items(rv)
+            names_only = _contents(litems) == _contents(ritems)
+            generated = names_only and _generated_names(litems, ritems)
+            out.append({"object": label, "status": "equivalent-default" if generated else "different",
+                        "attribute": f"{kind} constraints", "source": lv, "target": rv,
+                        "detail": GENERATED_NAME if generated else "Only constraint names differ." if names_only else None})
+
+
+def _items(value):
+    return [] if value is None else [value] if isinstance(value, dict) else value
+
+
+def _contents(items):
+    return sorted(json.dumps(_strip_names(item), sort_keys=True) for item in items)
+
+
+def _generated_names(left, right):
+    """True when every name difference is a source constraint left unnamed, whose name Db2 generates."""
+    names = defaultdict(list)
+    for item in left:
+        names[json.dumps(_strip_names(item), sort_keys=True)].append(item.get("name"))
+    for item in right:
+        pending = names[json.dumps(_strip_names(item), sort_keys=True)]
+        if item.get("name") in pending:
+            pending.remove(item.get("name"))
+        elif None in pending:
+            pending.remove(None)
+        else:
+            return False
+    return True
 
 
 def _strip_names(value):

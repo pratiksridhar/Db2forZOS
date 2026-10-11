@@ -98,7 +98,8 @@ Realistic domain models are welcome, but spread syntax variants across them.
 - First offline check: `python3 tools/ddl.py diff source.sql product-generated.sql
   --map name-map.json --profile <profile>`. `different` entries are candidate
   defects; `environment-dependent` entries need recorded subsystem values or
-  catalog evidence; `equivalent-default` entries are not defects.
+  catalog evidence; `not-compared` entries were not read or are not modeled and
+  need separate review; `equivalent-default` entries are not defects.
 - Recreate actual product output under clean names. A reference script produced by
   this repository does not prove that the product generated correct DDL.
 - Compare selected semantic catalog fields (`tools/qa.py compare` with the bundle

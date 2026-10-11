@@ -25,13 +25,31 @@ check results. State plainly whether any live Db2 or product execution occurred.
 
 ```sh
 python3 tools/ddl.py diff source.sql product-generated.sql \
-  --map name-map.json --profile <profile>
+  --map name-map.json --profile <profile> --text
 ```
 
-`different` entries are candidate defects. `environment-dependent` entries need
-recorded subsystem values or catalog evidence. `equivalent-default` entries are
-not defects. A diff match is not a product pass; replay and catalog comparison
-still decide.
+`--text` prints one line per entry that needs review; without it the command
+prints JSON with every entry.
+
+| Status | Meaning |
+|---|---|
+| `different`, `missing` | Candidate defects: the product output changed or lost an attribute or object |
+| `environment-dependent` | Stated on one side only, and a subsystem parameter or container decides the omitted value. Record the value in the profile or check catalog evidence |
+| `extra` | Created only by the product output, for example an implicit object made explicit. Review it |
+| `not-compared` | A statement or object the diff could not read or does not model: a partly parsed statement, an `ALTER` other than an added constraint, `RENAME`, views, routines and triggers. Review it separately |
+| `equivalent-default` | Not a defect: one side states the documented default, or names a constraint the source left for Db2 to name |
+
+The command exits 1 when any `different` or `missing` entry exists, otherwise 3
+when any `environment-dependent`, `extra` or `not-compared` entry exists, otherwise 0.
+These product rewrites compare as the same definition: delimited names that spell
+ordinary identifiers, keys added later by `ALTER TABLE`, explicit documented
+defaults, defaults that the script's own database or table space supplies, values
+repeated in every `PARTITION` clause, `INCLUSIVE` limit keys and names for unnamed
+constraints. An omitted `FOR SBCS DATA` or `FOR MIXED DATA` follows the encoding
+scheme and the `MIXED` parameter. Sources and limits are in the
+[diff review](../history/reviews/diff-product-output.md).
+
+A diff match is not a product pass; replay and catalog comparison still decide.
 
 ## Catalog evidence protocol
 

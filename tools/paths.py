@@ -4,6 +4,7 @@ kb/        IBM-derived reference: chapters, source manifest, normalized JSON.
 qa/        Inputs the tools read: models, profiles, schemas, variety baselines.
 examples/  Worked examples, request examples, domain schemas, workloads.
 docs/      Workflows, command reference, roadmap and dated review history.
+tests/     Unit tests and their fixtures.
 """
 
 from __future__ import annotations
@@ -42,6 +43,9 @@ WORKLOAD_1000 = EXAMPLES / "workloads" / "1000-table" / "create-1000-table-qa-wo
 DOMAINS = EXAMPLES / "domains"
 
 DOCS = ROOT / "docs"
+
+TEST_FIXTURES = ROOT / "tests" / "fixtures"
+REGENERATED_SCHEMA = TEST_FIXTURES / "varied-schema-regenerated.sql"
 
 
 def rel(path: Path) -> str:

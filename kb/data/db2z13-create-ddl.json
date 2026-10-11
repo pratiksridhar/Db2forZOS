@@ -107,6 +107,14 @@
       "title": "CREATE TABLE statement",
       "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-create-table"
     },
+    "ibm-partition-boundary": {
+      "title": "Changing the boundary between partitions",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=partitions-changing-boundary-between"
+    },
+    "ibm-sql-identifiers": {
+      "title": "Identifiers in SQL",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=elements-identifiers"
+    },
     "ibm-table-concept": {
       "title": "Db2 tables",
       "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=concepts-db2-tables"

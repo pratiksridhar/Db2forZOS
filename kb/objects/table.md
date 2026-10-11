@@ -388,7 +388,7 @@ PARTITION BY [ RANGE ]
 - Each boundary supplies one or more constants/`MAXVALUE`/`MINVALUE`; omitted trailing key components resolve to the direction-dependent extreme.
 - Boundaries must progress in key order. The last boundary is enforced; values beyond it are out of range.
 - `MAXVALUE`/`MINVALUE` propagation and nullable-key rules depend on ASC/DESC as documented. Pair every mixed-direction positive case with boundary-order and illegal-extreme negatives.
-- `INCLUSIVE` includes the specified boundary. Omission follows the statement's documented ending semantics.
+- `INCLUSIVE` includes the specified boundary. `ENDING AT` defines the partition's limit key (`ibm-create-table`), and the limit key is the highest value of the partitioning key for a partition (`ibm-partition-boundary`), so omitting `INCLUSIVE` gives the same boundary. The diagram has no exclusive alternative.
 
 ## Table and implicit-space options
 

@@ -19,7 +19,7 @@ python3 tools/ddl.py bundle my-schema.sql --run QA1 --out generated/qa1 \
   --profile qa/profiles/example.json \
   --replay-schema APP=APPR --replay-database APPDB=APPRDB
 python3 tools/ddl.py diff generated/qa1/source.sql product-generated.sql \
-  --map generated/qa1/name-map.json
+  --map generated/qa1/name-map.json --text
 ```
 
 Or build a campaign from a modeled family:

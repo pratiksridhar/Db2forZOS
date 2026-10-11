@@ -17,3 +17,7 @@ the repository root with `.venv/bin/python -m unittest tests.<module> -v`.
 | [test_supply_chain_logistics_schema](test_supply_chain_logistics_schema.py) | The supply-chain example generator's topology and static checks |
 
 A new checker rule needs a fixture in `test_db2check`; see the [tool code map](../tools/README.md#add-a-checker-rule).
+
+`fixtures/` holds test inputs. `varied-schema-regenerated.sql` imitates extraction-tool
+formatting of the exemplar; it is not product evidence. `test_db2check` requires the
+diff to accept it unchanged and to report every defect seeded into it.

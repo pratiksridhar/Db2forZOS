@@ -459,7 +459,8 @@ def write_campaign(args):
         "6. Run bootstrap-replay.sql once if it contains database setup. Apply the recorded name map through the product or an SQL-aware adapter; replay actual product output. reference-replay.sql only tests the harness and is never product evidence.\n"
         "7. Capture catalog-replay.sql with the same adapter. Run tools/qa.py compare with the case contract and both JSON snapshots. A matching snapshot covers only the selected fields. Run required behavioral probes on both sides separately.\n"
         "8. Retain execution evidence before cleanup. Run only drops for objects this run created. Where present, database cleanup removes entire dedicated databases; separately clean routine objects listed in case cleanup.\n\n"
-        "Snapshot format and the execution protocol are in docs/workflows/campaign.md. No credentials or automatic execution are provided.\n")
+        "The snapshot format is in docs/workflows/product-verification.md (catalog evidence protocol); the execution protocol is in "
+        "docs/workflows/campaign.md. No credentials or automatic execution are provided.\n")
     args.out.mkdir(parents=True, exist_ok=False)
     for path, content in files.items():
         target = args.out / path

@@ -18,6 +18,9 @@ the single checklist; other documents link here instead of restating it.
 - subsystem parameters, especially `DPSEGSZ`, `IMPDSSIZE`, `IMPTKMOD`, `IMPTSCMP`,
   `IMPDSDEF`, `PADIX`, `PAGESET_PAGENUM`, `PCTFREE_UPD`, `DEFAULT_INSERT_ALGORITHM`,
   `TABLE_COL_NAME_EXPANSION`, `TBSBPLOB` and compression defaults
+- `MIXED` (field MIXED DATA on panel DSNTIPF, `YES` or `NO`) and the default encoding
+  scheme: with a table's encoding they decide whether an omitted `FOR subtype DATA`
+  means SBCS or MIXED, which product-generated DDL often states explicitly
 - storage group, active buffer pools and their sizes
 - SMS/DFSMS capabilities, extended-format/extended-addressability settings and
   available storage classes

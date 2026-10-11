@@ -20,7 +20,7 @@ command connects to Db2 or executes SQL.** Each tool prints full options with
 | `lint SQL [--profile P] [--max-line 72] [--assume KIND:NAME] [--json]` | Static checks against [IBM-sourced rules](../kb/data/db2z13-ddl-checks.json); reports minimum APPLCOMPAT | 0 pass; 1 findings; 2 bad input |
 | `coverage SQL [--baseline core\|extended\|FILE] [--json]` | Counts KB clauses and values exercised; gates on a [variety baseline](../qa/variety-baseline.json) | 0; 1 baseline unmet |
 | `bundle SQL --run R --out DIR --profile P --replay-schema S=T --replay-database D=E` | Catalog queries/expectations, cleanup, name map, inventory and case from a lint-clean script | 0; 2 bad input |
-| `diff SOURCE TARGET [--map name-map.json] [--profile P]` | Semantic diff of source and product-generated DDL | 0 match; 1 mismatch; 3 unresolved; 2 bad input |
+| `diff SOURCE TARGET [--map name-map.json] [--profile P] [--text]` | Semantic diff of source and product-generated DDL; `--text` lists only entries to review | 0 match; 1 mismatch; 3 unresolved; 2 bad input |
 | `levels [--applcompat V13R1M500] [--json]` | Function levels, or syntax gated above an APPLCOMPAT | 0 |
 | `context OBJECT` | Full IBM-linked context for a normalized object: clauses, rules, sources, campaign models and coverage | 0 |
 
@@ -28,8 +28,10 @@ command connects to Db2 or executes SQL.** Each tool prints full options with
 enforcing indexes, table-space/index ranges, LOB support objects,
 [dialect traps](../kb/dialect-traps.md) and
 [function-level/APPLCOMPAT gates](../kb/function-levels.md). `diff` separates real
-differences from documented defaults and subsystem-dependent defaults. See
-[the checker review](history/reviews/ddl-checker.md) for sources and limits.
+differences from documented defaults and subsystem-dependent defaults, and marks what
+it cannot read as `not-compared`; [product verification](workflows/product-verification.md#first-look-at-product-output)
+explains each status. See [the checker review](history/reviews/ddl-checker.md) and
+[the diff review](history/reviews/diff-product-output.md) for sources and limits.
 
 ```sh
 python3 tools/ddl.py lint my-schema.sql --profile qa/profiles/example.json
@@ -38,7 +40,7 @@ python3 tools/ddl.py bundle my-schema.sql --run QA1 --out generated/qa1 \
   --profile qa/profiles/example.json \
   --replay-schema APP=APPR --replay-database APPDB=APPRDB
 python3 tools/ddl.py diff generated/qa1/source.sql product-generated.sql \
-  --map generated/qa1/name-map.json --profile qa/profiles/example.json
+  --map generated/qa1/name-map.json --profile qa/profiles/example.json --text
 python3 tools/ddl.py plan --request examples/requests/index-include.json --require-modeled
 python3 tools/ddl.py levels --applcompat V13R1M500
 ```

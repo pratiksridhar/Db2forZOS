@@ -318,6 +318,30 @@ def _print_findings(path, report, allow_unsupported):
     print(f"{summary['status'].upper()}: {summary['statements']} statements; {counts}. Static checks only; Db2 acceptance is not proven.")
 
 
+def _print_diff(result):
+    """One line per entry that needs review; equivalent-default entries stay in the JSON output."""
+    def show(value):
+        return "-" if value is None else value if isinstance(value, str) else json.dumps(value)
+    for d in result["differences"]:
+        if d["status"] == "equivalent-default":
+            continue
+        where = d["object"] + (f" {d['attribute']}" if d.get("attribute") else "")
+        if d["status"] == "not-compared":
+            text = f"{d['side']}: {d['detail']}"
+        elif "source_only" in d:
+            text = f"source only {show(d['source_only'])}, target only {show(d['target_only'])}"
+        elif "source" in d or "target" in d:
+            note = d.get("detail") or (f"default from {d['default_from']}" if d.get("default_from") else None)
+            text = f"{show(d.get('source'))} -> {show(d.get('target'))}" + (f" ({note})" if note else "")
+        else:
+            text = d.get("detail") or ""
+        print(f"{d['status']}: {where}: {text}")
+    counts = ", ".join(f"{k}={v}" for k, v in sorted(result["counts"].items())) or "no differences"
+    hidden = result["counts"].get("equivalent-default", 0)
+    print(f"{result['status'].upper()}: {counts}." + (f" The {hidden} equivalent-default entries are listed only in JSON output." if hidden else "")
+          + " Parsed DDL only; execution and catalog comparison still decide.")
+
+
 def _levels(applcompat=None):
     data = db2check.function_level_data()
     lines = [f"Db2 13 function levels (reviewed {data['reviewed']}; source kb/data/db2z13-function-levels.json):"]
@@ -379,7 +403,8 @@ def main(argv=None):
     compare.add_argument("--map", type=Path, help="name-map.json from a bundle (schemas/databases/objects)")
     compare.add_argument("--map-schema", action="append", default=[], metavar="SRC=TGT")
     compare.add_argument("--map-database", action="append", default=[], metavar="SRC=TGT")
-    compare.add_argument("--profile", type=Path, help="resolves subsystem-parameter defaults such as DPSEGSZ and PADIX")
+    compare.add_argument("--profile", type=Path, help="resolves subsystem-parameter defaults such as DPSEGSZ, PADIX and MIXED")
+    compare.add_argument("--text", action="store_true", help="print one line per entry that needs review instead of JSON")
     package = commands.add_parser("bundle", help="derive a QA bundle from a lint-clean script; never executes SQL")
     package.add_argument("sql")
     _add_common(package)
@@ -430,7 +455,10 @@ def main(argv=None):
             result = db2check.diff(left, right, names, profile)
             result["parse_findings"] = {"source": [f.as_dict(left.rules) for f in left.findings if f.severity == "unsupported"],
                                         "target": [f.as_dict(right.rules) for f in right.findings if f.severity == "unsupported"]}
-            print(qa.dump(result), end="")
+            if args.text:
+                _print_diff(result)
+            else:
+                print(qa.dump(result), end="")
             return {"match": 0, "mismatch": 1, "unresolved": 3}[result["status"]]
         if args.command == "bundle":
             options, profile = _options(args)

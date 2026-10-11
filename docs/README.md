@@ -42,3 +42,4 @@ Dated records describe the repository when they were written; paths in them may 
 | Static checker, diff and bundle sources | [Checker review](history/reviews/ddl-checker.md) |
 | Trigger and procedure source review | [Routine review](history/reviews/routines.md) |
 | Parent/child table model source review | [Relational table review](history/reviews/table-relational.md) |
+| How the DDL diff judges product-style rewrites | [Diff review](history/reviews/diff-product-output.md) |

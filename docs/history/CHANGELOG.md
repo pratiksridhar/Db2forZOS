@@ -4,6 +4,17 @@ Dated reviews in [reviews/](reviews/) and the [campaign source review](source-re
 record exactly what was checked against which IBM edition. They are history: later
 changes do not re-certify them.
 
+## 2026-10-10: diff trusts product-style output and flags what it cannot read
+
+`ddl.py diff` no longer reports common extraction rewrites as differences: delimited
+names, explicit defaults, per-partition repetition, `INCLUSIVE` boundaries,
+generated constraint names and explicit `FOR SBCS|MIXED DATA` subtypes. It now compares
+generated expressions, `FIELDPROC` parameters and `NULLS LAST`, and it reports
+partly parsed statements, unmodeled `ALTER` statements and unmodeled objects as
+`not-compared` instead of returning `match`. `--text` prints only entries to review.
+Campaign `RUN.md` now points to the snapshot format in product verification. See
+[the diff review](reviews/diff-product-output.md).
+
 ## 2026-10-10: repository reorganized
 
 `kb/` now holds only IBM-derived reference. Tool inputs moved to `qa/`, examples

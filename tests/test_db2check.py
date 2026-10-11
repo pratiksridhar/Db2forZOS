@@ -423,6 +423,144 @@ class DiffTests(unittest.TestCase):
         self.assertIn(("extra", None), self.statuses(result))
         self.assertEqual(self.diff(target, source)["status"], "mismatch")
 
+    def test_partitions_inherit_outer_values_and_using_is_one_block(self):
+        source = DB + ("CREATE TABLESPACE TS1 IN QADB1 NUMPARTS 2 (PARTITION 1 USING STOGROUP SG2) "
+                       "USING STOGROUP SG1 PRIQTY 48 FREEPAGE 10;")
+        repeated = DB + ("CREATE TABLESPACE TS1 IN QADB1 NUMPARTS 2 (PARTITION 1 USING STOGROUP SG2 FREEPAGE 10, "
+                         "PARTITION 2 USING STOGROUP SG1 PRIQTY 48 FREEPAGE 10);")
+        self.assertEqual(self.diff(source, repeated)["status"], "match")
+        lost = self.diff(source, repeated.replace("PRIQTY 48 FREEPAGE 10", "FREEPAGE 0"))
+        self.assertIn(("different", "partition 2 freepage"), self.statuses(lost))
+        self.assertIn(("different", "partition 2 priqty"), self.statuses(lost))
+        # Partition 1 has its own USING clause, so it does not inherit the outer PRIQTY 48.
+        block = self.diff(source, repeated.replace("STOGROUP SG2 FREEPAGE", "STOGROUP SG2 PRIQTY 48 FREEPAGE"))
+        self.assertIn(("different", "partition 1 priqty"), self.statuses(block))
+
+    def test_omitted_inclusive_and_delimited_identifiers_are_the_same_definition(self):
+        source = DB + ("CREATE TABLESPACE TS1 IN QADB1 NUMPARTS 2;\n"
+                       "CREATE TABLE S.T (C INTEGER NOT NULL, CHECK (C > 0)) IN QADB1.TS1 "
+                       "PARTITION BY (C) (PARTITION 1 ENDING AT (10), PARTITION 2 ENDING AT (maxvalue));")
+        target = source.replace("CHECK (C > 0)", 'CHECK ("C" > 0)').replace("(10)", "(10) INCLUSIVE")
+        self.assertEqual(self.diff(source, target)["status"], "match")
+        self.assertIn(("different", "check constraints"), self.statuses(self.diff(source, target.replace('"C" >', '"c" >'))))
+
+    def test_unnamed_source_constraints_accept_generated_names(self):
+        source = DB + "CREATE TABLE S.T (C INTEGER, CHECK (C > 0), CONSTRAINT K2 CHECK (C < 9)) IN DATABASE QADB1;"
+        generated = self.diff(source, source.replace("CHECK (C > 0)", "CONSTRAINT C CHECK (C > 0)"))
+        self.assertEqual(generated["status"], "match")
+        self.assertIn(("equivalent-default", "check constraints"), self.statuses(generated))
+        renamed = self.diff(source, source.replace("K2", "K3"))
+        self.assertIn(("different", "check constraints"), self.statuses(renamed))
+        self.assertEqual("Only constraint names differ.", renamed["differences"][0]["detail"])
+
+    def test_character_subtype_default_follows_encoding_and_mixed_data(self):
+        def table(ccsid, subtype=""):
+            return DB.replace("INDEXBP BP0", f"INDEXBP BP0 CCSID {ccsid}") + f"CREATE TABLE S.T (C VARCHAR(8){subtype}) IN DATABASE QADB1;"
+        self.assertEqual(self.diff(table("UNICODE"), table("UNICODE", " FOR MIXED DATA"))["status"], "match")
+        self.assertIn(("different", "column C.subtype"), self.statuses(self.diff(table("UNICODE"), table("UNICODE", " FOR SBCS DATA"))))
+        ebcdic = self.diff(table("EBCDIC"), table("EBCDIC", " FOR SBCS DATA"))
+        self.assertIn(("environment-dependent", "column C.subtype"), self.statuses(ebcdic))
+        self.assertEqual(self.diff(table("EBCDIC"), table("EBCDIC", " FOR SBCS DATA"), prof=profile(MIXED="NO"))["status"], "match")
+        self.assertIn(("different", "column C.subtype"), self.statuses(self.diff(table("EBCDIC"), table("EBCDIC", " FOR SBCS DATA"), prof=profile(MIXED="YES"))))
+        self.assertIn(("different", "column C.type"), self.statuses(self.diff(table("EBCDIC"), table("EBCDIC", " FOR BIT DATA"))))
+
+    def test_expressions_fieldprocs_and_null_ordering_are_compared(self):
+        source = DB + ("CREATE TABLESPACE TS1 IN QADB1 NUMPARTS 2;\n"
+                       "CREATE TABLE S.T (C INTEGER, W VARCHAR(128) GENERATED ALWAYS AS (USER), "
+                       "F CHAR(8) FIELDPROC S.FP1 (1, 2)) IN QADB1.TS1 "
+                       "PARTITION BY (C NULLS LAST DESC) (PARTITION 1 ENDING AT (100), PARTITION 2 ENDING AT (MINVALUE));")
+        self.assertEqual(self.diff(source, source.replace("AS (USER)", "AS (SESSION_USER)"))["status"], "match")
+        for original, changed, attribute in (("AS (USER)", "AS (CURRENT SQLID)", "column W.generated_expression"),
+                                             ("S.FP1 (1, 2)", "S.FP1 (9)", "column F.fieldproc_parameters"),
+                                             ("(C NULLS LAST DESC)", "(C DESC)", "partitioning")):
+            with self.subTest(changed=changed):
+                self.assertIn(("different", attribute), self.statuses(self.diff(source, source.replace(original, changed))))
+
+    def test_unread_or_unmodeled_input_is_never_a_match(self):
+        source = DB + "CREATE TABLE S.T (C INTEGER) IN DATABASE QADB1;\nCREATE VIEW S.V AS SELECT C FROM S.T;"
+        cases = {"partial CREATE": source.replace("IN DATABASE QADB1;", "IN DATABASE QADB1 FROBNICATE YES;"),
+                 "unmodeled ALTER": source + "\nALTER TABLESPACE QADB1.T1 LOCKSIZE ROW;",
+                 "unknown statement": source + "\nFROBNICATE TABLE S.T;"}
+        self.assertEqual({("not-compared", None)}, {(d["status"], d.get("attribute")) for d in self.diff(source, source)["differences"]})
+        for name, target in cases.items():
+            with self.subTest(name):
+                result = self.diff(source, target)
+                self.assertEqual(result["status"], "unresolved")
+                self.assertGreaterEqual(result["counts"]["not-compared"], 2)
+
+    def test_cli_text_lists_entries_to_review_and_keeps_exit_codes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source, target = Path(tmp) / "source.sql", Path(tmp) / "target.sql"
+            source.write_text(DB + "CREATE TABLE S.T (C INTEGER) IN DATABASE QADB1;\n")
+            target.write_text(DB + "CREATE TABLE S.T (C INTEGER) IN DATABASE QADB1 AUDIT NONE;\nALTER TABLESPACE QADB1.X CLOSE NO;\n")
+            run = lambda *a: subprocess.run([sys.executable, str(ROOT / "tools/ddl.py"), "diff", str(source), str(target), *a],
+                                            capture_output=True, text=True)
+            text = run("--text")
+            self.assertEqual(text.returncode, 3)
+            lines = text.stdout.splitlines()
+            self.assertEqual(["not-compared: statement 3: target: ALTER TABLESPACE is not modeled; its effect on compared objects is unknown."],
+                             lines[:-1])
+            self.assertTrue(lines[-1].startswith("UNRESOLVED: equivalent-default=1, not-compared=1."))
+            self.assertEqual(json.loads(run().stdout)["status"], "unresolved")
+
+
+REGENERATION_DEFECTS = [  # (text in the regenerated fixture, seeded defect, object, attribute)
+    ("GBPCACHE CHANGED COMPRESS YES TRACKMOD YES", "GBPCACHE CHANGED COMPRESS NO TRACKMOD YES", "tablespace QAVDB01.QAVS03", "partition 3 compress"),
+    ("FREEPAGE 5 PCTFREE 20", "FREEPAGE 0 PCTFREE 20", "tablespace QAVDB01.QAVS03", "partition 1 freepage"),
+    ("MAXROWS 100", "MAXROWS 255", "tablespace QAVDB01.QAVS01", "maxrows"),
+    ("LOCKSIZE PAGE\n    LOCKMAX 0", "LOCKSIZE PAGE\n    LOCKMAX SYSTEM", "tablespace QAVDB01.QAVS02", "lockmax"),
+    ("DATA CAPTURE CHANGES", "DATA CAPTURE NONE", "table QAV.CUSTOMER", "data_capture"),
+    ("CACHE 50", "CACHE 20", "table QAV.CUSTOMER", "column CUSTOMER_ID.identity"),
+    (" IMPLICITLY HIDDEN", "", "table QAV.CUSTOMER", "column AUDIT_NOTE.hidden"),
+    ("WITH DEFAULT 'A'", "WITH DEFAULT 'B'", "table QAV.CUSTOMER", "column STATUS.default_text"),
+    ('"STATUS" CHAR(1) FOR SBCS DATA', '"STATUS" CHAR(1) FOR BIT DATA', "table QAV.CUSTOMER", "column STATUS.type"),
+    ('("QTY" > 0)', '("QTY" >= 0)', "table QAV.ORDER_LINE", "check constraints"),
+    ("NOT ENFORCED ENABLE QUERY OPTIMIZATION", "ENFORCED", "table QAV.ORDER_LINE", "foreign constraints"),
+    ('("CUSTOMER_CODE")\n    ON DELETE SET NULL', '("CUSTOMER_CODE")\n    ON DELETE RESTRICT', "table QAV.SALES_ORDER", "foreign constraints"),
+    ('"ORDER_CUSTOMER_FK"', '"ORDER_CUST_FK"', "table QAV.SALES_ORDER", "foreign constraints"),
+    ("'2024-12-31'", "'2024-12-30'", "table QAV.SALES_ORDER", "partitioning"),
+    (',"PICK_TIME" TIME\n', "", "table QAV.SALES_ORDER", "columns"),
+    ('("SKU" DESC)', '("SKU" ASC)', "index QAV.PRODUCT_SKUIX", "keys"),
+    ('("ORDER_ID" ASC, "LINE_NO" ASC)\n    NOT CLUSTER', '("LINE_NO" ASC, "ORDER_ID" ASC)\n    NOT CLUSTER', "index QAV.LINE_PKIX", "keys"),
+    ('INCLUDE ("STATUS")\n', "", "index QAV.CUSTOMER_UKIX", "include"),
+    ('"CUSTOMER_ID" ASC)\n    CLUSTER', '"CUSTOMER_ID" ASC)\n    NOT CLUSTER', "index QAV.ORDER_DATEIX", "cluster"),
+    (",PARTITION 2 USING STOGROUP SYSDEFLT PRIQTY -1 SECQTY -1 ERASE NO\n       FREEPAGE 0 PCTFREE 10",
+     ",PARTITION 2 USING STOGROUP SYSDEFLT PRIQTY -1 SECQTY -1 ERASE NO\n       FREEPAGE 0 PCTFREE 15", "index QAV.ORDER_DATEIX", "partition 2 pctfree"),
+    ('CREATE TABLE "QAV"."PRODUCT_DOC"', 'CREATE TABLE "QAV"."PRODUCT_DOCS"', "table QAV.PRODUCT_DOC", None),
+]
+
+
+class RegeneratedOutputTests(unittest.TestCase):
+    """Extraction tools rewrite DDL without changing it; the diff must accept those rewrites and still
+    report every seeded single-attribute defect."""
+
+    FULL = profile(DPSEGSZ=32, IMPTKMOD="YES", MIXED="NO")
+
+    @classmethod
+    def setUpClass(cls):
+        cls.source = EXAMPLE.read_text()
+        cls.regenerated = paths.REGENERATED_SCHEMA.read_text()
+
+    def diff(self, target, prof=None):
+        return db2check.diff(analyze(self.source), analyze(target, allow_placeholders=True), None, prof)
+
+    def test_rewrites_are_not_differences(self):
+        loose = self.diff(self.regenerated, PROFILE)
+        self.assertEqual("unresolved", loose["status"])
+        self.assertFalse([d for d in loose["differences"] if d["status"] not in ("equivalent-default", "environment-dependent")])
+        remaining = {(d["object"], d["attribute"]) for d in self.diff(self.regenerated, self.FULL)["differences"]
+                     if d["status"] != "equivalent-default"}
+        self.assertEqual({("index QAV.CUSTOMER_PKIX", "define"), ("tablespace QAVDB01.QAVS04", "dssize")}, remaining)
+
+    def test_every_seeded_defect_is_reported(self):
+        for original, defect, obj, attribute in REGENERATION_DEFECTS:
+            with self.subTest(defect=defect.strip() or f"removed {original.strip()}"):
+                self.assertEqual(1, self.regenerated.count(original), "the defect must change exactly one place")
+                result = self.diff(self.regenerated.replace(original, defect), self.FULL)
+                self.assertEqual("mismatch", result["status"])
+                found = {(d["object"], d.get("attribute")) for d in result["differences"] if d["status"] in ("different", "missing")}
+                self.assertIn((obj, attribute), found)
+
 
 class BundleTests(unittest.TestCase):
     def make(self, text=None, **names):
