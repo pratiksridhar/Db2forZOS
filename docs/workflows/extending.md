@@ -22,8 +22,12 @@
    enforcing index. SQL PL nodes use `kind: sql_pl` and a model-level alternate
    `statement_terminator`, with internal semicolons and no outer delimiter in the node.
 6. Define catalog queries with selected fields, stable keys, row-count bounds and
-   explicit padding fields. Exclude relocated identities from selected fields or add
-   a field-aware mapping mechanism. Do not normalize arbitrary SQL text or literals.
+   explicit padding fields. Name the catalog `table`; every selected column must be
+   listed for it in `kb/data/db2z13-catalog-columns.json` (add it from the IBM catalog
+   page first), and a computed field declares its type in `expression_types`.
+   `qa.py snapshot` types exported values by these declarations. Exclude relocated
+   identities from selected fields or add a field-aware mapping mechanism. Do not
+   normalize arbitrary SQL text or literals.
    Each assertion names a query, a row predicate (`where`) and exact expected fields
    (`equals`). An assertion must select exactly one row on both sides.
    Option `catalog_row_counts` can specialize exact expected row counts, such as

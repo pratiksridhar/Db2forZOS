@@ -83,6 +83,7 @@ The data type can be omitted only for generated timestamp/transaction forms wher
 - Column names are limited to 30 bytes unless the `TABLE_COL_NAME_EXPANSION` subsystem parameter (spelled `TABLE_COLUMN_NAME_EXPANSION` on the limits page) is ON; then up to 128 bytes, with names over 30 bytes possibly truncated in SQLDA-based interfaces. Record the setting in the profile (`ibm-limits`, `ibm-fl100`).
 - Varying-length columns are also bounded by page size: VARCHAR and VARBINARY 4046/8128/16320/32704 bytes and VARGRAPHIC 2023/4064/8160/16352 characters for 4/8/16/32 KB pages (`ibm-limits`).
 - In ordinary `CREATE TABLE` the parent of a foreign key must already exist, so a self-referencing constraint is added afterwards with `ALTER TABLE ... ADD FOREIGN KEY` (`ibm-create-table`). The schema processor relaxes this inside `CREATE SCHEMA`.
+- When the parent and dependent are the same table, the delete rule must be `CASCADE` or `NO ACTION` (`ibm-alter-table`). Under `CURRENT RULES` `'DB2'` an omitted rule means `RESTRICT`, so a self-reference states its rule.
 - Maximum record sizes without an edit procedure are 4056, 8138, 16330, and 32714 bytes for 4/8/16/32 KB pages. With `EDITPROC`, subtract 10 bytes from each. Maximum row size is eight bytes below maximum record size.
 - For an implicitly created table space, Db2 can select a larger page-size buffer pool when the actual record approaches the documented 90% threshold.
 
@@ -416,6 +417,24 @@ The following options describe only an **implicitly created** base table space:
 | `MEMBER CLUSTER` | Places by available space rather than clustering order. |
 | `TRACKMOD` | YES/NO; omission uses `IMPTKMOD`. |
 | `PAGENUM` | Applies to an implicit PBR space; omission uses `PAGESET_PAGENUM`; RPN preferred. |
+
+### Options changed later by ALTER TABLE
+
+`ALTER TABLE` sets several of these options after creation (`ibm-alter-table`,
+reviewed 2026-10-10): `DATA CAPTURE NONE|CHANGES`, `AUDIT NONE|CHANGES|ALL`,
+`VOLATILE` or `NOT VOLATILE` (optional `CARDINALITY`), `APPEND NO|YES`,
+`VALIDPROC program-name|NULL`, and `ADD RESTRICT ON DROP` or `DROP RESTRICT ON DROP`.
+Their descriptions match the CREATE TABLE options, so the resulting definition is
+the same; the page names no pending or REORG state for them. Differences to keep:
+
+- `VALIDPROC NULL` discontinues the current validation routine, and a new routine is
+  not applied to existing rows.
+- `ADD RESTRICT ON DROP` blocks dropping the table and the table space and database
+  that contain it until `DROP RESTRICT ON DROP` removes the restriction, so cleanup
+  removes it first.
+- Do not specify `DATA CAPTURE CHANGES` for a table in a `NOT LOGGED` table space.
+- A clause appears at most once per statement; only `ADD COLUMN` and `ALTER COLUMN`
+  repeat.
 
 ## LOB and XML side effects
 

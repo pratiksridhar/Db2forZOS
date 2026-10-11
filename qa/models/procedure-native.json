@@ -218,6 +218,7 @@
   "catalog": [
     {
       "id": "routine",
+      "table": "SYSIBM.SYSROUTINES",
       "fields": [
         "ROUTINETYPE",
         "ORIGIN",
@@ -252,6 +253,7 @@
     },
     {
       "id": "parameters",
+      "table": "SYSIBM.SYSPARMS",
       "fields": [
         "ORDINAL",
         "PARMNAME",
@@ -273,6 +275,7 @@
     },
     {
       "id": "package",
+      "table": "SYSIBM.SYSPACKAGE",
       "fields": [
         "TYPE",
         "VERSION",

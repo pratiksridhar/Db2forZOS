@@ -834,6 +834,12 @@ class Checker:
             if effective != "RESTRICT":
                 self.find("table.fk-business-time", f"{what}: PERIOD BUSINESS_TIME requires ON DELETE RESTRICT (effective rule: {effective}).", result, constraint.line)
         parent, parent_key = self.parent_state(result, state, constraint, creating)
+        if parent is state:
+            # "If T1 and T2 are the same table, CASCADE or NO ACTION must be specified" (ibm-alter-table). The
+            # omitted rule follows CURRENT RULES when this statement runs, not when the table was created.
+            effective = constraint.delete_rule or ("RESTRICT" if result.detail.get("rules", state.rules) == "DB2" else "NO ACTION")
+            if effective not in ("CASCADE", "NO ACTION"):
+                self.find("table.fk-self-reference-delete-rule", f"{what} references its own table, so its delete rule must be CASCADE or NO ACTION (effective rule: {effective}).", result, constraint.line)
         if parent is None or parent.external:
             return
         if constraint.parent_columns is None:
@@ -1125,15 +1131,24 @@ class Checker:
     # ---- other statements
     def alter(self, result):
         detail = result.detail
-        if result.kind != "table" or detail.get("unmodeled"):
+        if result.kind != "table" or detail.get("unmodeled") or detail.get("partial"):
             self.r.not_checked[f"ALTER {(result.kind or '').upper()}".strip()] += 1
             return
         table_key = qualified(detail["table"], detail.get("schema_default"))
+        for clause, line in detail.get("duplicate_clauses", []):
+            self.find("syntax.duplicate-clause", f"{clause.upper()} is specified more than once in one ALTER TABLE.", result, line)
         if not self.reference("relation", table_key, result, "Table"):
             return
         state = self.r.relations[table_key]
         if not isinstance(state, TableState):
             return
+        # An option set later by ALTER TABLE gives the catalog state of the same CREATE TABLE clause
+        # (ibm-alter-table), so it becomes part of the definition that bundles and the diff read.
+        for attribute, value in detail.get("options", {}).items():
+            if value is None:
+                state.obj.attrs.pop(attribute, None)  # VALIDPROC NULL
+            else:
+                state.obj.attrs[attribute] = value
         for constraint in detail.get("constraints", []):
             if constraint.kind in ("primary", "unique"):
                 self.unique_key(result, state, constraint)
@@ -2070,17 +2085,20 @@ class CatalogQueries:
         self.types = {t: v["columns"] for t, v in read_json(CATALOG_COLUMNS)["tables"].items()}
         self.queries = []
 
-    def add(self, qid, table, fields, key, where, rows, expressions=None):
-        expressions = expressions or {}
+    def add(self, qid, table, fields, key, where, rows, expressions=None, expression_types=None):
+        expressions, expression_types = expressions or {}, expression_types or {}
         missing = [f for f in fields if f not in expressions and f not in self.columns[table]]
         if missing:
             raise ValueError(f"Catalog query {qid} selects unverified columns {missing} from {table}")
+        if set(expressions) != set(expression_types):
+            raise ValueError(f"Catalog query {qid}: every computed field needs a declared type")
         rtrim = [f for f in fields if f not in expressions and self.types[table][f].startswith("CHAR(")]
         def render(side):
             select = ", ".join(expressions[f][side] + f" AS {f}" if f in expressions else f for f in fields)
             return f"SELECT {select} FROM {table} WHERE {where[side]}"
         low, high = rows if isinstance(rows, tuple) else (rows, rows)
         self.queries.append({"id": qid, "table": table, "fields": fields, "key": key, "rtrim_fields": rtrim,
+                             "types": {f: expression_types[f] if f in expressions else self.types[table][f] for f in fields},
                              "min_rows": low, "max_rows": high, "source_sql": render("source"),
                              "replay_sql": render("replay")})
 
@@ -2188,7 +2206,7 @@ def bundle(report, text, names, run, profile, out=None):
               ["NAME", "TYPE", "STATUS", "TABLESTATUS", "AUDITING", "DATACAPTURE", "APPEND", "SPLIT_ROWS", "CLUSTERTYPE",
                "ENCODING_SCHEME", "EDPROC", "VALPROC", "KEYCOLUMNS", "PARTKEYCOLNUM", "PARENTS", "CHILDREN", "CHECKS", "TSNAME_EXPLICIT"],
               ["NAME"], both(lambda s, d, schema=schema, tnames=tnames: f"CREATOR = {_literal(s(schema))} AND NAME IN ({_in_list(tnames)})"),
-              len(group), expressions={"TSNAME_EXPLICIT": both(tsname_expr)})
+              len(group), expressions={"TSNAME_EXPLICIT": both(tsname_expr)}, expression_types={"TSNAME_EXPLICIT": "VARCHAR(24) NOT NULL"})
         columns_low = columns_high = 0
         column_assertions = []
         for state in group:
@@ -2255,7 +2273,8 @@ def bundle(report, text, names, run, profile, out=None):
                   ["TBNAME", "RELNAME", "REFTBNAME", "COLCOUNT", "DELETERULE", "ENFORCED", "CHECKEXISTINGDATA", "PARENT_SCHEMA_MATCH"],
                   ["TBNAME", "RELNAME"], both(lambda s, d, schema=schema, tnames=sorted({st.obj.name.name for st, _ in fks}): f"CREATOR = {_literal(s(schema))} AND TBNAME IN ({_in_list(tnames)})"),
                   len(fks), expressions={"PARENT_SCHEMA_MATCH": {"source": "CASE WHEN REFTBCREATOR IN (" + _in_list({qualified(c.parent, s.schema_default).rpartition('.')[0] for s, c in fks}) + ") THEN 1 ELSE 0 END",
-                                                                  "replay": "CASE WHEN REFTBCREATOR IN (" + _in_list({names.schemas.get(p, p) for p in {qualified(c.parent, s.schema_default).rpartition('.')[0] for s, c in fks}}) + ") THEN 1 ELSE 0 END"}})
+                                                                  "replay": "CASE WHEN REFTBCREATOR IN (" + _in_list({names.schemas.get(p, p) for p in {qualified(c.parent, s.schema_default).rpartition('.')[0] for s, c in fks}}) + ") THEN 1 ELSE 0 END"}},
+                  expression_types={"PARENT_SCHEMA_MATCH": "INTEGER NOT NULL"})
             q.add(f"foreign_keys_{n}", "SYSIBM.SYSFOREIGNKEYS", ["TBNAME", "RELNAME", "COLSEQ", "COLNAME", "COLNO"],
                   ["TBNAME", "RELNAME", "COLSEQ"], both(lambda s, d, schema=schema, tnames=sorted({st.obj.name.name for st, _ in fks}): f"CREATOR = {_literal(s(schema))} AND TBNAME IN ({_in_list(tnames)})"),
                   sum(len(c.columns) for _, c in fks))
@@ -2480,7 +2499,10 @@ def _implicit(report):
 
 def _cleanup(report, names):
     """Ownership-aware drops in reverse dependency order for objects that exist at the end of the script."""
-    source, replay = [], []
+    # RESTRICT ON DROP blocks dropping the table, its table space and its database until it is removed (ibm-alter-table).
+    restricted = [key for key, state in report.tables.items() if state.obj.attrs.get("restrict_on_drop")]
+    source = [f"ALTER TABLE {key} DROP RESTRICT ON DROP" for key in restricted]
+    replay = [f"ALTER TABLE {names.relation(key)} DROP RESTRICT ON DROP" for key in restricted]
     created_dbs = {r.obj.name.name for r in report.objects if r.obj.kind == "database" and r.obj.name.name in report.databases}
     covered_tables = set()
     for key, ts in report.tablespaces.items():
@@ -2538,15 +2560,22 @@ def _run_md(run, report, names, cleanup):
             "review every warning and notice before execution.\n\n"
             "1. Verify the profile (function level, APPLCOMPAT, CURRENT RULES, subsystem parameters, pools, storage groups, authority). "
             "Confirm every source and replay name is unused.\n"
-            "2. Run `source.sql` statement by statement. Keep SQLCODE/SQLSTATE per statement. Stop at the first error; a failed setup blocks the case.\n"
-            "3. Run `catalog-source.sql`; export each result set as JSON under its `-- result set:` id with `side: source`.\n"
+            "2. Run `source.sql` statement by statement. Keep SQLCODE/SQLSTATE per statement. Stop at the first error; a failed setup blocks the case. "
+            "Record it: `python3 tools/qa.py record case.json --phase source --result pass --sqlcode 0 --evidence <log>` "
+            "(or `--result blocked --note ...`).\n"
+            "3. Run `catalog-source.sql`. Export each result set as CSV with its header row, named `<result set id>.csv` "
+            "after its `-- result set:` comment, into one directory, then "
+            "`python3 tools/qa.py snapshot --contract catalog-contract.json --side source --csv-dir <dir> --out source.json`.\n"
             "4. Extract the objects in `inventory.json` with the administration product, including table spaces, enforcing indexes, "
-            "auxiliary objects and dependent objects. Save the raw output as `product-generated.sql` with product version and options.\n"
-            "5. Offline first check: `python3 tools/ddl.py diff source.sql product-generated.sql --map name-map.json` "
+            "auxiliary objects and dependent objects. Save the raw output as `product-generated.sql`, then record it with "
+            "`--phase extraction --product <name> --product-version <version> [--option KEY=VALUE] --evidence product-generated.sql`.\n"
+            "5. Offline first check: `python3 tools/ddl.py diff source.sql product-generated.sql --map name-map.json --text` "
             "(map only if the product already applied the replay names). Investigate every `different` entry.\n"
             f"6. Apply the replay names ({', '.join(f'{k}->{v}' for k, v in {**names.schemas, **names.databases}.items())}) through the product or an SQL-aware adapter. "
-            "Never use blanket text replacement. Run the product output in the clean target.\n"
-            "7. Run `catalog-replay.sql`, export with `side: replay`, then `python3 tools/qa.py compare --contract catalog-contract.json --source source.json --replay replay.json`.\n"
+            "Never use blanket text replacement. Run the product output in the clean target and record `--phase replay`.\n"
+            "7. Run `catalog-replay.sql`, export it the same way and convert it with `--side replay`. Then "
+            "`python3 tools/qa.py record case.json --phase comparison --source source.json --replay replay.json` runs the comparison "
+            "and records its result; `python3 tools/qa.py status .` shows the case status.\n"
             "8. Keep all evidence, then run `cleanup-replay.sql` and `cleanup-source.sql` only for objects this run created. "
             "Lines starting with `-- review:` need a manual decision.\n")
 

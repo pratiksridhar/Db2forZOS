@@ -53,6 +53,7 @@
   "catalog": [
     {
       "id": "table",
+      "table": "SYSIBM.SYSTABLES",
       "fields": [
         "TYPE",
         "AUDITING",
@@ -74,6 +75,7 @@
     },
     {
       "id": "columns",
+      "table": "SYSIBM.SYSCOLUMNS",
       "fields": [
         "COLNO",
         "NAME",
@@ -101,6 +103,7 @@
     },
     {
       "id": "tablespace",
+      "table": "SYSIBM.SYSTABLESPACE",
       "fields": [
         "TYPE",
         "SEGSIZE",

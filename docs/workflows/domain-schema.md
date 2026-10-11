@@ -21,7 +21,8 @@ short gate list; this page explains each step.
    to spread these variants over five tables.
 2. Avoid the [dialect traps](../../kb/dialect-traps.md). In particular: 8-byte database and
    table-space names, 30-byte column names unless TABLE_COL_NAME_EXPANSION is on, no
-   `DEFAULT CURRENT TIMESTAMP`, no self-referencing FK inside CREATE TABLE, an
+   `DEFAULT CURRENT TIMESTAMP`, no self-referencing FK inside CREATE TABLE (add it
+   with ALTER TABLE and `ON DELETE NO ACTION` or `CASCADE`), an
    enforcing unique index for every key in an explicit table space before children,
    and LOB support objects (or `IN DATABASE`) for LOB columns.
 3. `python3 tools/ddl.py lint <sql> --profile <profile>` must PASS. Read each
@@ -46,9 +47,8 @@ fixed 72-column records. Function-level and APPLCOMPAT requirements come from
   and meet the `core` baseline.
 - [supply-chain-logistics](../../examples/domains/supply-chain-logistics/design.md):
   a 68-table generated domain schema with its request, plan and design case. It
-  predates the checker and is **not** a model to copy: `lint` reports three
-  self-referencing foreign keys inside CREATE TABLE, and it meets 11 of 43 `core`
-  requirements. It shows realistic topology, not syntax variety.
+  passes `lint` but meets only 11 of 43 `core` requirements, because its request
+  fixes one uniform PBG layout. It shows realistic topology, not syntax variety.
 
 Track a domain schema under `examples/domains/<id>/` only when it should be kept;
 otherwise write it under the git-ignored `generated/<id>/`.

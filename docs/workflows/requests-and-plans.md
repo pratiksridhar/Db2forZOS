@@ -41,9 +41,11 @@ The example requests unique indexes with INCLUDE, and crosses the remaining
 modeled key-order, padding and free-space choices. The plan lists the exact
 selected combinations, SQL fragments, constraint predicates, filtered coverage
 denominator, full model denominator and a concrete `offline_build_argv` for each
-independent object family. Execute that argument list through a process API,
-or quote it correctly for your shell, after reviewing the plan. It calls
-`tools/qa.py build`, which writes the DDL bundle and executes no SQL.
+independent object family. Execute that argument list from the repository root
+through a process API, or quote it correctly for your shell, after reviewing the
+plan. It calls `tools/qa.py build`, which writes the DDL bundle and executes no SQL.
+Paths inside the repository are recorded relative to its root, so a plan can be
+committed without one machine's checkout location; paths outside it stay absolute.
 
 Every plan has `status: design` and `review_status: agent_review_required`, even
 when `structured_scope_has_gaps` is false. A clause ID means a compiler path is

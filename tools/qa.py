@@ -204,6 +204,27 @@ def refs(model, selection):
     return sorted(covered)
 
 
+def catalog_types(query, tables=None):
+    """Declared type of every selected field: catalog columns from the verified column list, computed
+    fields from the query's expression_types. Snapshots are typed and checked against these."""
+    tables = tables if tables is not None else read(paths.CATALOG_COLUMNS)["tables"]
+    table = tables.get(query.get("table"))
+    if table is None:
+        raise ValueError(f"Catalog query {query.get('id')}: table {query.get('table')!r} has no verified columns "
+                         f"in {paths.rel(paths.CATALOG_COLUMNS)}")
+    computed = query.get("expression_types", {})
+    types = {}
+    for field in query["fields"]:
+        if field in computed:
+            types[field] = computed[field]
+        elif field in table["columns"]:
+            types[field] = table["columns"][field]
+        else:
+            raise ValueError(f"Catalog query {query['id']}: {field} is not a verified column of {query['table']}; "
+                             "declare a computed field in expression_types")
+    return types
+
+
 def validate_model(model, data):
     if type(model.get("uses_database", True)) is not bool:
         raise ValueError("uses_database must be a boolean")
@@ -263,9 +284,13 @@ def validate_model(model, data):
     query_map = {q["id"]: q for q in model["catalog"]}
     if not query_map or len(query_map) != len(model["catalog"]):
         raise ValueError("Catalog queries need unique IDs and cannot be empty")
+    tables = read(paths.CATALOG_COLUMNS)["tables"]
     for query in model["catalog"]:
         if not query["fields"] or not set(query["key"]) <= set(query["fields"]):
             raise ValueError("Catalog keys must be selected fields")
+        catalog_types(query, tables)
+        if not re.search(rf"\bFROM\s+{re.escape(query['table'])}\b", query["sql"]):
+            raise ValueError(f"Catalog query {query['id']} does not select from its declared table {query['table']}")
         if not set(query.get("rtrim_fields", [])) <= set(query["fields"]):
             raise ValueError("Padding fields must be selected fields")
     assertions = list(model.get("assertions", []))
@@ -309,8 +334,9 @@ def make_case(model, selection, profile, run, number, negative=None):
     row_counts = {}
     for axis, value in selection.items():
         row_counts.update(model["dimensions"][axis][value].get("catalog_row_counts", {}))
+    tables = read(paths.CATALOG_COLUMNS)["tables"]
     for query in model["catalog"]:
-        queries.append({**query, "source_sql": render(query["sql"], params), "replay_sql": render(query["sql"], replay)})
+        queries.append({**query, "types": catalog_types(query, tables), "source_sql": render(query["sql"], params), "replay_sql": render(query["sql"], replay)})
         if query["id"] in row_counts:
             queries[-1].update(min_rows=row_counts[query["id"]], max_rows=row_counts[query["id"]])
     assertions = model.get("assertions", []) + [a for axis, value in selection.items() for a in model["dimensions"][axis][value].get("assertions", [])]
@@ -452,14 +478,19 @@ def write_campaign(args):
         "For SPUFI body-format tests use SQLFORMAT SQLPL to retain comments and line structure. Do not split routine/trigger bodies on semicolons. "
         "Text metrics describe UTF-8 artifacts, not target CCSID byte limits.\n\n"
         "1. Verify the profile, required authority, and SQL processor settings. Run preflight.sql; require zero rows for every query.\n"
-        "2. Run bootstrap-source.sql once if it contains database setup. Per case, run setup.sql then action.sql; retain statement-level SQLCODE/SQLSTATE and stop after a setup error. Commit positive DDL.\n"
-        "3. For negative cases require successful setup and the intended action failure. Do not count arbitrary setup/authority errors as a pass. Skip product extraction for absent objects.\n"
-        "4. For positive cases capture catalog-source.sql result sets as JSON using the IDs in catalog-contract.json. Verify source attributes against the selection and IBM references. Inspect behavior-probes.json and retain any required body-text or behavioral evidence separately.\n"
-        "5. Extract DDL using the administration product, preserving product version, options and raw output as product-generated.sql. Include table spaces, enforcing indexes and dependent objects in the extraction scope.\n"
-        "6. Run bootstrap-replay.sql once if it contains database setup. Apply the recorded name map through the product or an SQL-aware adapter; replay actual product output. reference-replay.sql only tests the harness and is never product evidence.\n"
-        "7. Capture catalog-replay.sql with the same adapter. Run tools/qa.py compare with the case contract and both JSON snapshots. A matching snapshot covers only the selected fields. Run required behavioral probes on both sides separately.\n"
+        "2. Run bootstrap-source.sql once if it contains database setup. Per case, run setup.sql then action.sql; retain statement-level SQLCODE/SQLSTATE and stop after a setup error. Commit positive DDL. "
+        "Record each run: tools/qa.py record cases/<id> --phase source --result pass|fail|blocked --sqlcode N --evidence <log>.\n"
+        "3. For negative cases require successful setup and the intended action failure, and record it with the failing SQLCODE. Do not count arbitrary setup/authority errors as a pass. Skip product extraction for absent objects.\n"
+        "4. For positive cases export each catalog-source.sql result set as CSV with its header row, named <result set id>.csv in one directory per case and side, and convert it: "
+        "tools/qa.py snapshot --contract cases/<id>/catalog-contract.json --side source --csv-dir <dir> --out <file>. Verify source attributes against the selection and IBM references. "
+        "Inspect behavior-probes.json and retain any required body-text or behavioral evidence separately.\n"
+        "5. Extract DDL using the administration product, preserving product version, options and raw output as product-generated.sql. Include table spaces, enforcing indexes and dependent objects in the extraction scope. "
+        "Record it with --phase extraction --product <name> --product-version <version> --evidence product-generated.sql.\n"
+        "6. Run bootstrap-replay.sql once if it contains database setup. Apply the recorded name map through the product or an SQL-aware adapter; replay actual product output and record --phase replay. reference-replay.sql only tests the harness and is never product evidence.\n"
+        "7. Capture catalog-replay.sql with the same adapter and convert it with --side replay. tools/qa.py record cases/<id> --phase comparison --source <file> --replay <file> runs the comparison and records it. "
+        "A matching snapshot covers only the selected fields. Run required behavioral probes on both sides separately and record --phase probes. tools/qa.py status . reports every case.\n"
         "8. Retain execution evidence before cleanup. Run only drops for objects this run created. Where present, database cleanup removes entire dedicated databases; separately clean routine objects listed in case cleanup.\n\n"
-        "The snapshot format is in docs/workflows/product-verification.md (catalog evidence protocol); the execution protocol is in "
+        "Snapshots and outcome records are described in docs/workflows/product-verification.md; the execution protocol is in "
         "docs/workflows/campaign.md. No credentials or automatic execution are provided.\n")
     args.out.mkdir(parents=True, exist_ok=False)
     for path, content in files.items():
@@ -467,6 +498,142 @@ def write_campaign(args):
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8")
     print(dump({"output": str(args.out), "cases": len(cases), "coverage": coverage}))
+
+
+INTEGER_FAMILIES = {"SMALLINT", "INTEGER", "INT", "BIGINT"}
+TEXT_FAMILIES = {"CHAR", "CHARACTER", "VARCHAR", "TIMESTAMP", "DATE", "TIME"}
+
+
+def declared(type_text):
+    """(family, nullable) of a catalog declaration such as 'SMALLINT NOT NULL WITH DEFAULT'."""
+    words = re.sub(r"^FL \d+ ", "", type_text.upper()).split()
+    return re.sub(r"\(.*", "", words[0]), "NOT NULL" not in type_text.upper()
+
+
+def read_delimited(text, delimiter=","):
+    """RFC 4180 records as (line, [(text, quoted), ...]). Unlike the csv module it keeps whether a field
+    was quoted, so an unquoted empty field (how many clients export SQL NULL) differs from a quoted ''."""
+    records, record, field = [], [], []
+    quoted, at_start, line, start = False, True, 1, 1
+    i, n = 0, len(text)
+    while i < n:
+        ch = text[i]
+        if at_start and ch == '"':
+            i += 1
+            while True:
+                if i >= n:
+                    raise ValueError(f"line {start}: quoted field is not closed")
+                if text[i] == '"':
+                    if text[i + 1:i + 2] == '"':
+                        field.append('"')
+                        i += 2
+                        continue
+                    i += 1
+                    break
+                line += text[i] == "\n"
+                field.append(text[i])
+                i += 1
+            if i < n and text[i] not in (delimiter, "\r", "\n"):
+                raise ValueError(f"line {line}: text follows a closing quote")
+            quoted, at_start = True, False
+        elif ch == delimiter:
+            record.append(("".join(field), quoted))
+            field, quoted, at_start = [], False, True
+            i += 1
+        elif ch in "\r\n":
+            record.append(("".join(field), quoted))
+            records.append((start, record))
+            record, field, quoted, at_start = [], [], False, True
+            i += 2 if text[i:i + 2] == "\r\n" else 1
+            line += 1
+            start = line
+        else:
+            field.append(ch)
+            at_start = False
+            i += 1
+    if record or field or quoted:
+        record.append(("".join(field), quoted))
+        records.append((start, record))
+    return records
+
+
+def typed_value(value, quoted, type_text, null, where):
+    family, nullable = declared(type_text)
+    is_null = not quoted and value == null
+    if family in INTEGER_FAMILIES:
+        if is_null and nullable:
+            return None
+        try:
+            return int(value.strip())
+        except ValueError:
+            raise ValueError(f"{where}: {value!r} is not a value of {type_text}") from None
+    if family in TEXT_FAMILIES:
+        # A NOT NULL column cannot hold NULL, so its unquoted empty field is the empty string.
+        return None if is_null and nullable else value
+    raise ValueError(f"{where}: no conversion rule for declared type {type_text}")
+
+
+def snapshot(contract, side, files, null="", delimiter=",", encoding="utf-8"):
+    """Turn one CSV export per catalog result set into the snapshot that compare reads. Values are typed by
+    the contract's declared types; text keeps its exact characters, padding included."""
+    if side not in ("source", "replay"):
+        raise ValueError("side must be source or replay")
+    if not isinstance(contract, dict) or not contract.get("case_id") or not contract.get("catalog"):
+        raise ValueError("Contract must identify a case and contain catalog queries")
+    if len(delimiter) != 1 or delimiter in '"\r\n':
+        raise ValueError("The delimiter must be one character other than a quote or line break")
+    ids = [q["id"] for q in contract["catalog"]]
+    missing, unknown = [i for i in ids if i not in files], sorted(set(files) - set(ids))
+    if missing or unknown:
+        raise ValueError(f"Every result set needs exactly one export. Missing: {missing or 'none'}; not in the contract: {unknown or 'none'}")
+    catalog, provenance = {}, {}
+    for query in contract["catalog"]:
+        types = query.get("types")
+        if not types or set(query["fields"]) - types.keys():
+            raise ValueError(f"Contract query {query['id']} lacks declared types; rebuild the bundle or campaign with the current tools")
+        path = Path(files[query["id"]])
+        raw = path.read_bytes()
+        try:
+            text = raw.decode(encoding)
+        except UnicodeDecodeError as error:
+            raise ValueError(f"{path}: not {encoding} text ({error.reason}); pass --encoding") from None
+        records = read_delimited(text.removeprefix("﻿"), delimiter)
+        if not records:
+            raise ValueError(f"{path}: empty file; export the header row with the result set")
+        header = [name.strip().upper() for name, _ in records[0][1]]
+        duplicate = sorted({h for h in header if header.count(h) > 1})
+        absent, extra = [f for f in query["fields"] if f not in header], [h for h in header if h not in query["fields"]]
+        if duplicate or absent or extra:
+            raise ValueError(f"{path}: header does not match result set {query['id']} "
+                             f"(missing {absent or 'none'}, unexpected {extra or 'none'}, repeated {duplicate or 'none'})")
+        rows = []
+        for line, record in records[1:]:
+            if record == [("", False)] and len(header) > 1:
+                continue  # a blank line
+            if len(record) != len(header):
+                raise ValueError(f"{path} line {line}: {len(record)} fields; the header has {len(header)}")
+            rows.append({name: typed_value(value, quoted, types[name], null, f"{path} line {line} {name}")
+                         for name, (value, quoted) in zip(header, record)})
+        catalog[query["id"]] = rows
+        provenance[query["id"]] = {"file": paths.portable(path), "sha256": hashlib.sha256(raw).hexdigest(), "rows": len(rows)}
+    return {"case_id": contract["case_id"], "side": side, "catalog": catalog,
+            "provenance": {"converted_by": "tools/qa.py snapshot", "contract_sha256": digest(contract),
+                           "null": null, "delimiter": delimiter, "encoding": encoding, "files": provenance}}
+
+
+def check_types(query, side, rows):
+    """Reject values whose JSON type contradicts the declared column type, such as "5" for SMALLINT."""
+    for row in rows:
+        for field, type_text in query.get("types", {}).items():
+            family, nullable = declared(type_text)
+            value = row.get(field)
+            if value is None:
+                if not nullable:
+                    raise ValueError(f"{side}.{query['id']}: {field} is NULL, but {type_text} cannot be")
+            elif family in INTEGER_FAMILIES and (type(value) is not int):
+                raise ValueError(f"{side}.{query['id']}: {field} must be a JSON integer for {type_text}, not {value!r}")
+            elif family in TEXT_FAMILIES and not isinstance(value, str):
+                raise ValueError(f"{side}.{query['id']}: {field} must be a JSON string for {type_text}, not {value!r}")
 
 
 def compare(contract, source, replay):
@@ -489,6 +656,9 @@ def compare(contract, source, replay):
             raise ValueError(f"{side} snapshot case_id/side mismatch")
         if not isinstance(snapshot.get("catalog"), dict):
             raise ValueError(f"{side} snapshot requires a catalog map")
+        converted_for = (snapshot.get("provenance") or {}).get("contract_sha256")
+        if converted_for is not None and converted_for != digest(contract):
+            raise ValueError(f"{side} snapshot was converted for a different contract; convert the exports again with this one")
     for query in contract["catalog"]:
         if not query.get("fields") or not query.get("key") or not set(query["key"]) <= set(query["fields"]):
             raise ValueError("Contract requires selected fields and stable row keys")
@@ -518,6 +688,7 @@ def compare(contract, source, replay):
                     raise ValueError(f"{side}.{query['id']}: duplicate catalog key {key}")
                 keys.add(key)
                 records.append(json.dumps(values, sort_keys=True))
+            check_types(query, side, rows)
             for assertion in contract.get("assertions", []):
                 if assertion["catalog"] != query["id"]:
                     continue
@@ -564,6 +735,182 @@ def context_pack(object_name):
     return pack
 
 
+PHASES = ("source", "extraction", "replay", "comparison", "probes", "cleanup")
+PREREQUISITE = {"extraction": "source", "replay": "extraction", "comparison": "replay", "probes": "replay"}
+VERDICTS = ("pass", "fail", "blocked")
+
+
+def case_path(path):
+    path = Path(path)
+    return path / "case.json" if path.is_dir() else path
+
+
+def required_phases(record, probes=False):
+    """Phases whose latest attempts decide the status. A positive round trip needs every phase; an
+    expected SQL or operational error needs only the source run; an expected product error ends at extraction."""
+    outcome = record["expected"]["outcome"]
+    if outcome == "success":
+        return ["source", "extraction", "replay", "comparison"] + (["probes"] if probes else [])
+    return ["source", "extraction"] if outcome == "ofs_error" else ["source"]
+
+
+def latest_attempts(record):
+    return {phase: attempts[-1] for phase, attempts in record.get("outcomes", {}).items() if attempts}
+
+
+def derive_status(record, probes=False):
+    """design or ready until something is recorded; then fail, blocked or pass once a required phase decides
+    it, otherwise in_progress. A case can never be set to pass by hand."""
+    if record["status"] == "retired":
+        return "retired"
+    latest = latest_attempts(record)
+    if not latest:
+        return record["status"] if record["status"] in ("design", "ready") else "design"
+    results = [latest.get(phase, {}).get("result") for phase in required_phases(record, probes)]
+    for verdict in ("fail", "blocked"):
+        if verdict in results:
+            return verdict
+    return "pass" if all(result == "pass" for result in results) else "in_progress"
+
+
+def case_contract(path, record):
+    contract = Path(path).parent / record.get("artifacts", {}).get("catalog_contract", "catalog-contract.json")
+    return read(contract) if contract.is_file() else None
+
+
+def probes_required(path, record):
+    contract = case_contract(path, record)
+    return bool(contract and contract.get("probes"))
+
+
+def file_digest(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def record_outcome(path, phase, result=None, evidence=(), sqlcode=None, sqlstate=None, note=None, product=None,
+                   product_version=None, options=None, snapshots=None, at=None):
+    """Append one attempt to a case record and derive its status. The comparison result comes from compare
+    itself; malformed or missing evidence is refused rather than recorded."""
+    import datetime
+    import os
+
+    path = case_path(path)
+    record = read(path)
+    if not isinstance(record, dict) or not {"id", "status", "expected"} <= record.keys():
+        raise ValueError(f"{path} is not a case record")
+    if record["status"] == "retired":
+        raise ValueError(f"{record['id']} is retired; nothing more is recorded")
+    if phase not in PHASES:
+        raise ValueError(f"Unknown phase {phase!r}; use one of {', '.join(PHASES)}")
+    applicable = required_phases(record, probes=True) + ["cleanup"]
+    if phase not in applicable:
+        raise ValueError(f"{record['id']} expects {record['expected']['outcome']}; the {phase} phase does not apply")
+    before = PREREQUISITE.get(phase)
+    if before in applicable and latest_attempts(record).get(before, {}).get("result") != "pass":
+        raise ValueError(f"Record a passing {before} phase before {phase}")
+    stamp = at or datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z", stamp):
+        raise ValueError("--at must be a UTC time such as 2026-10-10T14:30:00Z")
+    files = [Path(p) for p in evidence]
+    entry = {}
+    if phase == "comparison":
+        if result is not None:
+            raise ValueError("The comparison result comes from compare; give --contract, --source and --replay instead of --result")
+        contract_path, source_path, replay_path = (Path(p) for p in snapshots)
+        contract = read(contract_path)
+        if contract.get("case_id") != record["id"]:
+            raise ValueError(f"{contract_path} belongs to {contract.get('case_id')}, not {record['id']}")
+        compared = compare(contract, read(source_path), read(replay_path))
+        result = "pass" if compared["status"] == "match" else "fail"
+        entry["compare"] = {"status": compared["status"], "differences": len(compared["differences"]),
+                            "failed_assertions": sum("failed_assertion" in d for d in compared["differences"])}
+        files = [contract_path, source_path, replay_path] + files
+    elif snapshots:
+        raise ValueError("--contract, --source and --replay apply only to the comparison phase")
+    if result not in VERDICTS:
+        raise ValueError(f"--result must be one of {', '.join(VERDICTS)}")
+    if sqlstate is not None and not re.fullmatch(r"[0-9A-Z]{5}", sqlstate):
+        raise ValueError("SQLSTATE is five digits or uppercase letters")
+    expected = record["expected"]
+    expects_error = phase == "source" and expected["outcome"] == "sql_error"
+    if result == "pass" and sqlcode is not None:
+        if expects_error and sqlcode >= 0:
+            raise ValueError("A negative case passes only when the action fails; this SQLCODE reports success")
+        if not expects_error and phase in ("source", "replay") and sqlcode < 0:
+            raise ValueError(f"A {phase} pass cannot carry a negative SQLCODE")
+    if expects_error and result == "pass":
+        if sqlcode is None:
+            raise ValueError("Record the SQLCODE of the intended failure (--sqlcode)")
+        for name, observed in (("sqlcode", sqlcode), ("sqlstate", sqlstate)):
+            if expected.get(name) is not None and observed is not None and observed != expected[name]:
+                raise ValueError(f"The case expects {name.upper()} {expected[name]}, not {observed}")
+    if phase == "extraction" and (product or product_version or options):
+        if not (product and product_version):
+            raise ValueError("Record the product with --product and --product-version")
+        entry["product"] = {"name": product, "version": product_version, **({"options": options} if options else {})}
+    if phase == "extraction" and result == "pass" and "product" not in entry:
+        raise ValueError("An extraction pass needs --product and --product-version")
+    if result == "pass" and not files:
+        raise ValueError("A pass needs evidence (--evidence FILE): missing evidence is not a pass")
+    if result != "pass" and not files and not note:
+        raise ValueError("Explain a fail or blocked result with --evidence or --note")
+    recorded = []
+    for file in files:
+        if not file.is_file() or file.stat().st_size == 0:
+            raise ValueError(f"Evidence {file} is missing or empty")
+        relative = Path(os.path.relpath(file.resolve(), path.parent.resolve())).as_posix()
+        recorded.append({"path": relative, "sha256": file_digest(file)})
+    entry = {"result": result, "recorded_at": stamp, **({"sqlcode": sqlcode} if sqlcode is not None else {}),
+             **({"sqlstate": sqlstate} if sqlstate is not None else {}), **entry,
+             **({"note": note} if note else {}), "evidence": recorded}
+    record.setdefault("outcomes", {}).setdefault(phase, []).append(entry)
+    record["status"] = derive_status(record, probes_required(path, record))
+    temporary = path.with_name(path.name + ".tmp")
+    temporary.write_text(dump(record), encoding="utf-8")
+    temporary.replace(path)
+    return record, entry
+
+
+def case_status(path):
+    """Derived status, latest result per required phase, the next phase and any evidence problems."""
+    path = case_path(path)
+    record = read(path)
+    probes = probes_required(path, record)
+    problems = []
+    for phase, attempts in record.get("outcomes", {}).items():
+        for item in attempts:
+            for evidence in item["evidence"]:
+                file = path.parent / evidence["path"]
+                if not file.is_file():
+                    problems.append(f"{phase}: evidence {evidence['path']} is missing")
+                elif file_digest(file) != evidence["sha256"]:
+                    problems.append(f"{phase}: evidence {evidence['path']} changed after it was recorded")
+    derived = derive_status(record, probes)
+    if derived != record["status"]:
+        problems.append(f"status is {record['status']}, but the recorded outcomes give {derived}")
+    latest = latest_attempts(record)
+    phases = {phase: latest.get(phase, {}).get("result") for phase in required_phases(record, probes)}
+    open_phase = next((p for p, r in phases.items() if r != "pass"), None)
+    return {"case": record["id"], "path": paths.portable(path), "status": record["status"], "phases": phases,
+            "next": open_phase if derived in ("design", "ready", "in_progress") else None, "problems": problems}
+
+
+def find_cases(targets):
+    found = []
+    for target in map(Path, targets):
+        if target.is_file():
+            found.append(target)
+        elif (target / "case.json").is_file():
+            found.append(target / "case.json")
+        elif target.is_dir():
+            found.extend(sorted(target.rglob("case.json")))
+        else:
+            raise ValueError(f"{target}: no such case file or directory")
+    if not found:
+        raise ValueError("No case.json found")
+    return found
+
+
 def validate_case(record):
     try:
         from jsonschema import Draft202012Validator
@@ -582,6 +929,12 @@ def validate_case(record):
                 raise ValueError(f"Unresolved SQL placeholder in {statements}")
     if not record["action_sql"]:
         raise ValueError("Case requires at least one action statement")
+    if record.get("outcomes"):
+        # Behavioral probes may or may not be required; that is in the catalog contract, not the record.
+        if record["status"] not in {derive_status(record), derive_status(record, probes=True)}:
+            raise ValueError(f"Status {record['status']} contradicts the recorded outcomes")
+    elif record["status"] in ("in_progress", "pass", "fail", "blocked"):
+        raise ValueError(f"Status {record['status']} needs outcomes recorded by tools/qa.py record; missing evidence is not a result")
 
 
 def main(argv=None):
@@ -607,6 +960,33 @@ def main(argv=None):
     comparison.add_argument("--contract", type=Path, required=True)
     comparison.add_argument("--source", type=Path, required=True)
     comparison.add_argument("--replay", type=Path, required=True)
+    snap = commands.add_parser("snapshot", help="turn CSV exports of the catalog result sets into a compare snapshot")
+    snap.add_argument("--contract", type=Path, required=True)
+    snap.add_argument("--side", choices=["source", "replay"], required=True)
+    snap.add_argument("--csv-dir", type=Path, help="directory with one QUERY-ID.csv per result set")
+    snap.add_argument("--result", action="append", default=[], metavar="QUERY-ID=FILE", help="export for one result set; overrides --csv-dir")
+    snap.add_argument("--delimiter", default=",", help="field delimiter; 'tab' for tab-separated exports")
+    snap.add_argument("--null", default="", help="unquoted text the client writes for SQL NULL (default: an empty unquoted field)")
+    snap.add_argument("--encoding", default="utf-8", help="encoding of the export files (default utf-8; a BOM is ignored)")
+    snap.add_argument("--out", type=Path, help="write a new snapshot file; an existing file is never overwritten")
+    rec = commands.add_parser("record", help="append one phase result with its evidence to a case record and derive its status")
+    rec.add_argument("case", type=Path, help="case.json or the directory that holds it")
+    rec.add_argument("--phase", choices=PHASES, required=True)
+    rec.add_argument("--result", choices=VERDICTS, help="pass, fail or blocked; the comparison result comes from compare")
+    rec.add_argument("--evidence", action="append", default=[], type=Path, metavar="FILE", help="file that shows the result; hashed and stored relative to the case")
+    rec.add_argument("--sqlcode", type=int)
+    rec.add_argument("--sqlstate")
+    rec.add_argument("--note")
+    rec.add_argument("--product", help="administration product that generated the DDL (extraction)")
+    rec.add_argument("--product-version")
+    rec.add_argument("--option", action="append", default=[], metavar="KEY=VALUE", help="product generation option (extraction)")
+    rec.add_argument("--contract", type=Path, help="comparison: the case's catalog contract (default: the one beside the case)")
+    rec.add_argument("--source", type=Path, help="comparison: source snapshot")
+    rec.add_argument("--replay", type=Path, help="comparison: replay snapshot")
+    rec.add_argument("--at", help="UTC time of the result, such as 2026-10-10T14:30:00Z (default: now)")
+    state = commands.add_parser("status", help="report each case's status, phase results, next phase and evidence problems")
+    state.add_argument("targets", nargs="+", type=Path, help="case.json files, case directories, bundles or campaigns")
+    state.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
     try:
         if args.command == "build":
@@ -624,6 +1004,63 @@ def main(argv=None):
             result = compare(read(args.contract), read(args.source), read(args.replay))
             print(dump(result))
             return 1 if result["status"] == "mismatch" else 0
+        elif args.command == "snapshot":
+            contract = read(args.contract)
+            files = {}
+            if args.csv_dir:
+                files = {q["id"]: args.csv_dir / f"{q['id']}.csv" for q in contract.get("catalog", [])
+                         if (args.csv_dir / f"{q['id']}.csv").is_file()}
+            for item in args.result:
+                query_id, separator, path = item.partition("=")
+                if not separator or not query_id or not path:
+                    raise ValueError(f"--result expects QUERY-ID=FILE, not {item!r}")
+                files[query_id] = Path(path)
+            delimiter = "\t" if args.delimiter in ("tab", "\\t") else args.delimiter
+            result = snapshot(contract, args.side, files, args.null, delimiter, args.encoding)
+            if args.out:
+                with args.out.open("x", encoding="utf-8") as handle:
+                    handle.write(dump(result))
+            else:
+                print(dump(result), end="")
+            counts = ", ".join(f"{q}={len(rows)}" for q, rows in result["catalog"].items())
+            print(f"{args.side} snapshot for {result['case_id']}: rows {counts}. Not compared yet; run compare.", file=sys.stderr)
+        elif args.command == "record":
+            snapshots = None
+            if args.phase == "comparison" or args.source or args.replay or args.contract:
+                if not (args.source and args.replay):
+                    raise ValueError("The comparison phase needs --source and --replay snapshots")
+                path = case_path(args.case)
+                contract = args.contract or path.parent / read(path).get("artifacts", {}).get("catalog_contract", "catalog-contract.json")
+                snapshots = (contract, args.source, args.replay)
+            options = {}
+            for item in args.option:
+                key, separator, value = item.partition("=")
+                if not separator or not key:
+                    raise ValueError(f"--option expects KEY=VALUE, not {item!r}")
+                options[key] = value
+            record, entry = record_outcome(args.case, args.phase, args.result, args.evidence, args.sqlcode, args.sqlstate,
+                                           args.note, args.product, args.product_version, options, snapshots, args.at)
+            detail = f" ({entry['compare']['differences']} difference(s))" if "compare" in entry else ""
+            print(f"{record['id']}: {args.phase} {entry['result']}{detail}; status {record['status']}.")
+        elif args.command == "status":
+            reports = [case_status(path) for path in find_cases(args.targets)]
+            if args.json:
+                print(dump(reports), end="")
+            else:
+                columns = list(dict.fromkeys(phase for report in reports for phase in report["phases"]))
+                rows = [["CASE", "STATUS", *(c.upper() for c in columns), "NEXT"]]
+                rows += [[r["case"], r["status"], *(r["phases"].get(c) or "-" for c in columns), r["next"] or "-"] for r in reports]
+                widths = [max(len(row[i]) for row in rows) for i in range(len(rows[0]))]
+                for row in rows:
+                    print("  ".join(cell.ljust(width) for cell, width in zip(row, widths)).rstrip())
+                for report in reports:
+                    for problem in report["problems"]:
+                        print(f"PROBLEM {report['case']}: {problem}")
+                totals = ", ".join(f"{k}={v}" for k, v in sorted(Counter(r["status"] for r in reports).items()))
+                print(f"{len(reports)} case(s): {totals}. Statuses come only from recorded evidence; nothing was executed.")
+            if any(r["problems"] for r in reports):
+                return 2
+            return 0 if all(r["status"] in ("pass", "retired") for r in reports) else 1
         elif args.command == "validate":
             import db2check
             profile = read(paths.EXAMPLE_PROFILE)

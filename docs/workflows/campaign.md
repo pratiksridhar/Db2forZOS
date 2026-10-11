@@ -89,7 +89,9 @@ coverage is relative to the filtered family. The report also retains the full
 model's raw and valid combination counts. Budgeted results never hide uncovered
 interactions.
 
-`coverage.json` measures **design selection**, with runtime passes initially zero.
+`coverage.json` measures **design selection**, with runtime passes initially zero; it
+is never updated. Runtime results come from each case's recorded outcomes:
+`tools/qa.py status <campaign>` lists them ([recording outcomes](product-verification.md#record-outcomes)).
 `tools/qa.py inventory` separately reports which normalized clauses have any
 compiler path and which have none. Neither report claims complete IBM syntax,
 restriction, behavior, or product coverage. Rule references provide traceability;

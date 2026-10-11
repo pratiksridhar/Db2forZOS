@@ -2,7 +2,7 @@
  "schema_version": "1.0.0",
  "title": "Db2 13 for z/OS catalog columns used by generated catalog queries",
  "reviewed": "2026-10-10",
- "note": "Column names and declared types were read from the IBM Db2 13 catalog table pages on the review date. Descriptions are not reproduced; follow the source link. Generated queries may select only columns listed here.",
+ "note": "Column names and declared types were read from the IBM Db2 13 catalog table pages on the review date. Descriptions are not reproduced; follow the source link. Generated queries may select only columns listed here, and tools/qa.py snapshot types exported values by these declarations. A table with columns_scope lists only some columns.",
  "tables": {
   "SYSIBM.SYSAUXRELS": {
    "source_ref": "ibm-catalog-sysauxrels",
@@ -259,6 +259,34 @@
     "CREATEDTS": "TIMESTAMP(12) NOT NULL WITH DEFAULT"
    }
   },
+  "SYSIBM.SYSPACKAGE": {
+   "source_ref": "ibm-catalog-syspackage",
+   "columns_scope": "Only the columns that campaign models select or filter on, read on the review date; other columns of this table are not listed.",
+   "columns": {
+    "COLLID": "VARCHAR(128) NOT NULL",
+    "NAME": "VARCHAR(128) NOT NULL",
+    "VERSION": "VARCHAR(122) NOT NULL",
+    "TYPE": "CHAR(1) NOT NULL WITH DEFAULT",
+    "APPLCOMPAT": "VARCHAR(10) NOT NULL WITH DEFAULT"
+   }
+  },
+  "SYSIBM.SYSPARMS": {
+   "source_ref": "ibm-catalog-sysparms",
+   "columns_scope": "Only the columns that campaign models select or filter on, read on the review date; other columns of this table are not listed.",
+   "columns": {
+    "SCHEMA": "VARCHAR(128) NOT NULL",
+    "NAME": "VARCHAR(128) NOT NULL",
+    "ROUTINETYPE": "CHAR(1) NOT NULL",
+    "VERSION": "VARCHAR(122) NOT NULL WITH DEFAULT",
+    "ORDINAL": "SMALLINT NOT NULL",
+    "PARMNAME": "VARCHAR(128) NOT NULL",
+    "ROWTYPE": "CHAR(1) NOT NULL",
+    "TYPENAME": "VARCHAR(128) NOT NULL",
+    "LENGTH": "INTEGER NOT NULL",
+    "SCALE": "SMALLINT NOT NULL",
+    "CCSID": "INTEGER NOT NULL"
+   }
+  },
   "SYSIBM.SYSRELS": {
    "source_ref": "ibm-catalog-sysrels",
    "columns": {
@@ -278,6 +306,27 @@
     "ENFORCED": "CHAR(1) NOT NULL WITH DEFAULT 'Y\"",
     "CHECKEXISTINGDATA": "CHAR(1) NOT NULL WITH DEFAULT",
     "RELCREATED": "CHAR(1) NOT NULL"
+   }
+  },
+  "SYSIBM.SYSROUTINES": {
+   "source_ref": "ibm-catalog-sysroutines",
+   "columns_scope": "Only the columns that campaign models select or filter on, read on the review date; other columns of this table are not listed.",
+   "columns": {
+    "SCHEMA": "VARCHAR(128) NOT NULL",
+    "NAME": "VARCHAR(128) NOT NULL",
+    "ROUTINETYPE": "CHAR(1) NOT NULL",
+    "ORIGIN": "CHAR(1) NOT NULL",
+    "LANGUAGE": "VARCHAR(24) NOT NULL",
+    "PARM_COUNT": "SMALLINT NOT NULL",
+    "DETERMINISTIC": "CHAR(1) NOT NULL",
+    "SQL_DATA_ACCESS": "CHAR(1) NOT NULL",
+    "NULL_CALL": "CHAR(1) NOT NULL",
+    "RESULT_SETS": "SMALLINT NOT NULL",
+    "COMMIT_ON_RETURN": "CHAR(1) NOT NULL",
+    "VERSION": "VARCHAR(122) NOT NULL WITH DEFAULT",
+    "ACTIVE": "CHAR(1) NOT NULL WITH DEFAULT",
+    "DEBUG_MODE": "CHAR(1) NOT NULL WITH DEFAULT",
+    "PARAMETER_CCSID": "INTEGER NOT NULL WITH DEFAULT"
    }
   },
   "SYSIBM.SYSTABLEPART": {
@@ -477,6 +526,20 @@
     "PCTFREE_UPD_CALC": "SMALLINT WITH DEFAULT NULL",
     "COMPRESSRATIO": "SMALLINT NOT NULL WITH DEFAULT",
     "KEYLABEL": "VARCHAR(192) NOT NULL WITH DEFAULT"
+   }
+  },
+  "SYSIBM.SYSTRIGGERS": {
+   "source_ref": "ibm-catalog-systriggers",
+   "columns_scope": "Only the columns that campaign models select or filter on, read on the review date; other columns of this table are not listed.",
+   "columns": {
+    "SCHEMA": "VARCHAR(128) NOT NULL",
+    "NAME": "VARCHAR(128) NOT NULL",
+    "TRIGTIME": "CHAR(1) NOT NULL",
+    "TRIGEVENT": "CHAR(1) NOT NULL",
+    "GRANULARITY": "CHAR(1) NOT NULL",
+    "SQLPL": "CHAR(1) NOT NULL WITH DEFAULT",
+    "SECURE": "CHAR(1) NOT NULL WITH DEFAULT 'N'",
+    "VERSION": "VARCHAR(122) NOT NULL"
    }
   }
  }

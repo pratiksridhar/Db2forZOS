@@ -232,8 +232,8 @@ def make_plan(request, root=ROOT):
         if profile_ready and negative_ready and not connected:
             run = f"{request.get('run_prefix', 'QA')}{index:02d}"
             out = root / request.get("output_root", f"generated/{request['id']}") / instance
-            argv = ["python3", str(ROOT / "tools/qa.py"), "build", "--model", model["id"], "--profile", str(profile_path),
-                    "--run", run, "--strategy", strategy, "--out", str(out)]
+            argv = ["python3", paths.portable(ROOT / "tools/qa.py"), "build", "--model", model["id"],
+                    "--profile", paths.portable(profile_path), "--run", run, "--strategy", strategy, "--out", paths.portable(out)]
             if "budget" in request:
                 argv.extend(["--budget", str(request["budget"])])
             if request.get("negative", False):
@@ -265,7 +265,8 @@ def make_plan(request, root=ROOT):
             "tool_sha256": {name: hashlib.sha256((ROOT / "tools" / name).read_bytes()).hexdigest() for name in ("ddl.py", "qa.py")},
             "request_schema_sha256": qa.digest(qa.read(SCHEMA)),
             "structured_scope_has_gaps": bool(gaps), "dependency_order": order,
-            "environment": {"profile": str(profile_path) if profile_path else None,
+            "path_base": "Relative paths, including those in offline_build_argv, are relative to the repository root; run the argv from there.",
+            "environment": {"profile": paths.portable(profile_path) if profile_path else None,
                             "verified": profile.get("verified", False) if isinstance(profile, dict) else False,
                             "execution_status": "not_executed", "profile_sha256": qa.digest(profile) if profile is not None else None},
             "objects": plans, "gaps": gaps, "research_tasks": research, "context": contexts,

@@ -5,13 +5,13 @@
   "review_status": "agent_review_required",
   "intent": "Design a source-reviewed Db2 13 for z/OS schema for a multi-tenant third-party logistics control tower. Support customer orders, warehouse inventory, shipment planning, multimodal legs, load consolidation, carrier tenders, appointments, live tracking, customs, documents, exceptions, customer billing, carrier settlement, accounting, idempotent integrations, audit, and transactional outbox delivery.",
   "intent_interpretation": "The intent is preserved verbatim, not parsed or certified. The agent must map every requirement to exact selections or an explicit gap.",
-  "request_sha256": "bf5682b42112c4090071d49fb55cf3f2f3e49f14809fe560d08d4985936059e2",
-  "kb_sha256": "628018c4076131d8715003441066c056c5b01971be0167d81bd78e0ed71b7aae",
+  "request_sha256": "07c588a13f74f58569766200c74a0a2fc7763e4f128d4a777ff72e7fe38ad08e",
+  "kb_sha256": "f7af08688fa92c307cfd208daf1e03684874a7f8813eef51c4ca79d062d7753c",
   "request": {
     "schema_version": "1.0.0",
     "id": "supply-chain-logistics",
     "intent": "Design a source-reviewed Db2 13 for z/OS schema for a multi-tenant third-party logistics control tower. Support customer orders, warehouse inventory, shipment planning, multimodal legs, load consolidation, carrier tenders, appointments, live tracking, customs, documents, exceptions, customer billing, carrier settlement, accounting, idempotent integrations, audit, and transactional outbox delivery.",
-    "profile": "kb/campaigns/profiles/example.json",
+    "profile": "qa/profiles/example.json",
     "strategy": "pairwise",
     "run_prefix": "SC",
     "output_root": "generated/supply-chain-logistics",
@@ -161,8 +161,8 @@
     ]
   },
   "tool_sha256": {
-    "ddl.py": "69cd2248e90e6c63b0207332a2c960c39b7a52eae081e1750d583f7e48ccfe5c",
-    "qa.py": "d7863a6de100e9b8591e8fe3e786c36cd4ca0589ef6c0f1e80a8a40ae9d52aca"
+    "ddl.py": "1da154185b989e92a544b3cd7f2bba64577fc1c9765c3f1d29a801648d100205",
+    "qa.py": "fb54cd436e7b7347679222c5eb2985479ed72f1037d8703132692f539572b293"
   },
   "request_schema_sha256": "3caddcc325ea97483a59f8fbd22276b702bad7ac4f13252ecd3f00042b306a6d",
   "structured_scope_has_gaps": true,
@@ -172,8 +172,9 @@
     "relational-tables",
     "indexes"
   ],
+  "path_base": "Relative paths, including those in offline_build_argv, are relative to the repository root; run the argv from there.",
   "environment": {
-    "profile": "/Users/sridharpratik/CodeRepos/Db2ForZOS/kb/campaigns/profiles/example.json",
+    "profile": "qa/profiles/example.json",
     "verified": false,
     "execution_status": "not_executed",
     "profile_sha256": "1affb1f6b16f0bd44b2290152e283f9604cf7f87034bb93da48b0ec604c3df30"
@@ -249,9 +250,9 @@
         ]
       },
       "offline_build_argv": null,
-      "model_sha256": "cea4623c701989ceedb37b68bca10158a41ad239856acd9799622e380fe51ed7",
+      "model_sha256": "eff7efbf8502718983ad8bf55b799401d20afe92a3c650e995f9df991878d114",
       "model_scope": {
-        "evidence": "IBM Db2 13 SQL Reference, edition 2026-09-03. See kb/campaigns/SOURCE-REVIEW.md. Model constraints cover only this bounded family.",
+        "evidence": "IBM Db2 13 SQL Reference, edition 2026-09-03. See docs/history/source-review.md. Model constraints cover only this bounded family.",
         "minimum_function_level": "V13R1M500",
         "minimum_applcompat": "V13R1M500",
         "rule_refs": [
@@ -428,9 +429,9 @@
       "chosen_model": "table-relational",
       "selection": {},
       "offline_build_argv": null,
-      "model_sha256": "7906d3e2dc3bac610a406b605065ef04398cc141ff67735fb415c01046a19d4d",
+      "model_sha256": "96a580e7b0f0bfcc578d36bac2e0f99caacfc8f6cd7083904b4018e9148c4a40",
       "model_scope": {
-        "evidence": "IBM Db2 13 SQL Reference SC28-2773-00, Last updated 2026-09-09; CREATE TABLE pp. 1708-1709 and 1730-1735, catalog sections listed in kb/campaigns/reviews/table-relational.md. Bounded source-reviewed family, no live execution.",
+        "evidence": "IBM Db2 13 SQL Reference SC28-2773-00, Last updated 2026-09-09; CREATE TABLE pp. 1708-1709 and 1730-1735, catalog sections listed in docs/history/reviews/table-relational.md. Bounded source-reviewed family, no live execution.",
         "minimum_function_level": "V13R1M500",
         "minimum_applcompat": "V13R1M500",
         "rule_refs": [
@@ -735,9 +736,9 @@
       "chosen_model": "index-core",
       "selection": {},
       "offline_build_argv": null,
-      "model_sha256": "68aa760a4385f640ad1241a1e28e3e44f5d3efc3ccdfbaefa285072df60f00ac",
+      "model_sha256": "bb0158cb79b374a16fe355a4658cf4f2a0285f3b68f736c15e65db5bf746d243",
       "model_scope": {
-        "evidence": "IBM Db2 13 SQL Reference, edition 2026-09-03. See kb/campaigns/SOURCE-REVIEW.md. Model constraints cover only this bounded family.",
+        "evidence": "IBM Db2 13 SQL Reference, edition 2026-09-03. See docs/history/source-review.md. Model constraints cover only this bounded family.",
         "minimum_function_level": "V13R1M500",
         "minimum_applcompat": "V13R1M500",
         "rule_refs": [

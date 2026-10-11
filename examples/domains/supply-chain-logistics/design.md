@@ -1,9 +1,13 @@
 # Supply-chain logistics backend design
 
-> **Status, 2026-10-10:** the generated DDL fails `tools/ddl.py lint` with three
-> `table.fk-self-reference` errors (F01803, F05604, F05804) and meets 11 of 43
-> `core` variety requirements. Move each self-reference to `ALTER TABLE ... ADD
-> FOREIGN KEY` after the parent's enforcing index before using it as source DDL.
+> **Status, 2026-10-10:** the generated DDL passes `tools/ddl.py lint`. The three
+> self-referencing keys (F01803, F05604, F05804) are added by `ALTER TABLE` after
+> their table's enforcing index, with `ON DELETE NO ACTION`: IBM allows only
+> `CASCADE` or `NO ACTION` when parent and dependent are the same table. The script
+> meets 11 of 43 `core` variety requirements because the request fixes one uniform
+> logged PBG design for every table; use it for realistic topology and
+> [varied-schema.sql](../../varied-schema.sql) for syntax variety. `plan.json` was
+> regenerated from `request.json` with repository-relative paths.
 
 ## Use case
 

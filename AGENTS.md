@@ -102,13 +102,16 @@ Realistic domain models are welcome, but spread syntax variants across them.
   need separate review; `equivalent-default` entries are not defects.
 - Recreate actual product output under clean names. A reference script produced by
   this repository does not prove that the product generated correct DDL.
-- Compare selected semantic catalog fields (`tools/qa.py compare` with the bundle
-  contract) and add behavioral probes where catalogs are insufficient. Preserve
-  case, literal whitespace, ordered keys/parameters, and object relationships.
-  Never normalize SQL with blanket string replacement.
+- Compare selected semantic catalog fields: convert each side's CSV exports with
+  `tools/qa.py snapshot`, then run `tools/qa.py compare` with the bundle contract.
+  Add behavioral probes where catalogs are insufficient. Preserve case, literal
+  whitespace, ordered keys/parameters, and object relationships. Never normalize
+  SQL with blanket string replacement.
 - Missing or empty evidence is not a pass. A catalog `match` is only a scoped result,
-  not the case lifecycle state. Keep source acceptance, extraction, replay, and
-  semantic verification as separate outcomes.
+  not the case lifecycle state. Record source acceptance, extraction, replay, and
+  comparison as separate outcomes with `tools/qa.py record`; it derives the case
+  status from recorded evidence, and `tools/qa.py status` reports it. Never edit a
+  case status by hand.
 - Offline generation does not authorize running SQL. Cleanup targets only objects
   this run created. Dedicated database cleanup drops their entire contents.
 

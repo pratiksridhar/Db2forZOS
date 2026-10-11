@@ -263,11 +263,19 @@ class AuthoringPlanTests(unittest.TestCase):
             self.assertEqual(result.returncode, 2)
             self.assertFalse(result.stdout)
 
+    def test_plan_records_repository_relative_paths(self):
+        result = self.plan()
+        argv = result["objects"][0]["offline_build_argv"]
+        self.assertEqual("qa/profiles/example.json", result["environment"]["profile"])
+        self.assertEqual(["python3", "tools/qa.py", "build"], argv[:3])
+        self.assertEqual("generated/index-include/indexes", argv[argv.index("--out") + 1])
+        self.assertNotIn(str(ROOT), json.dumps(result))
+
     def test_planned_command_builds_the_exact_previewed_cases(self):
         with tempfile.TemporaryDirectory() as tmp:
             self.request["output_root"] = tmp
             current = self.plan()["objects"][0]
-            result = subprocess.run(current["offline_build_argv"], cwd=tmp, text=True, capture_output=True)
+            result = subprocess.run(current["offline_build_argv"], cwd=ROOT, text=True, capture_output=True)
             self.assertEqual(result.returncode, 0, result.stderr)
             bundle = Path(tmp) / "indexes"
             manifest = qa.read(bundle / "manifest.json")

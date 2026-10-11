@@ -33,14 +33,24 @@
 > enforcing indexes. Encode cross-clause exclusions, isolated negatives and catalog
 > oracles. Keep the existing PBG family intact and report any unsupported branches.
 
+## Record execution results
+
+> Read AGENTS.md and docs/workflows/product-verification.md. For the case in
+> generated/[id], convert my catalog CSV exports in [dir]/source and [dir]/replay
+> with `tools/qa.py snapshot`. Record the source run, the extraction by [product]
+> [version] with options [options], the replay and the comparison with
+> `tools/qa.py record`, using the logs I supply as evidence. Report
+> `tools/qa.py status` and every comparison difference. Record nothing as passed
+> without evidence.
+
 ## Investigate a product discrepancy
 
-> Read the case record, contract, source/replay catalogs and actual product-generated
-> SQL in the supplied case directory. Identify whether the failure belongs to setup,
-> Db2 acceptance, product extraction, name mapping, replay, or semantic comparison.
-> Show the smallest relevant difference with IBM source references. Do not infer
-> success from missing evidence. Propose a smaller reproducer preserving the same
-> dependency and effective environment.
+> Read the case record and its recorded outcomes, contract, source/replay catalogs
+> and actual product-generated SQL in the supplied case directory. Identify whether
+> the failure belongs to setup, Db2 acceptance, product extraction, name mapping,
+> replay, or semantic comparison. Show the smallest relevant difference with IBM
+> source references. Do not infer success from missing evidence. Propose a smaller
+> reproducer preserving the same dependency and effective environment.
 
 ## Fill a coverage gap
 

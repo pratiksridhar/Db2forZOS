@@ -42,6 +42,7 @@
   "catalog": [
     {
       "id": "tablespace",
+      "table": "SYSIBM.SYSTABLESPACE",
       "fields": [
         "TYPE",
         "SEGSIZE",

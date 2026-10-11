@@ -1,0 +1,10 @@
+NAME,TBNAME,UNIQUERULE,COLCOUNT,CLUSTERING,PADDED,COMPRESS,FREEPAGE,PCTFREE,GBPCACHE,PGSIZE,BPOOL,CLOSERULE,COPY,PIECESIZE,INDEXTYPE,ERASERULE,STORTYPE,PAGENUM
+"CUSTOMER_PKIX","CUSTOMER","P",1,"Y"," ","N",0,10," ",4,"BP0     ","Y","N",2097152,"2","N","I","A"
+"CUSTOMER_UKIX","CUSTOMER","R",2,"N"," ","N",0,10," ",4,"BP0     ","Y","N",2097152,"2","N","I","A"
+"CUSTOMER_TAXIX","CUSTOMER","N",1,"N","N","N",0,10," ",4,"BP0     ","Y","N",2097152,"2","N","I","A"
+"PRODUCT_PKIX","PRODUCT","P",1,"N"," ","N",0,10," ",4,"BP0     ","Y","N",2097152,"2","N","I","A"
+"PRODUCT_SKUIX","PRODUCT","C",1,"N","Y","N",31,0," ",4,"BP0     ","Y","N",2097152,"2","N","I","A"
+"ORDER_PKIX","SALES_ORDER","P",1,"N"," ","N",0,10," ",4,"BP0     ","Y","N",2097152,"2","N","I","A"
+"ORDER_DATEIX","SALES_ORDER","D",2,"Y"," ","N",,,,4,"BP0     ","Y","N",0,"P","N",,"A"
+"ORDER_CUSTIX","SALES_ORDER","D",1,"N"," ","N",0,10," ",4,"BP0     ","Y","N",2097152,"2","N","I","A"
+"LINE_PKIX","ORDER_LINE","P",2,"N"," ","N",0,10," ",4,"BP0     ","Y","N",2097152,"2","N","I","A"

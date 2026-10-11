@@ -36,6 +36,7 @@ products' documentation.
 | A nullable PRIMARY KEY or UNIQUE column | NOT NULL key columns | (`table.key-not-null`) |
 | `PRIMARY KEY` on a table in an explicit table space with no index | `CREATE UNIQUE INDEX` with the same columns in the same order, before any child FK | The table stays incomplete and children cannot reference it (`table.incomplete-definition`, `table.fk-parent-unique-index`; `ibm-create-index`) |
 | `REFERENCES same_table` inside CREATE TABLE | `ALTER TABLE ... ADD FOREIGN KEY ... REFERENCES same_table` after the parent index exists | The parent must already exist outside CREATE SCHEMA (`table.fk-self-reference`) |
+| A self-reference with `ON DELETE RESTRICT`, `SET NULL` or no rule under `CURRENT RULES 'DB2'` | `ON DELETE NO ACTION` or `ON DELETE CASCADE` | The same table as parent and dependent allows only those rules (`table.fk-self-reference-delete-rule`; `ibm-alter-table`) |
 | `ON UPDATE CASCADE`, `ON DELETE SET DEFAULT`, `DEFERRABLE` | ON DELETE RESTRICT, NO ACTION, CASCADE or SET NULL; NOT ENFORCED if needed | (`dialect.referential-on-update`, `dialect.referential-action`, `dialect.clause`) |
 | FK column types that only resemble the parent's (INTEGER to BIGINT, CHAR(10) to VARCHAR(10)) | Identical type, length, scale and subtype | (`table.fk-type-identity`) |
 | Composite foreign keys longer than 255 bytes | Foreign key length at most 255 minus the nullable column count | (`table.fk-key-length`) |

@@ -8,7 +8,7 @@ command connects to Db2 or executes SQL.** Each tool prints full options with
 | Tool | Owns |
 |---|---|
 | `tools/ddl.py` | Any DDL script: request plans, lint, variety coverage, product diff, QA bundles |
-| `tools/qa.py` | Modeled campaign families: build, validate, compare catalog evidence, validate cases |
+| `tools/qa.py` | Modeled campaign families and case evidence: build, validate, convert and compare catalog exports, record outcomes, validate cases |
 | `tools/kb.py` | Queries over the normalized IBM-derived reference in `kb/data/` |
 | `tools/agent.py` | The legacy recipe layer in `qa/legacy-agent/` |
 
@@ -51,14 +51,19 @@ python3 tools/ddl.py levels --applcompat V13R1M500
 |---|---|---|
 | `models` | Lists compilable campaign models in [qa/models](../qa/models) as JSON | 0 |
 | `build --model M --profile P --run R --out DIR [--strategy S] [--set AXIS=VALUE] [--budget N] [--negative]` | Writes an offline campaign bundle; never overwrites output | 0; 2 bad input |
+| `snapshot --contract C --side source\|replay --csv-dir DIR [--result ID=FILE] [--null TEXT] [--delimiter D] [--encoding E] [--out F]` | Turns one CSV export per catalog result set into a typed snapshot | 0 written; 2 malformed export or bad input |
 | `compare --contract C --source S.json --replay R.json` | Compares selected catalog fields and encoded expectations | 0 match; 1 differences; 2 malformed/missing evidence |
+| `record CASE --phase P [--result R] [--evidence F] [--sqlcode N] [--sqlstate S] [--note T] [--product N --product-version V] [--option K=V] [--source S --replay R] [--at T]` | Appends a source, extraction, replay, comparison, probes or cleanup result with its evidence to a case and derives the status | 0 recorded; 2 refused |
+| `status PATH... [--json]` | Each case's status, phase results, next phase and evidence integrity | 0 all pass; 1 some not passed; 2 evidence missing/changed or inconsistent |
 | `validate-case CASE.json` | Checks a case against the [case schema](../qa/schemas/test-case.schema.json) IBM source IDs and unresolved placeholders; not SQL legality | 0 valid; nonzero invalid |
 | `validate` | Checks model references, constraints, rendering and dependency graphs | 0; 2 invalid |
 | `inventory` | Normalized clauses with and without a compiler path | 0 |
 | `context OBJECT` | Self-contained IBM-linked object context pack | 0 |
 
 Strategies are `pairwise` (default), `three-way`, `each-choice` and `exhaustive`.
-See [the campaign workflow](workflows/campaign.md) for what each covers.
+See [the campaign workflow](workflows/campaign.md) for what each covers, and
+[product verification](workflows/product-verification.md#catalog-evidence-protocol)
+for snapshots and outcome records.
 
 ```sh
 python3 tools/qa.py build --model table-core --profile qa/profiles/example.json \
@@ -68,6 +73,11 @@ python3 tools/qa.py build --model table-relational --profile qa/profiles/example
 python3 tools/qa.py build --model trigger-basic --profile qa/profiles/example.json \
   --run G01 --set body=long-comment --out generated/trigger-demo
 .venv/bin/python tools/qa.py validate-case generated/qa1/case.json
+python3 tools/qa.py snapshot --contract generated/qa1/catalog-contract.json --side source \
+  --csv-dir exports/source --out generated/qa1/source.json
+python3 tools/qa.py record generated/qa1 --phase comparison \
+  --source generated/qa1/source.json --replay generated/qa1/replay.json
+python3 tools/qa.py status generated/qa1
 ```
 
 ## kb.py: query the IBM-derived reference

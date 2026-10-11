@@ -173,9 +173,10 @@ CREATE TABLE QAV.ORDER_LINE
 CREATE UNIQUE INDEX QAV.LINE_PKIX ON QAV.ORDER_LINE (ORDER_ID, LINE_NO);
 
 -- A table cannot reference itself in CREATE TABLE; add the self-reference now.
+-- A self-reference must use ON DELETE CASCADE or NO ACTION (ALTER TABLE).
 ALTER TABLE QAV.ORDER_LINE
   ADD CONSTRAINT LINE_PARENT_FK FOREIGN KEY (PARENT_ORDER_ID, PARENT_LINE_NO)
-  REFERENCES QAV.ORDER_LINE (ORDER_ID, LINE_NO) ON DELETE SET NULL;
+  REFERENCES QAV.ORDER_LINE (ORDER_ID, LINE_NO) ON DELETE NO ACTION;
 
 -- Implicit table space in the database: Db2 creates the base space, the
 -- enforcing index, the hidden ROWID and the LOB space/auxiliary objects.

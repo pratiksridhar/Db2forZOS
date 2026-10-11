@@ -58,7 +58,7 @@ The JSON is deliberately a normalized test model, not a replacement SQL parser. 
 | [data/db2z13-trigger-body-statements.json](data/db2z13-trigger-body-statements.json) | Trigger statement syntax and support matrix |
 | [data/db2z13-ddl-checks.json](data/db2z13-ddl-checks.json) | Static check rules with severities, KB rule references and IBM sources |
 | [data/db2z13-function-levels.json](data/db2z13-function-levels.json) | Function-level and APPLCOMPAT gate data used by `lint` and `diff` |
-| [data/db2z13-catalog-columns.json](data/db2z13-catalog-columns.json) | Verified catalog column names/types that generated queries may select |
+| [data/db2z13-catalog-columns.json](data/db2z13-catalog-columns.json) | Verified catalog column names/types that generated queries may select; `qa.py snapshot` types exported values by them |
 
 ## Object cross-reference
 

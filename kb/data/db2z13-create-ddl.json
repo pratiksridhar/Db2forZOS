@@ -107,6 +107,10 @@
       "title": "CREATE TABLE statement",
       "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-create-table"
     },
+    "ibm-alter-table": {
+      "title": "ALTER TABLE statement",
+      "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-alter-table"
+    },
     "ibm-partition-boundary": {
       "title": "Changing the boundary between partitions",
       "url": "https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=partitions-changing-boundary-between"

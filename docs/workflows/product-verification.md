@@ -36,25 +36,60 @@ prints JSON with every entry.
 | `different`, `missing` | Candidate defects: the product output changed or lost an attribute or object |
 | `environment-dependent` | Stated on one side only, and a subsystem parameter or container decides the omitted value. Record the value in the profile or check catalog evidence |
 | `extra` | Created only by the product output, for example an implicit object made explicit. Review it |
-| `not-compared` | A statement or object the diff could not read or does not model: a partly parsed statement, an `ALTER` other than an added constraint, `RENAME`, views, routines and triggers. Review it separately |
+| `not-compared` | A statement or object the diff could not read or does not model: a partly parsed statement, an `ALTER` the diff does not model, `RENAME`, views, routines and triggers. Review it separately |
 | `equivalent-default` | Not a defect: one side states the documented default, or names a constraint the source left for Db2 to name |
 
 The command exits 1 when any `different` or `missing` entry exists, otherwise 3
 when any `environment-dependent`, `extra` or `not-compared` entry exists, otherwise 0.
 These product rewrites compare as the same definition: delimited names that spell
-ordinary identifiers, keys added later by `ALTER TABLE`, explicit documented
-defaults, defaults that the script's own database or table space supplies, values
-repeated in every `PARTITION` clause, `INCLUSIVE` limit keys and names for unnamed
-constraints. An omitted `FOR SBCS DATA` or `FOR MIXED DATA` follows the encoding
-scheme and the `MIXED` parameter. Sources and limits are in the
-[diff review](../history/reviews/diff-product-output.md).
+ordinary identifiers, keys added later by `ALTER TABLE`, table options that a later
+`ALTER TABLE` sets (`DATA CAPTURE`, `AUDIT`, `VOLATILE`, `APPEND`, `VALIDPROC`,
+`ADD` or `DROP RESTRICT ON DROP`), explicit documented defaults, defaults that the
+script's own database or table space supplies, values repeated in every `PARTITION`
+clause, `INCLUSIVE` limit keys and names for unnamed constraints. An omitted
+`FOR SBCS DATA` or `FOR MIXED DATA` follows the encoding scheme and the `MIXED`
+parameter. Other `ALTER` statements, such as `ALTER TABLE ... ADD COLUMN`,
+`ALTER COLUMN ... RESTART WITH` or any `ALTER TABLESPACE` and `ALTER INDEX`, stay
+`not-compared`. Sources and limits are in the
+[diff review](../history/reviews/diff-product-output.md) and the
+[ALTER and evidence review](../history/reviews/alter-table-and-evidence.md).
 
 A diff match is not a product pass; replay and catalog comparison still decide.
 
 ## Catalog evidence protocol
 
-Run the generated catalog queries with your local SQL client or test harness.
-An adapter exports each result set under the query ID printed in the SQL file:
+Run the generated catalog queries (`catalog-source.sql`, later `catalog-replay.sql`)
+with your SQL client. Export each result set as CSV with its header row, named after
+the `-- result set:` comment above its query (`tables_1.csv`), one directory per
+side. Then convert and compare:
+
+```sh
+python3 tools/qa.py snapshot --contract catalog-contract.json --side source \
+  --csv-dir exports/source --out source.json
+python3 tools/qa.py snapshot --contract catalog-contract.json --side replay \
+  --csv-dir exports/replay --out replay.json
+python3 tools/qa.py compare --contract catalog-contract.json \
+  --source source.json --replay replay.json
+```
+
+`snapshot` types every value by the declared catalog type the contract lists for
+it, taken from [the verified catalog columns](../../kb/data/db2z13-catalog-columns.json):
+integer columns become JSON numbers and text keeps every character, padding
+included. An unquoted empty field is SQL NULL in a nullable column and the empty
+string in a NOT NULL column; a quoted empty field is always the empty string. If
+your client writes NULL as text, name it with `--null` (for example `--null NULL`).
+`--delimiter` (`tab` for tab-separated files) and `--encoding` cover other export
+settings; a UTF-8 byte-order mark is ignored. `--result ID=FILE` maps a file that
+is named differently. The command refuses a missing or unexpected result set, a
+header that does not list exactly the selected columns, a short row, and a value
+its declared type cannot hold. Export both sides with the same client settings:
+`FOR BIT DATA` values such as `SYSINDEXPART.LIMITKEY` keep the representation the
+client writes. The rows do not show which side they came from, because selected
+fields exclude relocated names, so keep the two directories apart. Each snapshot
+records the hash of every export file and of the contract; `compare` rejects a
+snapshot converted for another contract.
+
+A harness can also write the snapshot JSON itself:
 
 ```json
 {
@@ -68,16 +103,12 @@ An adapter exports each result set under the query ID printed in the SQL file:
 
 This is a format illustration, not a complete table-case snapshot. Every query in
 the case contract must be present. Use uppercase column names, JSON numbers for
-numeric values, JSON null for SQL NULL, and lossless strings for text. Do not trim
+integer columns, JSON null for SQL NULL, and lossless strings for text. Do not trim
 DEFAULTVALUE or change letter case. Identify the second export with `side: replay`.
+`compare` rejects a value whose JSON type contradicts the declared column type,
+such as `"5"` for a SMALLINT, and NULL in a NOT NULL column.
 
-```sh
-python3 tools/qa.py compare \
-  --contract generated/table-demo/cases/DB2Z13-TABLE-T01-001/catalog-contract.json \
-  --source source-catalog.json --replay replay-catalog.json
-```
-
-Exit codes: **0** selected fields match and encoded expectations hold; **1** semantic
+`compare` exit codes: **0** selected fields match and encoded expectations hold; **1** semantic
 differences or failed expectations; **2** malformed/missing evidence or bad inputs.
 Rows are compared by declared keys independent of export order. Missing columns,
 duplicate keys and unexpected row counts are rejected. Only explicitly declared
@@ -90,19 +121,49 @@ contracts cover only their listed fields. Identity generator options, dependenci
 all partition attributes, and DML behavior need additional contracts/probes before
 claiming comprehensive semantic equivalence.
 
-## Evidence needed for a product test pass
+## Record outcomes
 
-Keep these separate in the external harness or case artifacts:
+Source acceptance, extraction, replay and comparison are separate results.
+`tools/qa.py record` appends each one to the case record's `outcomes`, with the
+time and every evidence file's path (relative to the case) and SHA-256:
 
-1. Source setup/action acceptance, subsystem identity, effective settings and diagnostics.
-2. Source catalog assertions and any required behavioral probes.
-3. Product version/options, exact extraction scope, raw generated SQL and name map.
-4. Actual replay SQL and statement-level acceptance results in the clean target.
-5. Catalog comparison and behavioral probe outcomes, plus cleanup ownership/results.
+```sh
+python3 tools/qa.py record CASE --phase source --result pass --sqlcode 0 --evidence source.log
+python3 tools/qa.py record CASE --phase extraction --result pass --evidence product-generated.sql \
+  --product "<product>" --product-version "<version>" --option KEY=VALUE
+python3 tools/qa.py record CASE --phase replay --result pass --sqlcode 0 --evidence replay.log
+python3 tools/qa.py record CASE --phase comparison --source source.json --replay replay.json
+python3 tools/qa.py status generated/qa1
+```
 
-The offline compiler/comparator does not promote a case to `pass`. Only the harness
-that has all required evidence can do so. Negative Db2 syntax cases cannot directly
-test product extraction because their target objects should not exist.
+`CASE` is a `case.json` or its directory; `--result` is `pass`, `fail` or `blocked`.
+
+| Phase | What it records | Needs first |
+|---|---|---|
+| `source` | Setup and action on the source subsystem. A positive case passes when they succeed; an expected-error case passes only with the SQLCODE of the intended failure | - |
+| `extraction` | The product run, with product name, version and options | a passing `source` |
+| `replay` | The product output run in the clean target | a passing `extraction` |
+| `comparison` | `compare` runs on the snapshots: `match` passes, `mismatch` fails, malformed evidence is refused | a passing `replay` |
+| `probes` | Behavioral probes; required when the catalog contract lists any (trigger and procedure families) | a passing `replay` |
+| `cleanup` | Drops of this run's objects; it never decides the status | - |
+
+A pass needs at least one evidence file, and missing or empty files are refused. A
+fail or blocked result needs evidence or `--note`. Each call adds an attempt and the
+latest attempt of each phase counts. The status follows from them: `fail` or
+`blocked` when a required phase has that result, `pass` when every required phase
+passed, otherwise `in_progress`. A case that expects an SQL or operational error
+needs only the source phase, and one that expects a product error (`ofs_error`) ends
+at extraction. Nothing sets `pass` by hand, and `validate-case` rejects a status the
+outcomes do not support. Negative Db2 syntax cases cannot test product extraction
+because their target objects should not exist.
+
+`status` lists every case under the given files or directories with its phase
+results and next phase. It also checks that each recorded evidence file still exists
+with the same hash. It exits 0 when every case passed (or is retired), 1 otherwise,
+and 2 when evidence is missing or changed or a status contradicts its outcomes.
+
+Keep with the evidence what the record cannot hold: subsystem identity and effective
+settings, the exact extraction scope and name map, and cleanup ownership.
 
 ## Arbitrary scripts and product output
 

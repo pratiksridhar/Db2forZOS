@@ -5,11 +5,17 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass, field
+import json
 from pathlib import Path
+import sys
 import textwrap
 
 
 ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "tools"))
+import db2check  # noqa: E402
+import paths  # noqa: E402
+
 DEFAULT_OUTPUT = ROOT / "generated" / "supply-chain-logistics" / "source.sql"
 SCHEMA = "LOGISTICS"
 DATABASE = "SCLDB"
@@ -2554,13 +2560,20 @@ def render_table(number: int, table: Table) -> list[str]:
             f"CONSTRAINT U{number:03d}{unique_number:02d} UNIQUE "
             f"({', '.join(columns)})"
         )
+    self_references: list[str] = []
     for fk_number, foreign_key in enumerate(table.all_foreign_keys(), 1):
-        elements.append(
+        constraint = (
             f"CONSTRAINT F{number:03d}{fk_number:02d} FOREIGN KEY "
             f"({', '.join(foreign_key.columns)}) REFERENCES "
             f"{qualified(foreign_key.ref_table)} "
-            f"({', '.join(foreign_key.ref_columns)}) ON DELETE RESTRICT"
+            f"({', '.join(foreign_key.ref_columns)})"
         )
+        if foreign_key.ref_table == table.name:
+            # CREATE TABLE cannot name its own table as the parent, and a
+            # self-reference must use CASCADE or NO ACTION (ALTER TABLE).
+            self_references.append(constraint + " ON DELETE NO ACTION")
+        else:
+            elements.append(constraint + " ON DELETE RESTRICT")
     for check_number, expression in enumerate(table.checks, 1):
         elements.append(
             f"CONSTRAINT C{number:03d}{check_number:02d} "
@@ -2628,6 +2641,9 @@ def render_table(number: int, table: Table) -> list[str]:
                 "  DEFER NO;",
             ]
         )
+    for constraint in self_references:
+        lines.extend(["", "", f"ALTER TABLE {qualified(table.name)}"])
+        lines.extend(wrap_sql("ADD " + constraint + ";", "  "))
     return lines
 
 
@@ -2702,11 +2718,15 @@ def render_preamble(index_count: int) -> list[str]:
         "RUN ORDER: execute sequentially with semicolon terminators and stop at "
         "the first error. This script is not rerunnable or atomic. Each table "
         "is followed by all enforcing and access-path indexes, then COMMIT, so "
-        "parent keys exist before child creation. Record successful statements "
-        "and repair from a known empty database/schema after failure.",
+        "parent keys exist before child creation. A table that references "
+        "itself gets that key from ALTER TABLE after its enforcing index, with "
+        "ON DELETE NO ACTION, because IBM allows only CASCADE or NO ACTION "
+        "when parent and dependent are the same table. Record successful "
+        "statements and repair from a known empty database/schema after "
+        "failure.",
         "IBM TRACEABILITY: reviewed local normalized rules and IBM Db2 13 SQL "
         "Reference sections CREATE DATABASE, CREATE TABLESPACE, CREATE TABLE, "
-        "CREATE INDEX, referential/check constraints, generated row-change "
+        "CREATE INDEX, ALTER TABLE, referential/check constraints, generated row-change "
         "timestamps, data types, and implicit table/LOB creation. Also reviewed "
         "the Administration Guide topics for PBG and LOB support objects. IBM "
         "SQL Reference was last updated 2026-04-06 and accessed 2026-09-12.",
@@ -2971,6 +2991,17 @@ def validate_schema(sql: str) -> list[str]:
     return errors
 
 
+def lint(sql: str) -> list[str]:
+    """Error and unsupported findings of tools/ddl.py lint with the example profile."""
+    profile = json.loads(paths.EXAMPLE_PROFILE.read_text(encoding="utf-8"))
+    report = db2check.analyze(sql, db2check.Options.from_profile(profile))
+    return [
+        f"line {finding.line}: {finding.rule}: {finding.message}"
+        for finding in report.findings
+        if finding.severity in db2check.FAILING
+    ]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
@@ -2981,7 +3012,7 @@ def main() -> int:
     )
     args = parser.parse_args()
     sql = generate_sql()
-    errors = validate_schema(sql)
+    errors = validate_schema(sql) + lint(sql)
     if errors:
         for error in errors:
             print(f"ERROR: {error}")
@@ -3001,7 +3032,7 @@ def main() -> int:
         f"{len(TABLES)} tables, "
         f"{len(TABLES) - 1} explicit table spaces, "
         f"{sum(index_count_for(table) for table in TABLES)} indexes, "
-        f"executable lines <= {MAX_LINE} columns"
+        f"executable lines <= {MAX_LINE} columns, tools/ddl.py lint clean"
     )
     return 0
 

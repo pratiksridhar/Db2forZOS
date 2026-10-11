@@ -143,6 +143,7 @@
   "catalog": [
     {
       "id": "parent_columns",
+      "table": "SYSIBM.SYSCOLUMNS",
       "fields": [
         "COLNO",
         "NAME",
@@ -168,6 +169,7 @@
     },
     {
       "id": "child_columns",
+      "table": "SYSIBM.SYSCOLUMNS",
       "fields": [
         "COLNO",
         "NAME",
@@ -193,6 +195,7 @@
     },
     {
       "id": "relationship",
+      "table": "SYSIBM.SYSRELS",
       "fields": [
         "RELNAME",
         "COLCOUNT",
@@ -212,10 +215,14 @@
         "ENFORCED",
         "CHECKEXISTINGDATA"
       ],
-      "sql": "SELECT RELNAME, COLCOUNT, DELETERULE, ENFORCED, CHECKEXISTINGDATA, CASE WHEN REFTBCREATOR = '{{SCHEMA}}' AND REFTBNAME = '{{TABLE}}P' THEN 1 ELSE 0 END AS PARENT_MATCH FROM SYSIBM.SYSRELS WHERE CREATOR = '{{SCHEMA}}' AND TBNAME = '{{TABLE}}'"
+      "sql": "SELECT RELNAME, COLCOUNT, DELETERULE, ENFORCED, CHECKEXISTINGDATA, CASE WHEN REFTBCREATOR = '{{SCHEMA}}' AND REFTBNAME = '{{TABLE}}P' THEN 1 ELSE 0 END AS PARENT_MATCH FROM SYSIBM.SYSRELS WHERE CREATOR = '{{SCHEMA}}' AND TBNAME = '{{TABLE}}'",
+      "expression_types": {
+        "PARENT_MATCH": "INTEGER NOT NULL"
+      }
     },
     {
       "id": "foreign_keys",
+      "table": "SYSIBM.SYSFOREIGNKEYS",
       "fields": [
         "RELNAME",
         "COLSEQ",
@@ -236,6 +243,7 @@
     },
     {
       "id": "parent_primary_index",
+      "table": "SYSIBM.SYSINDEXES",
       "fields": [
         "UNIQUERULE",
         "COLCOUNT"
@@ -252,6 +260,7 @@
     },
     {
       "id": "parent_unique_index",
+      "table": "SYSIBM.SYSINDEXES",
       "fields": [
         "UNIQUERULE",
         "COLCOUNT"
@@ -268,6 +277,7 @@
     },
     {
       "id": "parent_primary_keys",
+      "table": "SYSIBM.SYSKEYS",
       "fields": [
         "COLSEQ",
         "COLNO",
@@ -287,6 +297,7 @@
     },
     {
       "id": "parent_unique_keys",
+      "table": "SYSIBM.SYSKEYS",
       "fields": [
         "COLSEQ",
         "COLNO",
@@ -306,6 +317,7 @@
     },
     {
       "id": "checks",
+      "table": "SYSIBM.SYSCHECKS",
       "fields": [
         "CHECKNAME",
         "CHECKCONDITION",
@@ -324,6 +336,7 @@
     },
     {
       "id": "parent_table",
+      "table": "SYSIBM.SYSTABLES",
       "fields": [
         "TYPE",
         "STATUS",
@@ -338,10 +351,14 @@
         "TYPE",
         "STATUS"
       ],
-      "sql": "SELECT TYPE, STATUS, CASE WHEN DBNAME = '{{DATABASE}}' AND TSNAME = '{{PARENT_TABLESPACE}}' THEN 1 ELSE 0 END AS SPACE_MATCH FROM SYSIBM.SYSTABLES WHERE CREATOR = '{{SCHEMA}}' AND NAME = '{{TABLE}}P'"
+      "sql": "SELECT TYPE, STATUS, CASE WHEN DBNAME = '{{DATABASE}}' AND TSNAME = '{{PARENT_TABLESPACE}}' THEN 1 ELSE 0 END AS SPACE_MATCH FROM SYSIBM.SYSTABLES WHERE CREATOR = '{{SCHEMA}}' AND NAME = '{{TABLE}}P'",
+      "expression_types": {
+        "SPACE_MATCH": "INTEGER NOT NULL"
+      }
     },
     {
       "id": "child_table",
+      "table": "SYSIBM.SYSTABLES",
       "fields": [
         "TYPE",
         "STATUS",
@@ -356,7 +373,10 @@
         "TYPE",
         "STATUS"
       ],
-      "sql": "SELECT TYPE, STATUS, CASE WHEN DBNAME = '{{DATABASE}}' AND TSNAME = '{{TABLESPACE}}' THEN 1 ELSE 0 END AS SPACE_MATCH FROM SYSIBM.SYSTABLES WHERE CREATOR = '{{SCHEMA}}' AND NAME = '{{TABLE}}'"
+      "sql": "SELECT TYPE, STATUS, CASE WHEN DBNAME = '{{DATABASE}}' AND TSNAME = '{{TABLESPACE}}' THEN 1 ELSE 0 END AS SPACE_MATCH FROM SYSIBM.SYSTABLES WHERE CREATOR = '{{SCHEMA}}' AND NAME = '{{TABLE}}'",
+      "expression_types": {
+        "SPACE_MATCH": "INTEGER NOT NULL"
+      }
     }
   ],
   "dimensions": {

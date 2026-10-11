@@ -182,6 +182,7 @@
   "catalog": [
     {
       "id": "trigger",
+      "table": "SYSIBM.SYSTRIGGERS",
       "fields": [
         "TRIGTIME",
         "TRIGEVENT",
@@ -206,6 +207,7 @@
     },
     {
       "id": "package",
+      "table": "SYSIBM.SYSPACKAGE",
       "fields": [
         "TYPE",
         "VERSION"

@@ -114,6 +114,8 @@ NEGATIVE = {
     "table.fk-key-length": DB + "CREATE TABLE S.P (A CHAR(200) NOT NULL, B CHAR(100) NOT NULL, PRIMARY KEY (A, B)) IN DATABASE QADB1;\n"
                            "CREATE TABLE S.C (A CHAR(200), B CHAR(100), FOREIGN KEY (A, B) REFERENCES S.P) IN DATABASE QADB1;",
     "table.fk-self-reference": DB + "CREATE TABLE S.T (C INTEGER NOT NULL PRIMARY KEY, P INTEGER REFERENCES S.T) IN DATABASE QADB1;",
+    "table.fk-self-reference-delete-rule": DB + "CREATE TABLE S.T (C INTEGER NOT NULL PRIMARY KEY, P INTEGER) IN DATABASE QADB1;\n"
+                                           "ALTER TABLE S.T ADD FOREIGN KEY (P) REFERENCES S.T;",
     "table.fk-parent-key": DB + "CREATE TABLE S.P (A INTEGER NOT NULL, B INTEGER NOT NULL, PRIMARY KEY (A, B)) IN DATABASE QADB1;\n"
                            "CREATE TABLE S.C (A INTEGER, B INTEGER, FOREIGN KEY (B, A) REFERENCES S.P (B, A)) IN DATABASE QADB1;",
     "table.fk-arity": DB + "CREATE TABLE S.P (A INTEGER NOT NULL, B INTEGER NOT NULL, PRIMARY KEY (A, B)) IN DATABASE QADB1;\n"
@@ -302,10 +304,25 @@ class LintBehaviorTests(unittest.TestCase):
         self.assertEqual(report.compatibility["minimum_applcompat"], "V13R1M506")
         self.assertEqual(len(report.tables), 1000)
 
-    def test_self_reference_through_alter_table_is_accepted(self):
-        sql = (DB + TS + "CREATE TABLE S.T (C INTEGER NOT NULL, P INTEGER, PRIMARY KEY (C)) IN QADB1.TS1;\n"
-               "CREATE UNIQUE INDEX S.I ON S.T (C);\nALTER TABLE S.T ADD FOREIGN KEY (P) REFERENCES S.T ON DELETE SET NULL;")
-        self.assertFalse(rules(sql))
+    def test_self_reference_through_alter_table_needs_cascade_or_no_action(self):
+        base = (DB + TS + "CREATE TABLE S.T (C INTEGER NOT NULL, P INTEGER, PRIMARY KEY (C)) IN QADB1.TS1;\n"
+                "CREATE UNIQUE INDEX S.I ON S.T (C);\n")
+        for rule in ("CASCADE", "NO ACTION"):
+            with self.subTest(rule=rule):
+                self.assertFalse(rules(base + f"ALTER TABLE S.T ADD FOREIGN KEY (P) REFERENCES S.T ON DELETE {rule};"))
+        for clause in (" ON DELETE SET NULL", " ON DELETE RESTRICT", ""):
+            with self.subTest(clause=clause):
+                found = rules(base + f"ALTER TABLE S.T ADD FOREIGN KEY (P) REFERENCES S.T{clause};")
+                self.assertEqual({"table.fk-self-reference-delete-rule"}, found)
+        # The omitted rule follows CURRENT RULES when the ALTER runs: NO ACTION under 'STD'.
+        self.assertFalse(rules(base + "SET CURRENT RULES = 'STD';\nALTER TABLE S.T ADD FOREIGN KEY (P) REFERENCES S.T;"))
+
+    def test_alter_table_options_are_checked(self):
+        base = DB + "CREATE TABLE S.T (C INTEGER) IN DATABASE QADB1;\n"
+        self.assertFalse(rules(base + "ALTER TABLE S.T DATA CAPTURE CHANGES AUDIT ALL APPEND NO NOT VOLATILE;"))
+        self.assertEqual({"syntax.duplicate-clause"}, rules(base + "ALTER TABLE S.T AUDIT ALL AUDIT NONE;"))
+        self.assertEqual({"script.parse-error"}, rules(base + "ALTER TABLE S.T DATA CAPTURE SOMETIMES;"))
+        self.assertEqual({"dependency.external"}, rules(DB + "ALTER TABLE S.MISSING APPEND YES;"))
 
     def test_enforcing_index_must_match_column_order(self):
         base = DB + TS + "CREATE TABLE S.T (A INTEGER NOT NULL, B INTEGER NOT NULL, PRIMARY KEY (A, B)) IN QADB1.TS1;\n"
@@ -476,6 +493,26 @@ class DiffTests(unittest.TestCase):
             with self.subTest(changed=changed):
                 self.assertIn(("different", attribute), self.statuses(self.diff(source, source.replace(original, changed))))
 
+    def test_alter_table_options_fold_into_the_definition(self):
+        options = "AUDIT ALL DATA CAPTURE CHANGES APPEND YES VOLATILE VALIDPROC S.VP1 WITH RESTRICT ON DROP"
+        source = DB + f"CREATE TABLE S.T (C INTEGER) IN DATABASE QADB1 {options};"
+        altered = (DB + "CREATE TABLE S.T (C INTEGER) IN DATABASE QADB1 VALIDPROC S.OLD;\n"
+                   "ALTER TABLE S.T DATA CAPTURE CHANGES AUDIT ALL;\n"
+                   "ALTER TABLE S.T APPEND YES VOLATILE CARDINALITY ADD RESTRICT ON DROP VALIDPROC S.VP1;")
+        self.assertEqual("match", self.diff(source, altered)["status"])
+        for later, attribute in (("ALTER TABLE S.T DATA CAPTURE NONE;", "data_capture"), ("ALTER TABLE S.T AUDIT CHANGES;", "audit"),
+                                 ("ALTER TABLE S.T NOT VOLATILE;", "volatile"), ("ALTER TABLE S.T VALIDPROC NULL;", "validproc"),
+                                 ("ALTER TABLE S.T DROP RESTRICT ON DROP;", "restrict_on_drop")):
+            with self.subTest(later=later):
+                self.assertIn(("different", attribute), self.statuses(self.diff(source, altered + "\n" + later)))
+        # Removing what was never set leaves the documented default.
+        plain = DB + "CREATE TABLE S.T (C INTEGER) IN DATABASE QADB1;"
+        self.assertEqual("match", self.diff(plain, plain + "\nALTER TABLE S.T DROP RESTRICT ON DROP DATA CAPTURE NONE;")["status"])
+        self.assertIn(("not-compared", None), self.statuses(self.diff(plain, plain + "\nALTER TABLE S.T ADD COLUMN D INTEGER;")))
+        # Db2 rejects a statement that does not parse, so none of its clauses apply.
+        aborted = self.statuses(self.diff(plain, plain + "\nALTER TABLE S.T DATA CAPTURE CHANGES AUDIT;"))
+        self.assertEqual({("not-compared", None)}, aborted)
+
     def test_unread_or_unmodeled_input_is_never_a_match(self):
         source = DB + "CREATE TABLE S.T (C INTEGER) IN DATABASE QADB1;\nCREATE VIEW S.V AS SELECT C FROM S.T;"
         cases = {"partial CREATE": source.replace("IN DATABASE QADB1;", "IN DATABASE QADB1 FROBNICATE YES;"),
@@ -577,26 +614,24 @@ class BundleTests(unittest.TestCase):
         self.assertIn("DROP DATABASE QAVDB01", files["cleanup-source.sql"])
         self.assertIn("DROP DATABASE QAVDB02", files["cleanup-replay.sql"])
         self.assertTrue(all(len(line) <= 72 for line in files["catalog-source.sql"].splitlines()))
-        # Build snapshots that satisfy every encoded expectation, then compare.
-        snapshots = {}
-        for side in ("source", "replay"):
-            catalog = {}
-            for query in contract["catalog"]:
-                by_key = {}
-                for assertion in (a for a in contract["assertions"] if a["catalog"] == query["id"]):
-                    key = json.dumps(sorted(assertion["where"].items()))
-                    row = by_key.setdefault(key, {f: f"{query['id']}-{len(by_key)}" for f in query["fields"]})
-                    row.update(assertion["where"])
-                    row.update(assertion["equals"])
-                rows = list(by_key.values())
-                while len(rows) < query["min_rows"]:
-                    rows.append({f: f"{query['id']}-filler-{len(rows)}" for f in query["fields"]})
-                catalog[query["id"]] = rows
-            snapshots[side] = {"case_id": contract["case_id"], "side": side, "catalog": catalog}
-        self.assertEqual(qa.compare(contract, snapshots["source"], snapshots["replay"])["status"], "match")
-        broken = copy.deepcopy(snapshots["replay"])
-        broken["catalog"]["tablespaces_1"][0]["SEGSIZE"] = 999
-        self.assertEqual(qa.compare(contract, snapshots["source"], broken)["status"], "mismatch")
+        self.assertTrue(all(set(q["types"]) == set(q["fields"]) for q in contract["catalog"]))
+        # Imitation CSV exports of the exemplar's catalog meet every encoded expectation;
+        # tests/test_evidence.py seeds defects into them.
+        exports = {path.stem: path for path in paths.CATALOG_EXPORTS.glob("*.csv")}
+        source, replay = qa.snapshot(contract, "source", exports), qa.snapshot(contract, "replay", exports)
+        self.assertEqual(qa.compare(contract, source, replay)["status"], "match")
+        replay["catalog"]["tablespaces_1"][0]["SEGSIZE"] = 999
+        self.assertEqual(qa.compare(contract, source, replay)["status"], "mismatch")
+
+    def test_bundle_expectations_and_cleanup_follow_alter_table(self):
+        text = (DB + "CREATE TABLE QAV.T (C INTEGER) IN DATABASE QADB1;\n"
+                "ALTER TABLE QAV.T DATA CAPTURE CHANGES ADD RESTRICT ON DROP;\n")
+        _, files = self.make(text, databases={"QADB1": "QADB2"})
+        expected = [a["equals"] for a in json.loads(files["catalog-contract.json"])["assertions"] if a["where"] == {"NAME": "T"}][0]
+        self.assertEqual(("Y", "Y"), (expected["DATACAPTURE"], expected["CLUSTERTYPE"]))
+        source_cleanup = files["cleanup-source.sql"]
+        self.assertLess(source_cleanup.index("ALTER TABLE QAV.T DROP RESTRICT ON DROP"), source_cleanup.index("DROP DATABASE QADB1"))
+        self.assertIn("ALTER TABLE QAVR.T DROP RESTRICT ON DROP", files["cleanup-replay.sql"])
 
     def test_bundle_refuses_failing_scripts_and_missing_names(self):
         with self.assertRaisesRegex(ValueError, "lint"):

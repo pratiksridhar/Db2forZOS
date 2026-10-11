@@ -13,7 +13,9 @@ here is in [the changelog](history/CHANGELOG.md).
 Build a thin adapter around the actual work environment: SQL submission, statement
 diagnostics, catalog export, product invocation and clean-target replay. Keep the
 file protocol independent of the LLM vendor and product invocation mechanism.
-Record product version/options and subsystem settings alongside every result.
+`qa.py snapshot` already reads CSV exports and `qa.py record` keeps each phase's
+result, product version and options with hashed evidence, so the adapter only has
+to produce those files. Record subsystem settings alongside every result.
 
 Acceptance: one case demonstrates source acceptance, product extraction, replay,
 and detection of an intentionally removed semantic attribute. Keep approved test
@@ -56,10 +58,13 @@ Add dependency-aware reduction that repeatedly removes clauses/objects while an
 external harness confirms the same failure signature. Preserve the original case,
 seed/model hash, SQL, environment and product output. Use mutation tests to show
 that oracles catch missing defaults, reversed keys, wrong referential actions,
-truncated routine text and lost partition overrides. The DDL diff has such a test
-over the exemplar ([diff review](history/reviews/diff-product-output.md)); the
-catalog comparator and routine text checks do not yet. The diff still models no
-`ALTER TABLE` form other than an added constraint.
+truncated routine text and lost partition overrides. The DDL diff and the catalog
+comparator have such tests over the exemplar ([diff review](history/reviews/diff-product-output.md),
+[evidence review](history/reviews/alter-table-and-evidence.md)); routine text checks
+do not yet. The diff models added constraints and the ALTER TABLE option clauses;
+other `ALTER` forms, such as `ADD COLUMN`, `RESTART WITH` and every `ALTER TABLESPACE`
+or `ALTER INDEX`, remain `not-compared` until the product's actual output shows they
+are needed.
 
 Eventually rank campaign work by uncovered source-reviewed branches, historical
 defect yield, risk and execution cost. Thousands of repeated names are load coverage;

@@ -4,6 +4,24 @@ Dated reviews in [reviews/](reviews/) and the [campaign source review](source-re
 record exactly what was checked against which IBM edition. They are history: later
 changes do not re-certify them.
 
+## 2026-10-10: catalog exports, recorded outcomes and ALTER TABLE options
+
+`qa.py snapshot` turns one CSV export per catalog result set into a typed snapshot,
+so catalog comparison no longer needs hand-built JSON. Contracts now declare each
+field's catalog type; campaign-model queries name their catalog table, and four
+routine, trigger and package catalog tables joined the verified column list.
+`compare` rejects mistyped values and snapshots converted for another contract.
+`qa.py record` appends source, extraction, replay, comparison, probe and cleanup
+results with hashed evidence to a case and derives its status, which gains
+`in_progress`; `qa.py status` reports progress and changed evidence. Seeded defects
+in an imitation catalog export of the exemplar test the comparator. `lint`, `bundle`
+and `diff` apply the ALTER TABLE options DATA CAPTURE, AUDIT, VOLATILE, APPEND,
+VALIDPROC and RESTRICT ON DROP, and bundle cleanup removes RESTRICT ON DROP first.
+New rule `table.fk-self-reference-delete-rule` caught the exemplar's self-reference
+with `ON DELETE SET NULL`, now `NO ACTION`. The supply-chain example passes `lint`,
+and `ddl.py plan` writes repository-relative paths. See
+[the review](reviews/alter-table-and-evidence.md).
+
 ## 2026-10-10: diff trusts product-style output and flags what it cannot read
 
 `ddl.py diff` no longer reports common extraction rewrites as differences: delimited

@@ -46,8 +46,18 @@ DOCS = ROOT / "docs"
 
 TEST_FIXTURES = ROOT / "tests" / "fixtures"
 REGENERATED_SCHEMA = TEST_FIXTURES / "varied-schema-regenerated.sql"
+CATALOG_EXPORTS = TEST_FIXTURES / "varied-schema-catalog"
 
 
 def rel(path: Path) -> str:
     """Repository-relative POSIX path, for messages and recorded artifacts."""
     return path.resolve().relative_to(ROOT).as_posix()
+
+
+def portable(path: Path) -> str:
+    """Repository-relative POSIX path for a path inside the repository, else the absolute path.
+    Recorded artifacts use it so they never embed one machine's checkout location."""
+    try:
+        return rel(path)
+    except ValueError:
+        return str(path.resolve())

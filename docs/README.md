@@ -43,3 +43,4 @@ Dated records describe the repository when they were written; paths in them may 
 | Trigger and procedure source review | [Routine review](history/reviews/routines.md) |
 | Parent/child table model source review | [Relational table review](history/reviews/table-relational.md) |
 | How the DDL diff judges product-style rewrites | [Diff review](history/reviews/diff-product-output.md) |
+| ALTER TABLE options, catalog exports and case outcomes | [ALTER and evidence review](history/reviews/alter-table-and-evidence.md) |

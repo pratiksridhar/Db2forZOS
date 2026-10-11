@@ -84,6 +84,7 @@
   "catalog": [
     {
       "id": "index",
+      "table": "SYSIBM.SYSINDEXES",
       "fields": [
         "UNIQUERULE",
         "COLCOUNT",
@@ -102,6 +103,7 @@
     },
     {
       "id": "keys",
+      "table": "SYSIBM.SYSKEYS",
       "fields": [
         "COLSEQ",
         "COLNAME",
@@ -120,6 +122,7 @@
     },
     {
       "id": "index_storage",
+      "table": "SYSIBM.SYSINDEXES",
       "fields": [
         "FREEPAGE",
         "PCTFREE"

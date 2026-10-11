@@ -39,6 +39,7 @@ Reviewed: **2026-09-03**. Product path: **Db2 13 for z/OS** unless noted.
 ## Tables
 
 - `ibm-create-table` — [CREATE TABLE statement](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-create-table)
+- `ibm-alter-table` — [ALTER TABLE statement](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=statements-alter-table) (reviewed 2026-10-10)
 - `ibm-partition-boundary` — [Changing the boundary between partitions](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=partitions-changing-boundary-between) (reviewed 2026-10-10)
 - `ibm-sql-identifiers` — [Identifiers in SQL](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=elements-identifiers) (reviewed 2026-10-10)
 - `ibm-table-concept` — [Db2 tables](https://www.ibm.com/docs/en/db2-for-zos/13.0.0?topic=concepts-db2-tables)

@@ -645,6 +645,8 @@ def _mark_partial(result):
     """An aborted statement leaves an incomplete object that later checks must not trust."""
     if result.obj is not None:
         result.obj.attrs["partial"] = True
+    else:
+        result.detail["partial"] = True  # an aborted ALTER changes nothing
 
 
 def _dialect(cur, context):
@@ -1788,12 +1790,30 @@ def _parse_alter(cur, result, state):
     table = cur.name()
     result.detail["table"] = table
     result.detail["constraints"] = []
+    result.detail["options"] = {}
     result.detail["unmodeled"] = False
-    holder = Obj("table", table, result.statement.index, result.statement.line)
-    holder.attrs.update(constraints=[], columns=[])
+    options, seen = result.detail["options"], set()
+
+    def option(clause, attribute, value):
+        # "The same clause must not be specified more than one time" (ibm-alter-table)
+        if clause in seen:
+            result.detail.setdefault("duplicate_clauses", []).append((clause, line))
+        seen.add(clause)
+        options[attribute] = value
+
+    def choice(clause, allowed):
+        token = cur.next()
+        if token.value not in allowed:
+            raise ParseError(f"{clause} takes {' or '.join(allowed)}", token)
+        return token.value
+
     while not cur.at_end():
         line = cur.line()
-        if cur.accept("ADD"):
+        if cur.accept("ADD", "RESTRICT", "ON", "DROP"):
+            option("restrict-on-drop", "restrict_on_drop", True)
+        elif cur.accept("DROP", "RESTRICT", "ON", "DROP"):
+            option("restrict-on-drop", "restrict_on_drop", False)
+        elif cur.accept("ADD"):
             if cur.is_word("CONSTRAINT", "PRIMARY", "UNIQUE", "FOREIGN", "CHECK"):
                 name = None
                 if cur.accept("CONSTRAINT"):
@@ -1802,6 +1822,20 @@ def _parse_alter(cur, result, state):
             else:
                 result.detail["unmodeled"] = True
                 return
+        elif cur.accept("DATA", "CAPTURE"):
+            option("data-capture", "data_capture", choice("DATA CAPTURE", ("NONE", "CHANGES")))
+        elif cur.accept("AUDIT"):
+            option("audit", "audit", choice("AUDIT", ("NONE", "CHANGES", "ALL")))
+        elif cur.accept("APPEND"):
+            option("append", "append", choice("APPEND", ("NO", "YES")))
+        elif cur.accept("NOT", "VOLATILE"):
+            cur.accept("CARDINALITY")
+            option("volatile", "volatile", "NOT VOLATILE")
+        elif cur.accept("VOLATILE"):
+            cur.accept("CARDINALITY")
+            option("volatile", "volatile", "VOLATILE")
+        elif cur.accept("VALIDPROC"):
+            option("validproc", "validproc", None if cur.accept("NULL") else cur.name().qualified())
         else:
             result.detail["unmodeled"] = True
             return

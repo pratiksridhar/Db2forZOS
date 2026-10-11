@@ -10,7 +10,7 @@ IBM truth. Locations are defined once in [tools/paths.py](../tools/paths.py).
 | [profiles/example.json](profiles/example.json) | `lint`, `diff`, `bundle`, `build` | `test_qa` | Unverified example environment ([environment](../docs/environment.md)) |
 | [variety-baseline.json](variety-baseline.json) | `ddl.py coverage --baseline` | `test_db2check` | `core` and `extended` syntax-variety requirements for QA schemas |
 | [schemas/request.schema.json](schemas/request.schema.json) | `ddl.py plan` | `test_ddl` | Structured authoring requests ([requests and plans](../docs/workflows/requests-and-plans.md)) |
-| [schemas/test-case.schema.json](schemas/test-case.schema.json) | `qa.py validate-case`, tests | `test_kb` | Persistent test-case records, including those `build` and `bundle` write |
+| [schemas/test-case.schema.json](schemas/test-case.schema.json) | `qa.py validate-case`, tests | `test_kb`, `test_evidence` | Persistent test-case records, including those `build` and `bundle` write and the outcomes `qa.py record` adds |
 | [legacy-agent/](legacy-agent/README.md) | `agent.py`, `ddl.py plan` (object registry) | `test_kb`; `agent.py validate` | Earlier recipe layer, fixtures and SQL templates; kept for the view scaffold and manual authoring |
 
 The six models are `table-core`, `table-relational`, `tablespace-pbg`, `index-core`,

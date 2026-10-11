@@ -19,6 +19,16 @@ class SupplyChainLogisticsSchemaTests(unittest.TestCase):
     def test_generated_schema_is_statically_valid(self):
         sql = logistics.generate_sql()
         self.assertEqual([], logistics.validate_schema(sql))
+        self.assertEqual([], logistics.lint(sql), "tools/ddl.py lint must pass")
+
+    def test_self_references_follow_the_enforcing_index_with_no_action(self):
+        sql = logistics.generate_sql()
+        for table in ("018", "056", "058"):
+            constraint = sql.index(f"ADD CONSTRAINT F{table}0")
+            with self.subTest(table=table):
+                self.assertIn("ON DELETE NO ACTION", sql[constraint:].split(";", 1)[0])
+                self.assertLess(sql.index(f"CREATE UNIQUE INDEX LOGISTICS.I{table}001"), constraint)
+                self.assertTrue(sql[:constraint].rstrip().endswith(f"ALTER TABLE LOGISTICS.{logistics.TABLES[int(table) - 1].name}"))
 
     def test_expected_object_topology_is_present(self):
         names = {table.name for table in logistics.TABLES}

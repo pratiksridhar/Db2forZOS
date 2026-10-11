@@ -1,9 +1,10 @@
 -- Test fixture, not product evidence. A hand-written imitation of how DDL
 -- extraction tools commonly regenerate examples/varied-schema.sql: delimited
 -- names, explicit defaults, every PBR partition listed, keys added by ALTER
--- TABLE after their indexes, generated constraint names, FOR subtype DATA, and
--- INCLUSIVE partition boundaries. Every object keeps the exemplar's semantics,
--- so `tools/ddl.py diff` must report no `different` or `missing` entry.
+-- TABLE after their indexes, DATA CAPTURE set by ALTER TABLE, generated
+-- constraint names, FOR subtype DATA, and INCLUSIVE partition boundaries.
+-- Every object keeps the exemplar's semantics, so `tools/ddl.py diff` must
+-- report no `different` or `missing` entry.
 -- tests/test_db2check.py seeds single-attribute defects into this file and
 -- requires the diff to report each one.
 
@@ -135,7 +136,6 @@ SET CURRENT SQLID = 'QAV';
     )
     IN QAVDB01.QAVS01
     AUDIT ALL
-    DATA CAPTURE CHANGES
     CCSID EBCDIC
     NOT VOLATILE
     APPEND NO
@@ -303,6 +303,10 @@ SET CURRENT SQLID = 'QAV';
     ADD CONSTRAINT "CUSTOMER_UK" UNIQUE ("CUSTOMER_CODE")
   ;
 
+  ALTER TABLE "QAV"."CUSTOMER"
+    DATA CAPTURE CHANGES
+  ;
+
   ALTER TABLE "QAV"."SALES_ORDER"
     ADD CONSTRAINT "ORDER_PK" PRIMARY KEY ("ORDER_ID")
   ;
@@ -338,7 +342,7 @@ SET CURRENT SQLID = 'QAV';
   ALTER TABLE "QAV"."ORDER_LINE"
     ADD CONSTRAINT "LINE_PARENT_FK" FOREIGN KEY ("PARENT_ORDER_ID", "PARENT_LINE_NO")
     REFERENCES "QAV"."ORDER_LINE" ("ORDER_ID", "LINE_NO")
-    ON DELETE SET NULL ENFORCED
+    ON DELETE NO ACTION ENFORCED
   ;
 
   CREATE TABLE "QAV"."PRODUCT_DOC"
