@@ -37,6 +37,12 @@ products' documentation.
 | `PRIMARY KEY` on a table in an explicit table space with no index | `CREATE UNIQUE INDEX` with the same columns in the same order, before any child FK | The table stays incomplete and children cannot reference it (`table.incomplete-definition`, `table.fk-parent-unique-index`; `ibm-create-index`) |
 | `REFERENCES same_table` inside CREATE TABLE | `ALTER TABLE ... ADD FOREIGN KEY ... REFERENCES same_table` after the parent index exists | The parent must already exist outside CREATE SCHEMA (`table.fk-self-reference`) |
 | A self-reference with `ON DELETE RESTRICT`, `SET NULL` or no rule under `CURRENT RULES 'DB2'` | `ON DELETE NO ACTION` or `ON DELETE CASCADE` | The same table as parent and dependent allows only those rules (`table.fk-self-reference-delete-rule`; `ibm-alter-table`) |
+| `ALTER TABLE ... ADD PRIMARY KEY` or `UNIQUE` before its index in an explicit table space | `CREATE UNIQUE INDEX` first, then the ALTER | (`table.alter-key-needs-index`) |
+| `CHECK` or a later constraint without `ADD` in ALTER TABLE | `ADD` before every constraint that is not a first unique or referential one | (`syntax.alter-add-required`) |
+| `DATA CAPTURE CHANGES` on a table in a `NOT LOGGED` table space | A logged table space, or no data capture | (`table.data-capture-not-logged`) |
+| Two foreign keys to one parent with different delete rules, or either SET NULL | One shared rule other than SET NULL, or move SET NULL to another relationship | Cascading or repeated parents put the table on several delete paths (`table.fk-delete-paths`; `ibm-create-table`, `ibm-alter-table`) |
+| An ALTER TABLE foreign key that closes an all-CASCADE cycle, or CASCADE back to a table that is already delete-connected | RESTRICT, NO ACTION or SET NULL on one relationship of the cycle | (`table.fk-delete-cycle`) |
+| ALTER TABLE ... ON DELETE SET NULL on a nullable column in a partitioning-index key | Another delete rule, or a NOT NULL column | (`table.fk-set-null-partitioning-key`) |
 | `ON UPDATE CASCADE`, `ON DELETE SET DEFAULT`, `DEFERRABLE` | ON DELETE RESTRICT, NO ACTION, CASCADE or SET NULL; NOT ENFORCED if needed | (`dialect.referential-on-update`, `dialect.referential-action`, `dialect.clause`) |
 | FK column types that only resemble the parent's (INTEGER to BIGINT, CHAR(10) to VARCHAR(10)) | Identical type, length, scale and subtype | (`table.fk-type-identity`) |
 | Composite foreign keys longer than 255 bytes | Foreign key length at most 255 minus the nullable column count | (`table.fk-key-length`) |

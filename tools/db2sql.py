@@ -396,6 +396,7 @@ class Constraint:
     period: str | None = None  # BUSINESS_TIME WITHOUT OVERLAPS / PERIOD BUSINESS_TIME
     parent_period: bool = False  # PERIOD BUSINESS_TIME in the REFERENCES list
     column_level: bool = False
+    rules: str | None = None  # CURRENT RULES of the ALTER TABLE that added it; None = the table's CREATE
 
 
 @dataclass
@@ -1200,7 +1201,7 @@ def _parse_references(cur, constraint):
             return
 
 
-def _parse_table_constraint(cur, line, name):
+def _parse_table_constraint(cur, line, name, legacy_name=False):
     kind = "primary" if cur.accept("PRIMARY", "KEY") else "unique" if cur.accept("UNIQUE") else None
     if kind:
         constraint = Constraint(kind, name, [], line)
@@ -1213,6 +1214,13 @@ def _parse_table_constraint(cur, line, name):
                 constraint.columns.append(col[0].value)
         return constraint
     if cur.accept("FOREIGN", "KEY"):
+        if legacy_name and not cur.is_op("("):
+            # ALTER TABLE only: "For compatibility with prior releases, when the CONSTRAINT clause ... is not
+            # specified, a constraint-name can be specified following FOREIGN KEY" (ibm-alter-table).
+            token = cur.identifier()
+            if name is not None:
+                raise ParseError("A name after FOREIGN KEY is allowed only when CONSTRAINT is omitted", token)
+            name = token.value
         constraint = Constraint("foreign", name, [], line)
         for col in split_commas(cur.group()):
             if len(col) == 2 and col[0].is_word("PERIOD"):
@@ -1792,7 +1800,7 @@ def _parse_alter(cur, result, state):
     result.detail["constraints"] = []
     result.detail["options"] = {}
     result.detail["unmodeled"] = False
-    options, seen = result.detail["options"], set()
+    options, seen, first = result.detail["options"], set(), True
 
     def option(clause, attribute, value):
         # "The same clause must not be specified more than one time" (ibm-alter-table)
@@ -1810,18 +1818,23 @@ def _parse_alter(cur, result, state):
     while not cur.at_end():
         line = cur.line()
         if cur.accept("ADD", "RESTRICT", "ON", "DROP"):
-            option("restrict-on-drop", "restrict_on_drop", True)
+            option("add-restrict-on-drop", "restrict_on_drop", True)
         elif cur.accept("DROP", "RESTRICT", "ON", "DROP"):
-            option("restrict-on-drop", "restrict_on_drop", False)
-        elif cur.accept("ADD"):
-            if cur.is_word("CONSTRAINT", "PRIMARY", "UNIQUE", "FOREIGN", "CHECK"):
-                name = None
-                if cur.accept("CONSTRAINT"):
-                    name = cur.identifier().value
-                result.detail["constraints"].append(_parse_table_constraint(cur, line, name))
-            else:
+            option("drop-restrict-on-drop", "restrict_on_drop", False)
+        elif cur.is_word("ADD", "CONSTRAINT", "PRIMARY", "UNIQUE", "FOREIGN", "CHECK"):
+            added = cur.accept("ADD")
+            if not cur.is_word("CONSTRAINT", "PRIMARY", "UNIQUE", "FOREIGN", "CHECK"):
                 result.detail["unmodeled"] = True
                 return
+            start, name = cur.peek(), None
+            if cur.accept("CONSTRAINT"):
+                name = cur.identifier().value
+            if not added and (not first or cur.is_word("CHECK")):
+                # "The ADD keyword is optional for referential-constraint or unique-constraint if it is the first
+                # clause specified in the statement. Otherwise, ADD is required." (ibm-alter-table)
+                result.issues.append(("syntax.alter-add-required", "ADD can be omitted only before a unique or "
+                                      "referential constraint that is the first clause of ALTER TABLE.", start.line, {}))
+            result.detail["constraints"].append(_parse_table_constraint(cur, line, name, legacy_name=True))
         elif cur.accept("DATA", "CAPTURE"):
             option("data-capture", "data_capture", choice("DATA CAPTURE", ("NONE", "CHANGES")))
         elif cur.accept("AUDIT"):
@@ -1839,6 +1852,9 @@ def _parse_alter(cur, result, state):
         else:
             result.detail["unmodeled"] = True
             return
+        first = False
+    if "add-restrict-on-drop" in seen:
+        options["restrict_on_drop"] = True  # ADD clauses are processed after DROP clauses (ibm-alter-table notes)
 
 
 def _parse_drop(cur, result):

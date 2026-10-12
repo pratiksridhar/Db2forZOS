@@ -48,9 +48,10 @@ ordinary identifiers, keys added later by `ALTER TABLE`, table options that a la
 script's own database or table space supplies, values repeated in every `PARTITION`
 clause, `INCLUSIVE` limit keys and names for unnamed constraints. An omitted
 `FOR SBCS DATA` or `FOR MIXED DATA` follows the encoding scheme and the `MIXED`
-parameter. Other `ALTER` statements, such as `ALTER TABLE ... ADD COLUMN`,
-`ALTER COLUMN ... RESTART WITH` or any `ALTER TABLESPACE` and `ALTER INDEX`, stay
-`not-compared`. Sources and limits are in the
+parameter. Constraints added by `ALTER TABLE` also compare in the forms the manual
+allows: without `ADD` when first, and with the name after `FOREIGN KEY`. Other `ALTER`
+statements, such as `ALTER TABLE ... ADD COLUMN`, `ALTER COLUMN ... RESTART WITH` or any
+`ALTER TABLESPACE` and `ALTER INDEX`, stay `not-compared`. Sources and limits are in the
 [diff review](../history/reviews/diff-product-output.md) and the
 [ALTER and evidence review](../history/reviews/alter-table-and-evidence.md).
 

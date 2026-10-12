@@ -156,6 +156,46 @@ class TableState:
         return bool(self.tablespace and self.tablespace.obj.attrs.get("type") == "PBR")
 
 
+def partitioning_index(table, attrs):
+    """"An index is considered a partitioning index if the specified index key columns match or comprise a
+    superset of the columns specified in the partitioning key, are in the same order, and have the same
+    ascending or descending attributes" (ibm-create-index)."""
+    partition_keys = [(name, order or "ASC") for name, order in table.obj.attrs.get("partition_keys", [])]
+    keys = [(name, order or "ASC") for name, order in attrs.get("keys", [])]
+    return bool(partition_keys) and keys[:len(partition_keys)] == partition_keys
+
+
+def delete_rule(constraint, state):
+    """The explicit delete rule, else the CURRENT RULES default of the statement that defined the constraint."""
+    return constraint.delete_rule or ("RESTRICT" if (constraint.rules or state.rules) == "DB2" else "NO ACTION")
+
+
+def not_logged(state):
+    """True when the table's table space specifies NOT LOGGED: the explicit space, or the implicit one its CREATE TABLE describes."""
+    attrs = state.tablespace.obj.attrs if state.tablespace is not None else state.obj.attrs
+    return attrs.get("logged") == "NOT LOGGED"
+
+
+def _auxiliary(state):
+    """an auxiliary table, which accepts only APPEND"""
+    return state.aux
+
+
+def _accelerator_only(state):
+    """an accelerator-only table, which accepts only ADD or DROP RESTRICT ON DROP"""
+    return state.obj.attrs.get("placement") == "accelerator"
+
+
+def _materialized_query(state):
+    """a materialized query table, which accepts AUDIT, DATA CAPTURE and RESTRICT ON DROP among the modeled clauses"""
+    return state.obj.attrs.get("definition") == "mqt"
+
+
+# ALTER TABLE clauses a kind of table accepts, among those the parser models (ibm-alter-table, table-name).
+ALTER_LIMITS = ((_auxiliary, {"append"}), (_accelerator_only, {"restrict_on_drop"}),
+                (_materialized_query, {"audit", "data_capture", "restrict_on_drop"}))
+
+
 @dataclass
 class TablespaceState:
     obj: object
@@ -626,6 +666,8 @@ class Checker:
             if a.get("source"):
                 self.reference("relation", qualified(a["source"], default), result, "Source table")
         self.placement(result, state)
+        if a.get("data_capture") == "CHANGES" and not_logged(state):
+            self.find("table.data-capture-not-logged", f"{key} is in a NOT LOGGED table space; DATA CAPTURE CHANGES is not allowed.", result)
         if a.get("compress") in ("YES FIXEDLENGTH", "YES HUFFMAN"):
             self.require("compress-algorithm", result, f"CREATE TABLE ... COMPRESS {a['compress']}")
         if "key_label" in a:
@@ -646,6 +688,10 @@ class Checker:
         for column in a.get("columns", []):
             self.column(result, state, column)
         self.constraints(result, state)
+        defined = [(c, qualified(c.parent, default), delete_rule(c, state)) for c in state.fks
+                   if qualified(c.parent, default) != key]
+        for number, (constraint, _, rule) in enumerate(defined):
+            self.delete_paths(result, state, constraint, rule, defined[:number])
         self.periods(result, state)
         self.partitioning(result, state)
         self.row_length(result, state)
@@ -811,6 +857,48 @@ class Checker:
             return None, parent_key
         return parent, parent_key
 
+    def delete_graph(self):
+        """Parent table -> [(dependent, delete rule)] for the relationships defined so far. Self-referencing
+        relationships have their own rule (CASCADE or NO ACTION) and stay out of path analysis."""
+        graph = defaultdict(list)
+        for table in self.r.tables.values():
+            for fk in table.fks:
+                parent = qualified(fk.parent, table.schema_default)
+                if parent != table.key:
+                    graph[parent].append((table.key, delete_rule(fk, table)))
+        return graph
+
+    @staticmethod
+    def cascades(graph, start):
+        """Tables that a delete from `start` reaches through CASCADE relationships only."""
+        found, pending = set(), [start]
+        while pending:
+            for child, rule in graph.get(pending.pop(), []):
+                if rule == "CASCADE" and child not in found and child != start:
+                    found.add(child)
+                    pending.append(child)
+        return found
+
+    def shared_delete_path(self, graph, t2, t3):
+        """The CREATE TABLE and ALTER TABLE conditions under which the relationships to parents T2 and T3 must
+        have one delete rule that is not SET NULL: T2 and T3 are the same table, the deletion of rows from one
+        cascades to the other, or the deletion of rows from a third table cascades to both."""
+        if t2 == t3 or t2 in self.cascades(graph, t3) or t3 in self.cascades(graph, t2):
+            return True
+        return any({t2, t3} <= self.cascades(graph, table) for table in list(graph))
+
+    def delete_paths(self, result, state, constraint, rule, others):
+        """`others` are (constraint, parent, delete rule) of the dependent's other relationships."""
+        graph = self.delete_graph()
+        parent = qualified(constraint.parent, state.schema_default)
+        for other, other_parent, other_rule in others:
+            if self.shared_delete_path(graph, parent, other_parent) and (rule != other_rule or "SET NULL" in (rule, other_rule)):
+                names = " and ".join(f"{c.name or 'unnamed'} ({r})" for c, r in ((other, other_rule), (constraint, rule)))
+                how = f"references {parent} twice" if parent == other_parent else \
+                    f"is delete-connected through {parent} and {other_parent}, which cascading deletes link"
+                self.find("table.fk-delete-paths", f"{state.key} {how}; {names} must have the same delete rule, "
+                          "and it must not be SET NULL.", result, constraint.line)
+
     def foreign_key(self, result, state, constraint, creating):
         what = f"FOREIGN KEY {constraint.name or ''}".strip()
         state.fks.append(constraint)
@@ -830,7 +918,7 @@ class Checker:
         if fk_period != constraint.parent_period:
             self.find("table.fk-business-time", f"{what}: PERIOD BUSINESS_TIME must be in both the FOREIGN KEY and REFERENCES lists, or in neither.", result, constraint.line)
         if fk_period or constraint.parent_period:
-            effective = constraint.delete_rule or ("RESTRICT" if state.rules == "DB2" else "NO ACTION")
+            effective = constraint.delete_rule or ("RESTRICT" if result.detail.get("rules", state.rules) == "DB2" else "NO ACTION")
             if effective != "RESTRICT":
                 self.find("table.fk-business-time", f"{what}: PERIOD BUSINESS_TIME requires ON DELETE RESTRICT (effective rule: {effective}).", result, constraint.line)
         parent, parent_key = self.parent_state(result, state, constraint, creating)
@@ -1090,7 +1178,7 @@ class Checker:
         if partitioned and not table.partitioned:
             self.find("index.partitioned-pbg", f"{table_key} is not in a partition-by-range table space.", result)
         partition_keys = [k for k, _ in table.obj.attrs.get("partition_keys", [])]
-        is_partitioning = bool(partition_keys) and keys[:len(partition_keys)] == partition_keys
+        is_partitioning = partitioning_index(table, a)
         if a.get("partitioned") and a["unique"] and partition_keys and not set(partition_keys) <= set(keys) and not is_partitioning:
             self.find("index.unique-partitioned-superset", "A UNIQUE partitioned secondary index must contain every partitioning column in its key.", result)
         index_columns = [by_name[n] for n in keys + include if n in by_name]
@@ -1135,28 +1223,93 @@ class Checker:
             self.r.not_checked[f"ALTER {(result.kind or '').upper()}".strip()] += 1
             return
         table_key = qualified(detail["table"], detail.get("schema_default"))
+        options, constraints = detail.get("options", {}), detail.get("constraints", [])
         for clause, line in detail.get("duplicate_clauses", []):
             self.find("syntax.duplicate-clause", f"{clause.upper()} is specified more than once in one ALTER TABLE.", result, line)
+        clauses = set(options) | ({"constraint"} if constraints else set())
+        if table_key.startswith("SYSIBM."):
+            if clauses != {"data_capture"} or options["data_capture"] != "CHANGES":
+                self.find("table.alter-clause-for-table-kind", f"{table_key} is a catalog table; DATA CAPTURE CHANGES is the only clause it accepts.", result)
+            return
         if not self.reference("relation", table_key, result, "Table"):
             return
         state = self.r.relations[table_key]
         if not isinstance(state, TableState):
             return
+        # Db2 rejects the whole statement on these errors, so none of its clauses is applied.
+        kind, allowed = next(((k, a) for k, a in ALTER_LIMITS if k(state)), (None, None))
+        failed = False
+        if kind is not None and clauses - allowed:
+            names = ", ".join(sorted(c.replace("_", " ").upper() for c in clauses - allowed))
+            self.find("table.alter-clause-for-table-kind", f"{table_key} is {kind.__doc__}; it does not accept {names}.", result)
+            failed = True
+        if options.get("data_capture") == "CHANGES" and not_logged(state):
+            self.find("table.data-capture-not-logged", f"{table_key} is in a NOT LOGGED table space; DATA CAPTURE CHANGES is not allowed.", result)
+            failed = True
+        for constraint in constraints:
+            if constraint.kind in ("primary", "unique") and not state.implicit_space and state.tablespace is not None \
+                    and enforcement_key(constraint) not in state.enforced_keys:
+                self.find("table.alter-key-needs-index", f"{table_key} has no unique index on ({', '.join(constraint.columns)}) yet; "
+                          "create it before ALTER TABLE adds the key.", result, constraint.line)
+                failed = True
+        if failed:
+            return
         # An option set later by ALTER TABLE gives the catalog state of the same CREATE TABLE clause
         # (ibm-alter-table), so it becomes part of the definition that bundles and the diff read.
-        for attribute, value in detail.get("options", {}).items():
+        for attribute, value in options.items():
             if value is None:
                 state.obj.attrs.pop(attribute, None)  # VALIDPROC NULL
             else:
                 state.obj.attrs[attribute] = value
-        for constraint in detail.get("constraints", []):
+        names = {c.name for c in state.obj.attrs.get("constraints", []) if c.name}
+        for constraint in constraints:
+            if constraint.name in names:
+                self.find("name.duplicate-constraint", f"Constraint name {constraint.name} is already used by {table_key}.", result, constraint.line)
+            names.add(constraint.name)
+            # The omitted delete rule follows CURRENT RULES when the ALTER TABLE statement is processed (ibm-alter-table).
+            constraint.rules = detail.get("rules", "DB2")
             if constraint.kind in ("primary", "unique"):
                 self.unique_key(result, state, constraint)
             elif constraint.kind == "foreign":
+                self.added_foreign_key(result, state, constraint)
                 self.foreign_key(result, state, constraint, creating=False)
             elif constraint.kind == "check":
                 state.checks.append(constraint)
-            state.obj.attrs["constraints"].append(constraint)
+            state.obj.attrs.setdefault("constraints", []).append(constraint)
+
+    def added_foreign_key(self, result, state, constraint):
+        """Delete-rule restrictions of ALTER TABLE ... ADD FOREIGN KEY (ibm-alter-table, ON DELETE)."""
+        parent, rule = qualified(constraint.parent, state.schema_default), delete_rule(constraint, state)
+        if parent == state.key:
+            return  # a self-reference has its own rule: CASCADE or NO ACTION
+        graph = self.delete_graph()
+        descendants, pending = set(), [state.key]
+        while pending:
+            for child, _ in graph.get(pending.pop(), []):
+                if child not in descendants:
+                    descendants.add(child)
+                    pending.append(child)
+        if parent in descendants:  # the new relationship closes a cycle
+            cascaded = self.cascades(graph, state.key)
+            if parent in cascaded:
+                self.find("table.fk-delete-cycle", f"Every relationship from {state.key} down to {parent} is CASCADE, so the cycle "
+                          "this foreign key closes would delete-connect a table to itself.", result, constraint.line)
+            elif rule == "CASCADE" and parent in {child for table in cascaded | {state.key} for child, _ in graph.get(table, [])}:
+                self.find("table.fk-delete-cycle", f"{parent} is delete-connected to {state.key}, so this foreign key cannot be CASCADE.",
+                          result, constraint.line)
+        others = [(c, qualified(c.parent, state.schema_default), delete_rule(c, state)) for c in state.fks
+                  if qualified(c.parent, state.schema_default) != state.key]
+        self.delete_paths(result, state, constraint, rule, others)
+        if constraint.delete_rule == "SET NULL":
+            for index_key_ in state.indexes:
+                index = self.r.indexes.get(index_key_)
+                if index is None or not partitioning_index(state, index.obj.attrs):
+                    continue
+                keys = {name for name, _ in index.obj.attrs.get("keys", [])}
+                nullable = [c for c in constraint.columns if c in keys and state.columns.get(c) is not None and state.columns[c].nullable]
+                if nullable:
+                    self.find("table.fk-set-null-partitioning-key", f"SET NULL is not allowed: nullable foreign-key column(s) "
+                              f"{', '.join(nullable)} are in the key of partitioning index {index_key_}.", result, constraint.line)
 
     def drop(self, result):
         name = result.detail.get("name")
@@ -1733,7 +1886,7 @@ def _semantic_table(a, default, rules, names, encoding=None):
         elif c.kind == "unique":
             constraints["unique"].append({"name": c.name, "columns": c.columns, "period": c.period})
         elif c.kind == "foreign":
-            delete = c.delete_rule or ("RESTRICT" if rules == "DB2" else "NO ACTION")
+            delete = c.delete_rule or ("RESTRICT" if (c.rules or rules) == "DB2" else "NO ACTION")
             constraints["foreign"].append({
                 "name": c.name, "columns": c.columns, "parent": names.relation(qualified(c.parent, default)),
                 "parent_columns": c.parent_columns, "delete_rule": delete, "delete_rule_explicit": c.delete_rule is not None,
@@ -2281,7 +2434,7 @@ def bundle(report, text, names, run, profile, out=None):
             for state, c in fks:
                 if not c.name:
                     continue
-                rule = c.delete_rule or ("RESTRICT" if state.rules == "DB2" else "NO ACTION")
+                rule = c.delete_rule or ("RESTRICT" if (c.rules or state.rules) == "DB2" else "NO ACTION")
                 assertions.append({"catalog": f"relations_{n}", "where": {"TBNAME": state.obj.name.name, "RELNAME": c.name},
                                    "equals": {"REFTBNAME": c.parent.name, "COLCOUNT": len(c.columns), "DELETERULE": DELETERULE[rule],
                                               "ENFORCED": "Y" if c.enforced else "N", "PARENT_SCHEMA_MATCH": 1}})

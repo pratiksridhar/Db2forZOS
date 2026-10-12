@@ -22,7 +22,8 @@ short gate list; this page explains each step.
 2. Avoid the [dialect traps](../../kb/dialect-traps.md). In particular: 8-byte database and
    table-space names, 30-byte column names unless TABLE_COL_NAME_EXPANSION is on, no
    `DEFAULT CURRENT TIMESTAMP`, no self-referencing FK inside CREATE TABLE (add it
-   with ALTER TABLE and `ON DELETE NO ACTION` or `CASCADE`), an
+   with ALTER TABLE and `ON DELETE NO ACTION` or `CASCADE`), one shared delete rule
+   other than SET NULL for keys whose parents are the same table or cascade-linked, an
    enforcing unique index for every key in an explicit table space before children,
    and LOB support objects (or `IN DATABASE`) for LOB columns.
 3. `python3 tools/ddl.py lint <sql> --profile <profile>` must PASS. Read each

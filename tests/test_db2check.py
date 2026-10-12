@@ -116,6 +116,23 @@ NEGATIVE = {
     "table.fk-self-reference": DB + "CREATE TABLE S.T (C INTEGER NOT NULL PRIMARY KEY, P INTEGER REFERENCES S.T) IN DATABASE QADB1;",
     "table.fk-self-reference-delete-rule": DB + "CREATE TABLE S.T (C INTEGER NOT NULL PRIMARY KEY, P INTEGER) IN DATABASE QADB1;\n"
                                            "ALTER TABLE S.T ADD FOREIGN KEY (P) REFERENCES S.T;",
+    "table.alter-key-needs-index": DB + TS + "CREATE TABLE S.T (C INTEGER NOT NULL) IN QADB1.TS1;\nALTER TABLE S.T ADD PRIMARY KEY (C);",
+    "table.fk-delete-paths": DB + "CREATE TABLE S.P (A INTEGER NOT NULL PRIMARY KEY, B INTEGER NOT NULL UNIQUE) IN DATABASE QADB1;\n"
+                             "CREATE TABLE S.C (A INTEGER REFERENCES S.P ON DELETE RESTRICT, B INTEGER REFERENCES S.P (B) ON DELETE SET NULL) "
+                             "IN DATABASE QADB1;",
+    "table.fk-delete-cycle": DB + "CREATE TABLE S.A (K INTEGER NOT NULL PRIMARY KEY, B INTEGER) IN DATABASE QADB1;\n"
+                             "CREATE TABLE S.B (K INTEGER NOT NULL PRIMARY KEY, A INTEGER REFERENCES S.A ON DELETE CASCADE) IN DATABASE QADB1;\n"
+                             "ALTER TABLE S.A ADD FOREIGN KEY (B) REFERENCES S.B ON DELETE CASCADE;",
+    "table.fk-set-null-partitioning-key": DB + "CREATE TABLE S.P (A INTEGER NOT NULL PRIMARY KEY) IN DATABASE QADB1;\n"
+                                          "CREATE TABLESPACE TS1 IN QADB1 NUMPARTS 2;\n"
+                                          "CREATE TABLE S.C (K INTEGER, A INTEGER) IN QADB1.TS1 PARTITION BY (K) "
+                                          "(PARTITION 1 ENDING AT (10), PARTITION 2 ENDING AT (MAXVALUE));\n"
+                                          "CREATE INDEX S.CI ON S.C (K, A) PARTITIONED;\n"
+                                          "ALTER TABLE S.C ADD FOREIGN KEY (K) REFERENCES S.P ON DELETE SET NULL;",
+    "table.alter-clause-for-table-kind": "ALTER TABLE SYSIBM.SYSTABLES AUDIT ALL;",
+    "table.data-capture-not-logged": DB + "CREATE TABLESPACE TS1 IN QADB1 NOT LOGGED;\n"
+                                     "CREATE TABLE S.T (C INTEGER) IN QADB1.TS1 DATA CAPTURE CHANGES;",
+    "syntax.alter-add-required": DB + "CREATE TABLE S.T (C INTEGER NOT NULL) IN DATABASE QADB1;\nALTER TABLE S.T CHECK (C > 0);",
     "table.fk-parent-key": DB + "CREATE TABLE S.P (A INTEGER NOT NULL, B INTEGER NOT NULL, PRIMARY KEY (A, B)) IN DATABASE QADB1;\n"
                            "CREATE TABLE S.C (A INTEGER, B INTEGER, FOREIGN KEY (B, A) REFERENCES S.P (B, A)) IN DATABASE QADB1;",
     "table.fk-arity": DB + "CREATE TABLE S.P (A INTEGER NOT NULL, B INTEGER NOT NULL, PRIMARY KEY (A, B)) IN DATABASE QADB1;\n"
@@ -317,6 +334,72 @@ class LintBehaviorTests(unittest.TestCase):
         # The omitted rule follows CURRENT RULES when the ALTER runs: NO ACTION under 'STD'.
         self.assertFalse(rules(base + "SET CURRENT RULES = 'STD';\nALTER TABLE S.T ADD FOREIGN KEY (P) REFERENCES S.T;"))
 
+    def test_alter_table_follows_the_sql_reference(self):
+        parent = DB + "CREATE TABLE S.P (A INTEGER NOT NULL PRIMARY KEY) IN DATABASE QADB1;\n"
+        child = parent + "CREATE TABLE S.C (A INTEGER) IN DATABASE QADB1;\n"
+        # ADD may be omitted before a first unique or referential constraint, and a name may follow FOREIGN KEY.
+        for statement in ("ALTER TABLE S.C FOREIGN KEY (A) REFERENCES S.P;", "ALTER TABLE S.C CONSTRAINT F1 FOREIGN KEY (A) REFERENCES S.P;",
+                          "ALTER TABLE S.C ADD FOREIGN KEY F1 (A) REFERENCES S.P;", "ALTER TABLE S.C FOREIGN KEY F1 (A) REFERENCES S.P APPEND YES;"):
+            with self.subTest(statement=statement):
+                self.assertFalse(rules(child + statement))
+                self.assertNotIn("ALTER TABLE", analyze(child + statement).not_checked)
+        sample = DB + ("CREATE TABLE S.DEPT (DEPTNO CHAR(3) NOT NULL PRIMARY KEY, ADMRDEPT CHAR(3) NOT NULL) IN DATABASE QADB1;\n"
+                       "ALTER TABLE S.DEPT FOREIGN KEY RDD (ADMRDEPT) REFERENCES S.DEPT ON DELETE CASCADE;")
+        self.assertFalse(rules(sample))
+        for statement in ("ALTER TABLE S.C APPEND YES FOREIGN KEY (A) REFERENCES S.P;", "ALTER TABLE S.C CONSTRAINT K CHECK (A > 0);"):
+            with self.subTest(statement=statement):
+                self.assertEqual({"syntax.alter-add-required"}, rules(child + statement))
+        self.assertIn("script.parse-error", rules(child + "ALTER TABLE S.C ADD CONSTRAINT F1 FOREIGN KEY F2 (A) REFERENCES S.P;"))
+        self.assertEqual({"name.duplicate-constraint"}, rules(child + "ALTER TABLE S.C ADD CONSTRAINT F1 FOREIGN KEY (A) REFERENCES S.P;\n"
+                                                                       "ALTER TABLE S.C ADD CONSTRAINT F1 CHECK (A > 0);"))
+        # A key added by ALTER needs its unique index first unless Db2 created the table space.
+        explicit = DB + TS + "CREATE TABLE S.T (C INTEGER NOT NULL) IN QADB1.TS1;\n"
+        self.assertEqual({"table.alter-key-needs-index"}, rules(explicit + "ALTER TABLE S.T ADD UNIQUE (C);\nCREATE UNIQUE INDEX S.I ON S.T (C);"))
+        self.assertFalse(rules(explicit + "CREATE UNIQUE INDEX S.I ON S.T (C);\nALTER TABLE S.T ADD UNIQUE (C);"))
+        self.assertFalse(rules(DB + "CREATE TABLE S.T (C INTEGER NOT NULL) IN DATABASE QADB1;\nALTER TABLE S.T PRIMARY KEY (C);"))
+
+    def test_delete_rules_follow_the_delete_connection_rules(self):
+        parents = DB + ("CREATE TABLE S.P (A INTEGER NOT NULL PRIMARY KEY, B INTEGER NOT NULL UNIQUE) IN DATABASE QADB1;\n"
+                        "CREATE TABLE S.Q (A INTEGER NOT NULL PRIMARY KEY, P INTEGER REFERENCES S.P ON DELETE CASCADE) IN DATABASE QADB1;\n")
+        child = "CREATE TABLE S.C (A INTEGER REFERENCES S.P ON DELETE {}, B INTEGER REFERENCES {} ON DELETE {}) IN DATABASE QADB1;"
+        cases = {("RESTRICT", "S.P (B)", "RESTRICT"): set(), ("CASCADE", "S.P (B)", "CASCADE"): set(),
+                 ("SET NULL", "S.P (B)", "SET NULL"): {"table.fk-delete-paths"},
+                 ("NO ACTION", "S.Q", "RESTRICT"): {"table.fk-delete-paths"},  # deletes from P cascade to Q
+                 ("RESTRICT", "S.Q", "RESTRICT"): set()}
+        for (first, parent, second), expected in cases.items():
+            with self.subTest(first=first, parent=parent, second=second):
+                self.assertEqual(expected, rules(parents + child.format(first, parent, second)))
+        # A CASCADE self-reference (the SQL Reference's ALTER TABLE example 4) beside a SET NULL cycle between two tables.
+        sample = DB + ("CREATE TABLE S.DEPT (DEPTNO CHAR(3) NOT NULL PRIMARY KEY, MGRNO CHAR(6), ADMRDEPT CHAR(3) NOT NULL) IN DATABASE QADB1;\n"
+                       "CREATE TABLE S.EMP (EMPNO CHAR(6) NOT NULL PRIMARY KEY, WORKDEPT CHAR(3) REFERENCES S.DEPT ON DELETE SET NULL) "
+                       "IN DATABASE QADB1;\n"
+                       "ALTER TABLE S.DEPT FOREIGN KEY RDD (ADMRDEPT) REFERENCES S.DEPT ON DELETE CASCADE;\n"
+                       "ALTER TABLE S.DEPT FOREIGN KEY RDE (MGRNO) REFERENCES S.EMP ON DELETE {};")
+        self.assertFalse(rules(sample.format("SET NULL")))
+        self.assertEqual({"table.fk-delete-cycle"}, rules(sample.format("CASCADE")))  # EMP is delete-connected to DEPT
+        # SET NULL only matters for the key of a partitioning index.
+        partitioned = NEGATIVE["table.fk-set-null-partitioning-key"]
+        self.assertNotIn("table.fk-set-null-partitioning-key", rules(partitioned.replace("S.C (K, A) PARTITIONED", "S.C (A, K)")))
+        self.assertNotIn("table.fk-set-null-partitioning-key", rules(partitioned.replace("S.C (K, A)", "S.C (K DESC, A)")))
+
+    def test_alter_table_clauses_depend_on_the_kind_of_table(self):
+        kinds = {"materialized query": DB + "CREATE TABLE S.T (C INTEGER) IN DATABASE QADB1;\n"
+                                            "CREATE TABLE S.M AS (SELECT C FROM S.T) DATA INITIALLY DEFERRED REFRESH DEFERRED IN DATABASE QADB1;\n",
+                 "accelerator-only": DB + "CREATE TABLE S.M (C INTEGER) IN ACCELERATOR ACC1;\n",
+                 "auxiliary": DB + TS + "CREATE LOB TABLESPACE LS1 IN QADB1;\nCREATE TABLE S.T (C CLOB(1M)) IN QADB1.TS1;\n"
+                                        "CREATE AUX TABLE S.M IN QADB1.LS1 STORES S.T COLUMN C PART 1;\nCREATE UNIQUE INDEX S.XI ON S.M;\n"}
+        accepted = {"materialized query": "AUDIT ALL DATA CAPTURE CHANGES ADD RESTRICT ON DROP", "accelerator-only": "ADD RESTRICT ON DROP",
+                    "auxiliary": "APPEND YES"}
+        for kind, script in kinds.items():
+            with self.subTest(kind=kind):
+                self.assertNotIn("table.alter-clause-for-table-kind", rules(script + f"ALTER TABLE S.M {accepted[kind]};"))
+                self.assertIn("table.alter-clause-for-table-kind", rules(script + "ALTER TABLE S.M VOLATILE;"))
+        self.assertFalse(rules("ALTER TABLE SYSIBM.SYSTABLES DATA CAPTURE CHANGES;"))
+        self.assertEqual({"table.alter-clause-for-table-kind"}, rules("ALTER TABLE SYSIBM.SYSTABLES DATA CAPTURE NONE;"))
+        logged = DB + "CREATE TABLESPACE TS2 IN QADB1 NOT LOGGED;\nCREATE TABLE S.T (C INTEGER) IN QADB1.TS2;\n"
+        self.assertEqual({"table.data-capture-not-logged"}, rules(logged + "ALTER TABLE S.T DATA CAPTURE CHANGES;"))
+        self.assertEqual({"table.data-capture-not-logged"}, rules(DB + "CREATE TABLE S.T (C INTEGER) IN DATABASE QADB1 NOT LOGGED DATA CAPTURE CHANGES;"))
+
     def test_alter_table_options_are_checked(self):
         base = DB + "CREATE TABLE S.T (C INTEGER) IN DATABASE QADB1;\n"
         self.assertFalse(rules(base + "ALTER TABLE S.T DATA CAPTURE CHANGES AUDIT ALL APPEND NO NOT VOLATILE;"))
@@ -513,6 +596,31 @@ class DiffTests(unittest.TestCase):
         aborted = self.statuses(self.diff(plain, plain + "\nALTER TABLE S.T DATA CAPTURE CHANGES AUDIT;"))
         self.assertEqual({("not-compared", None)}, aborted)
 
+    def test_alter_table_constraint_forms_order_and_rules_follow_the_manual(self):
+        base = DB + ("CREATE TABLE S.P (A INTEGER NOT NULL PRIMARY KEY) IN DATABASE QADB1;\n"
+                     "CREATE TABLE S.C (A INTEGER) IN DATABASE QADB1;\n")
+        named = base + "ALTER TABLE S.C ADD CONSTRAINT F1 FOREIGN KEY (A) REFERENCES S.P ON DELETE CASCADE;"
+        for form in ("ALTER TABLE S.C FOREIGN KEY F1 (A) REFERENCES S.P ON DELETE CASCADE;",
+                     "ALTER TABLE S.C CONSTRAINT F1 FOREIGN KEY (A) REFERENCES S.P ON DELETE CASCADE;"):
+            with self.subTest(form=form):
+                self.assertEqual("match", self.diff(named, base + form)["status"])
+        # DROP clauses run before ADD clauses, whatever their written order.
+        restricted = DB + "CREATE TABLE S.T (C INTEGER) IN DATABASE QADB1 WITH RESTRICT ON DROP;"
+        plain = DB + "CREATE TABLE S.T (C INTEGER) IN DATABASE QADB1;\n"
+        for clauses in ("DROP RESTRICT ON DROP ADD RESTRICT ON DROP", "ADD RESTRICT ON DROP DROP RESTRICT ON DROP"):
+            with self.subTest(clauses=clauses):
+                self.assertFalse(rules(plain + f"ALTER TABLE S.T {clauses};"))
+                self.assertEqual("match", self.diff(restricted, plain + f"ALTER TABLE S.T {clauses};")["status"])
+        # An omitted delete rule follows CURRENT RULES when the ALTER runs, not when the table was created.
+        late = base + "SET CURRENT RULES = 'STD';\nALTER TABLE S.C ADD CONSTRAINT F1 FOREIGN KEY (A) REFERENCES S.P;"
+        explicit = base + "ALTER TABLE S.C ADD CONSTRAINT F1 FOREIGN KEY (A) REFERENCES S.P ON DELETE {};"
+        self.assertEqual("match", self.diff(late, explicit.format("NO ACTION"))["status"])
+        self.assertIn(("different", "foreign constraints"), self.statuses(self.diff(late, explicit.format("RESTRICT"))))
+        report = analyze(late.replace("S.", "QAV."))
+        contract = json.loads(db2check.bundle(report, late.replace("S.", "QAV."), db2check.NameMap({"QAV": "QAVR"}, {"QADB1": "QADB2"}),
+                                              "VX1", PROFILE)["catalog-contract.json"])
+        self.assertEqual("A", next(a["equals"]["DELETERULE"] for a in contract["assertions"] if a["where"].get("RELNAME") == "F1"))
+
     def test_unread_or_unmodeled_input_is_never_a_match(self):
         source = DB + "CREATE TABLE S.T (C INTEGER) IN DATABASE QADB1;\nCREATE VIEW S.V AS SELECT C FROM S.T;"
         cases = {"partial CREATE": source.replace("IN DATABASE QADB1;", "IN DATABASE QADB1 FROBNICATE YES;"),
@@ -553,7 +661,8 @@ REGENERATION_DEFECTS = [  # (text in the regenerated fixture, seeded defect, obj
     ('"STATUS" CHAR(1) FOR SBCS DATA', '"STATUS" CHAR(1) FOR BIT DATA', "table QAV.CUSTOMER", "column STATUS.type"),
     ('("QTY" > 0)', '("QTY" >= 0)', "table QAV.ORDER_LINE", "check constraints"),
     ("NOT ENFORCED ENABLE QUERY OPTIMIZATION", "ENFORCED", "table QAV.ORDER_LINE", "foreign constraints"),
-    ('("CUSTOMER_CODE")\n    ON DELETE SET NULL', '("CUSTOMER_CODE")\n    ON DELETE RESTRICT', "table QAV.SALES_ORDER", "foreign constraints"),
+    ('("CUSTOMER_CODE")\n    ON DELETE RESTRICT', '("CUSTOMER_CODE")\n    ON DELETE NO ACTION', "table QAV.SALES_ORDER", "foreign constraints"),
+    ('ON DELETE SET NULL ENFORCED', 'ON DELETE RESTRICT ENFORCED', "table QAV.PRODUCT_DOC", "foreign constraints"),
     ('"ORDER_CUSTOMER_FK"', '"ORDER_CUST_FK"', "table QAV.SALES_ORDER", "foreign constraints"),
     ("'2024-12-31'", "'2024-12-30'", "table QAV.SALES_ORDER", "partitioning"),
     (',"PICK_TIME" TIME\n', "", "table QAV.SALES_ORDER", "columns"),

@@ -4,6 +4,16 @@ Dated reviews in [reviews/](reviews/) and the [campaign source review](source-re
 record exactly what was checked against which IBM edition. They are history: later
 changes do not re-certify them.
 
+## 2026-10-11: ALTER TABLE and delete rules follow the SQL Reference
+
+ALTER TABLE parsing and lint now follow the SQL Reference: optional ADD before a first key,
+the ALTER-only `FOREIGN KEY name` form, clause processing order, per-table-kind clause
+limits, DATA CAPTURE CHANGES on NOT LOGGED spaces, keys that need their index first,
+and the delete-rule default at ALTER time. New rules check delete-connection cycles,
+keys that put a table on several delete paths, and SET NULL on partitioning-index keys.
+The exemplar referenced one parent twice with RESTRICT and SET NULL, which CREATE TABLE
+forbids; SET NULL moved to `PRODUCT_DOC`. See [the review](reviews/alter-table-manual.md).
+
 ## 2026-10-10: catalog exports, recorded outcomes and ALTER TABLE options
 
 `qa.py snapshot` turns one CSV export per catalog result set into a typed snapshot,

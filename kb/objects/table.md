@@ -420,21 +420,57 @@ The following options describe only an **implicitly created** base table space:
 
 ### Options changed later by ALTER TABLE
 
-`ALTER TABLE` sets several of these options after creation (`ibm-alter-table`,
-reviewed 2026-10-10): `DATA CAPTURE NONE|CHANGES`, `AUDIT NONE|CHANGES|ALL`,
-`VOLATILE` or `NOT VOLATILE` (optional `CARDINALITY`), `APPEND NO|YES`,
-`VALIDPROC program-name|NULL`, and `ADD RESTRICT ON DROP` or `DROP RESTRICT ON DROP`.
-Their descriptions match the CREATE TABLE options, so the resulting definition is
-the same; the page names no pending or REORG state for them. Differences to keep:
+Read in the Db2 13 for z/OS SQL Reference SC28-2773-00, 2022-05-18 edition (printed
+pages cited), and rechecked against the current `ibm-alter-table` topic on 2026-10-10.
 
-- `VALIDPROC NULL` discontinues the current validation routine, and a new routine is
-  not applied to existing rows.
-- `ADD RESTRICT ON DROP` blocks dropping the table and the table space and database
-  that contain it until `DROP RESTRICT ON DROP` removes the restriction, so cleanup
-  removes it first.
-- Do not specify `DATA CAPTURE CHANGES` for a table in a `NOT LOGGED` table space.
-- A clause appears at most once per statement; only `ADD COLUMN` and `ALTER COLUMN`
-  repeat.
+- Syntax (pp. 1224-1225): clauses repeat in one statement, but "The same clause must
+  not be specified more than one time, except for the ADD COLUMN or ALTER COLUMN
+  clauses." `DATA CAPTURE NONE|CHANGES`, `VOLATILE` or `NOT VOLATILE` each with an
+  optional `CARDINALITY` ("currently has no effect", p. 1279), `ADD RESTRICT ON DROP`,
+  `DROP RESTRICT ON DROP`, `APPEND NO|YES`, `AUDIT NONE|CHANGES|ALL` and
+  `VALIDPROC program-name|NULL` are separate clauses. ADD CLONE, DROP CLONE, RENAME
+  COLUMN, ALTER or DROP ORGANIZATION, ADD or DROP VERSIONING, DROP COLUMN, ACTIVATE,
+  DEACTIVATE, ENABLE ARCHIVE and DISABLE ARCHIVE allow no other clause.
+- "The ADD keyword is optional for referential-constraint or unique-constraint if it
+  is the first clause specified in the statement. Otherwise, ADD is required."
+  (p. 1225). Only in ALTER TABLE may a constraint name follow `FOREIGN KEY` when
+  `CONSTRAINT` is omitted (p. 1233); the CREATE TABLE diagram (p. 1643) has no such form.
+- Table kinds (pp. 1235-1236): a catalog table accepts only `DATA CAPTURE CHANGES`; an
+  accelerator-only table only `ADD` or `DROP RESTRICT ON DROP`; an auxiliary table only
+  `APPEND`; a materialized query table only `AUDIT`, `DATA CAPTURE`, its query,
+  partition and key-label clauses and `ADD` or `DROP RESTRICT ON DROP`.
+- When several clauses appear they are processed in this order (p. 1286): VALIDPROC,
+  AUDIT, DATA CAPTURE, ROTATE, VOLATILE, APPEND, DROP clauses, ALTER clauses, RENAME,
+  ADD clauses. So `ADD RESTRICT ON DROP` wins over `DROP RESTRICT ON DROP` in one statement.
+- None of these option clauses is a pending definition change (pp. 1289-1290 list
+  ALTER COLUMN, DROP COLUMN, ADD PARTITION, ALTER PARTITION and ALTER PARTITIONING).
+- `ADD RESTRICT ON DROP` "Restricts dropping the table and the database and table space
+  that contain the table" (p. 1280). A new `VALIDPROC` "is not used to validate existing
+  table rows"; `NULL` discontinues it (p. 1283). "Do not specify DATA CAPTURE CHANGES
+  for tables that reside in table spaces that specify NOT LOGGED" (p. 1279; CREATE TABLE
+  says the same). `APPEND` "must not be specified for a table in a work file table
+  space" (p. 1282).
+- Added keys (pp. 1258-1262): a primary or unique key needs an existing unique index
+  with the same columns in the same order unless the table space was implicitly
+  created; a constraint name must differ from the table's other constraint names. If
+  parent and dependent are the same table, CASCADE or NO ACTION must be specified. The
+  omitted delete rule follows `CURRENT RULES` "when the ALTER TABLE statement is
+  processed". SET NULL is also not allowed when a nullable foreign-key column is in the
+  key of a partitioning index: an index whose key columns "match or comprise a superset
+  of the columns specified in the partitioning key, are in the same order, and have the
+  same ascending or descending attributes" (CREATE INDEX, p. 1525).
+- Delete-connection (p. 1262): "A cycle involving two or more tables must not cause a
+  table to be delete-connected to itself." A new key cannot close a cycle whose other
+  relationships are all CASCADE, and "CASCADE must not be specified if T2 is
+  delete-connected to T1". A table is delete-connected to P if it is a dependent of P
+  or of a table to which deletes from P cascade (p. 16). When the dependent is reached
+  from one table along several paths, its relationships on those paths must have the
+  same delete rule, and it must not be SET NULL.
+- CREATE TABLE states the same path rule for the keys of one statement (pp. 1668-1669):
+  for parents T2 and T3 of two FOREIGN KEY clauses, "The delete rules of the
+  relationships involving T2 and T3 must be the same and must not be SET NULL" if they
+  are the same table, if deletes from one cascade to the other, or if deletes from a
+  third table cascade to both.
 
 ## LOB and XML side effects
 
